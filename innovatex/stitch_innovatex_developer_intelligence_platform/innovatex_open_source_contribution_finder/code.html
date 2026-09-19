@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.tech-mesh{background-color:#0a0a0f;background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 0);background-size:24px 24px;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"outline":"#908fa0","surface-container-high":"#2a2931","inverse-primary":"#494bd6","surface-container-highest":"#34343c","secondary":"#d0bcff","tertiary-fixed":"#6ffbbe","on-primary-container":"#0d0096","secondary-fixed":"#e9ddff","surface-container-low":"#1b1b22","surface-dim":"#13131a","surface-container":"#1f1f26","error":"#ffb4ab","on-surface-variant":"#c7c4d7","inverse-surface":"#e4e1eb","on-secondary-fixed":"#23005c","primary-fixed-dim":"#c0c1ff","background":"#13131a","surface-container-lowest":"#0e0e14","on-tertiary":"#003824","on-secondary-fixed-variant":"#5516be","primary-container":"#8083ff","tertiary-fixed-dim":"#4edea3","on-background":"#e4e1eb","tertiary-container":"#00885d","surface-variant":"#34343c","on-tertiary-fixed":"#002113","primary":"#c0c1ff","tertiary":"#4edea3","on-error-container":"#ffdad6","on-secondary":"#3c0091","error-container":"#93000a","on-primary-fixed":"#07006c","on-error":"#690005","on-tertiary-container":"#000703","inverse-on-surface":"#303037","surface":"#13131a","surface-bright":"#393840","outline-variant":"#464554","on-surface":"#e4e1eb","on-secondary-container":"#c4abff","secondary-container":"#571bc1","on-primary":"#1000a9","on-tertiary-fixed-variant":"#005236","secondary-fixed-dim":"#d0bcff","surface-tint":"#c0c1ff","primary-fixed":"#e1e0ff","on-primary-fixed-variant":"#2f2ebe"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","margin-desktop":"2rem","space-lg":"1.5rem","space-sm":"0.5rem","margin":"1rem","gutter":"1.25rem","space-md":"1rem","gutter-desktop":"1.5rem","space-xs":"0.25rem"},"fontFamily":{"headline-lg-mobile":["Space Grotesk"],"body-sm":["Inter"],"body-md":["Inter"],"headline-lg":["Space Grotesk"],"display":["Space Grotesk"],"label-code":["JetBrains Mono"],"headline-sm":["Space Grotesk"],"label-caps":["Inter"],"headline-md":["Space Grotesk"],"body-lg":["Inter"]},"fontSize":{"headline-lg-mobile":["28px",{"lineHeight":"36px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"400"}],"headline-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"600"}],"display":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"label-code":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"headline-sm":["18px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"600"}],"label-caps":["11px",{"lineHeight":"14px","letterSpacing":"0.06em","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"400"}]}}}};</script></head><body class="tech-mesh font-body-md text-body-md text-on-surface min-h-screen"><header class="fixed top-0 left-0 right-0 h-16 z-50 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.2)]"><div class="w-full h-16 px-gutter-desktop flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-md min-w-[240px]"><img alt="InnovateX Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UHqiD3a1sXtzCp7n81mbp1tQ7Pq2PyVbcwDW9eYxoDyeGp-DOPmKsctBUfGHd5wRLSrw2WF9Ncv8rjInrSUztp8bg4mgXAWF6g2ZwTbPNL0EB_KRaQE5nyNIYoFTm-vRoxKhu6QWMi3NAPe2p9Z2mrydAPvvUj5dNuCKUBcncO0inj6fGcHB89JLAYdGgKjZmak-DFlR_594wGNF93UhK018C65qsJu684hpa1lvcus_jfHMQlSdIZ5g"/><span class="font-headline-sm text-headline-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-primary-container">InnovateX</span></div><nav class="hidden xl:flex items-center gap-space-lg" data-active-classes="text-on-surface font-semibold"><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="dashboard" href="#">Dashboard</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="github-analyzer" href="#">GitHub</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="research-agent" href="#">Research</a><a aria-current="page" class="transition-colors text-on-surface font-semibold" data-path="open-source-finder" href="#">Open Source</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="contest-tracker" href="#">Contests</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="job-search" href="#">Jobs</a></nav><div class="flex items-center gap-space-md"><button class="p-space-xs text-on-surface-variant hover:text-on-surface transition-colors relative flex items-center justify-center" type="button"><span class="material-symbols-outlined">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(208,188,255,0.8)]"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADFScRC851l0kFH0hzpGL0vA3WsIes3bJqLaHoiHOfN38hJtkFWrEgvo-VSPDNNeBaJPxxXFn4rCvt1mgzs3oyRsrqYG6wWiUzLXv0fY-mQjng2Nti8j74KRlviUC2v74d9gQ4HVXjXQIxfwDSomrnWRZAI0Qrm-9w8mHRMBPeXukD_tjn_Kqq8qC_OgE70jjsE6d3LZEHR8uLDaGTv5Agssb7zyCx8oH5g0e4-0SaURJBLSLTaFB_"/><div class="hidden sm:flex flex-col text-left"><span class="font-body-sm text-body-sm font-medium text-on-surface leading-none">Om</span><span class="font-label-code text-label-code text-on-surface-variant leading-none mt-1">Staff Architect</span></div></div><a class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface transition-all" data-path="login" href="#"><span class="material-symbols-outlined text-base">logout</span><span class="hidden md:inline font-body-sm text-body-sm">Logout</span></a></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[1px_0_8px_rgba(0,0,0,0.15)] z-40 flex flex-col justify-between p-space-md"><div class="flex flex-col gap-space-xs"><div class="px-space-sm py-space-xs"><span class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant/70">Developer Modules</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-gradient-to-r from-secondary-container to-surface-container-highest text-on-surface shadow-[0_0_16px_rgba(87,27,193,0.35)]"><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="dashboard" href="#"><span class="material-symbols-outlined text-xl">dashboard</span><span class="font-body-md text-body-md">Dashboard</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="github-analyzer" href="#"><span class="material-symbols-outlined text-xl">code</span><span class="font-body-md text-body-md">GitHub Analyzer</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="research-agent" href="#"><span class="material-symbols-outlined text-xl">psychology</span><span class="font-body-md text-body-md">Research Agent</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg transition-all bg-gradient-to-r from-secondary-container to-surface-container-highest text-on-surface shadow-[0_0_16px_rgba(87,27,193,0.35)]" data-path="open-source-finder" href="#"><span class="material-symbols-outlined text-xl">hub</span><span class="font-body-md text-body-md">Open Source Finder</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="contest-tracker" href="#"><span class="material-symbols-outlined text-xl">emoji_events</span><span class="font-body-md text-body-md">Contest Tracker</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="job-search" href="#"><span class="material-symbols-outlined text-xl">work</span><span class="font-body-md text-body-md">Job Search</span></a></nav></div><div class="flex flex-col gap-1"><div class="px-space-sm py-space-xs"><span class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant/70">Preferences &amp; Help</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-gradient-to-r from-secondary-container to-surface-container-highest text-on-surface shadow-[0_0_16px_rgba(87,27,193,0.35)]"><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="settings" href="#"><span class="material-symbols-outlined text-xl">settings</span><span class="font-body-md text-body-md">Settings</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="documentation" href="#"><span class="material-symbols-outlined text-xl">menu_book</span><span class="font-body-md text-body-md">Documentation</span></a></nav></div></aside><div class="pl-64"><main class="w-full pt-16 px-gutter-desktop min-h-screen"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Top Aura -->
+<div class="relative w-full overflow-hidden pb-12">
+<div class="absolute -top-24 left-1/3 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-12 right-12 w-80 h-80 bg-secondary-container/15 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Stepper Header Section -->
+<div class="w-full pt-4 pb-8 flex flex-col gap-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-widest px-2 py-0.5 rounded-full bg-primary/10">Telemetry v2.4</span>
+<span class="font-label-code text-label-code text-on-surface-variant">OSS Intelligence Engine</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Open Source Opportunity Matcher</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-code text-label-code text-on-surface-variant">Indexed Repos: <strong class="text-on-surface">14,289 active</strong></span>
+</div>
+</div>
+<!-- 3-Step Interactive Process Tracker -->
+<div class="w-full bg-surface-container-low/90 backdrop-blur-md rounded-xl p-4 shadow-sm">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 relative">
+<!-- Step 1 Indicator -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-high transition-all cursor-pointer" id="step-nav-1">
+<div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center font-label-code text-label-code font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps uppercase text-tertiary font-semibold">Step 01 • Complete</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Stack &amp; Experience</span>
+</div>
+</div>
+<!-- Step 2 Indicator -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-highest transition-all cursor-pointer shadow-md shadow-primary/5" id="step-nav-2">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-code text-label-code font-bold">
+              02
+            </div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps uppercase text-primary font-semibold">Step 02 • Active</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Curated Opportunities</span>
+</div>
+</div>
+<!-- Step 3 Indicator -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low transition-all cursor-pointer opacity-80 hover:opacity-100" id="step-nav-3">
+<div class="w-8 h-8 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center font-label-code text-label-code font-bold">
+              03
+            </div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant font-semibold">Step 03 • Ready</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">PR Guide &amp; AI Review</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- STEP 1: Input Matrix Card (Glassmorphic) -->
+<section class="w-full mb-12 bg-surface-container-lowest/70 backdrop-blur-xl rounded-xl p-6 md:p-8 shadow-xl relative">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 mb-6">
+<div>
+<span class="font-label-code text-label-code text-secondary font-medium tracking-wide">PHASE 1 // PROFILE PARAMETERS</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mt-1">Find Your Perfect Open Source Contribution</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Configure your current language proficiency, runtime mastery, and bandwidth tier.</p>
+</div>
+<!-- Language Dropdown Filter -->
+<div class="flex items-center gap-3">
+<label class="font-label-code text-label-code text-on-surface-variant whitespace-nowrap" for="language-select">Target Core:</label>
+<div class="relative min-w-[180px]">
+<select class="w-full bg-surface-container-high text-on-surface font-body-sm text-body-sm px-4 py-2.5 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" id="language-select">
+<option value="all">All Ecosystems</option>
+<option selected="" value="ts">TypeScript / Node</option>
+<option value="rust">Rust / Systems</option>
+<option value="py">Python / ML</option>
+<option value="go">Go / Cloud Native</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-2.5 text-on-surface-variant text-base">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Skills Matrix Multiselect -->
+<div class="flex flex-col gap-3 mb-8">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Select Active Tooling &amp; Competencies (Click to toggle)</label>
+<div class="flex flex-wrap gap-2.5" id="skills-selector">
+<!-- Skill item 1 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="python" type="button">
+<span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Python
+          </button>
+<!-- Skill item 2 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="js" type="button">
+<span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+            JavaScript
+          </button>
+<!-- Skill item 3 (Active) -->
+<button class="skill-chip active flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-primary-container text-on-primary-container shadow-md shadow-primary/20 transition-all cursor-pointer" data-skill="ts" type="button">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+            TypeScript
+          </button>
+<!-- Skill item 4 (Active) -->
+<button class="skill-chip active flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-primary-container text-on-primary-container shadow-md shadow-primary/20 transition-all cursor-pointer" data-skill="react" type="button">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+            React
+          </button>
+<!-- Skill item 5 (Active) -->
+<button class="skill-chip active flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-primary-container text-on-primary-container shadow-md shadow-primary/20 transition-all cursor-pointer" data-skill="node" type="button">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+            Node.js
+          </button>
+<!-- Skill item 6 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="go" type="button">
+<span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            Go
+          </button>
+<!-- Skill item 7 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="rust" type="button">
+<span class="w-2 h-2 rounded-full bg-orange-400"></span>
+            Rust
+          </button>
+<!-- Skill item 8 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="cpp" type="button">
+<span class="w-2 h-2 rounded-full bg-pink-400"></span>
+            C++
+          </button>
+<!-- Skill item 9 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="java" type="button">
+<span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            Java
+          </button>
+<!-- Skill item 10 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="pytorch" type="button">
+<span class="w-2 h-2 rounded-full bg-purple-400"></span>
+            ML/PyTorch
+          </button>
+<!-- Skill item 11 -->
+<button class="skill-chip flex items-center gap-2 px-3.5 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all cursor-pointer" data-skill="docker" type="button">
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            Docker/DevOps
+          </button>
+</div>
+</div>
+<!-- Experience Level Radio Toggle Deck -->
+<div class="flex flex-col gap-3 mb-8">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Target Scope &amp; Experience Bracket</label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Level 1 (Selected) -->
+<label class="cursor-pointer relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-high text-on-surface ring-2 ring-primary transition-all shadow-md" id="exp-beginner">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-tertiary text-2xl">eco</span>
+<span class="w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-on-primary"></span>
+</span>
+</div>
+<div class="mt-4">
+<span class="font-headline-sm text-headline-sm text-on-surface block">1. Beginner</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                First-time contributors, good-first-issues, localized documentation fixes &amp; issue triage.
+              </p>
+</div>
+<input checked="" class="sr-only" name="exp_level" type="radio" value="beginner"/>
+</label>
+<!-- Level 2 -->
+<label class="cursor-pointer relative flex flex-col justify-between p-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all shadow-sm" id="exp-intermediate">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-secondary text-2xl">rocket_launch</span>
+<span class="w-3.5 h-3.5 rounded-full bg-surface-container-highest"></span>
+</div>
+<div class="mt-4">
+<span class="font-headline-sm text-headline-sm text-on-surface block">2. Intermediate</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                Subsystem bug fixes, minor performance regressions, edge runtime adapters, and unit test suites.
+              </p>
+</div>
+<input class="sr-only" name="exp_level" type="radio" value="intermediate"/>
+</label>
+<!-- Level 3 -->
+<label class="cursor-pointer relative flex flex-col justify-between p-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all shadow-sm" id="exp-advanced">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary text-2xl">diamond</span>
+<span class="w-3.5 h-3.5 rounded-full bg-surface-container-highest"></span>
+</div>
+<div class="mt-4">
+<span class="font-headline-sm text-headline-sm text-on-surface block">3. Advanced</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                Core architectural RFCs, multi-threaded memory optimizers, AST compiler transforms.
+              </p>
+</div>
+<input class="sr-only" name="exp_level" type="radio" value="advanced"/>
+</label>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-surface-container-high">
+<div class="flex items-center gap-3">
+<span class="font-label-code text-label-code text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-base">bolt</span> Latency: 18ms
+          </span>
+<span class="text-outline-variant">•</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Selected criteria yields 184 available issues</span>
+</div>
+<button class="w-full sm:w-auto px-8 py-3 rounded-lg bg-gradient-to-r from-primary via-primary-container to-secondary text-on-primary font-body-md text-body-md font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:opacity-95 transition-all cursor-pointer" id="btn-find-opps" type="button">
+<span class="material-symbols-outlined text-lg">search_check</span>
+<span>Find Opportunities</span>
+</button>
+</div>
+</section>
+<!-- STEP 2: Curated Results Grid (2x4) -->
+<section class="w-full mb-16">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+<div>
+<span class="font-label-caps text-label-caps uppercase text-primary tracking-wider">PHASE 2 // CURATED MATCHES</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Recommended Open Source Tasks (8 Matches)</h2>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-label-code text-label-code flex items-center gap-1.5 hover:bg-surface-bright transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">tune</span> Sort by Match Score
+          </button>
+</div>
+</div>
+<!-- 2x4 Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- CARD 1 (Featured: Next.js middleware) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none"></div>
+<div>
+<!-- Header -->
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">vercel/next.js</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">121k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">TypeScript</span>
+</div>
+<!-- Issue Title & Match Badge -->
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#guide-anchor">
+                #4921: Add support for custom header validation in middleware
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-tertiary-container/30 text-tertiary font-label-code text-label-code font-bold ring-2 ring-tertiary/40">
+                96%
+              </div>
+</div>
+<!-- Skills Overlap & Learning -->
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ TypeScript</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ React</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Async/Await</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Edge Runtime</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Web Streams API</span>
+</div>
+</div>
+</div>
+<!-- Bottom Fit & Action -->
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Matches your TS async flow expertise; repository has 2-day median PR merge cycle."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-primary-container text-on-primary-container font-body-md text-body-md font-semibold flex items-center justify-center gap-2 hover:bg-primary transition-colors cursor-pointer" onclick="document.getElementById('step-3-workspace').scrollIntoView({behavior: 'smooth'})" type="button">
+<span>Guide Me &amp; Review Code</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 2 (React) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">facebook/react</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">226k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">JavaScript</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #28190: Hydration warning overlay triggers duplicate DOM errors on soft reload
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-tertiary-container/30 text-tertiary font-label-code text-label-code font-bold ring-2 ring-tertiary/40">
+                94%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ React Internals</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Fiber Tree</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ SSR Dehydration</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Rollup Dev Harness</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Great first foray into React client-runtime dev warning harnesses with clear repro steps."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 3 (Astral UV) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">astral-sh/uv</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">31k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400">Rust</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #892: Improve error handling and recovery when lockfile is corrupted
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-tertiary-container/30 text-tertiary font-label-code text-label-code font-bold ring-2 ring-tertiary/40">
+                91%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ CLI Ergonomics</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Cargo Test</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ PubGrub Resolver</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Memory Mapped IO</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Isolated parsing subsystem with high test coverage. Ideal for safe diagnostic contributions."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 4 (PyTorch) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">pytorch/pytorch</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">83k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400">Python / C++</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #1204: Missing type annotation in TorchDynamo guarded export callback
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-tertiary-container/30 text-tertiary font-label-code text-label-code font-bold ring-2 ring-tertiary/40">
+                89%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Typing Module</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Pytest</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Dynamo Frame Evaluation</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ FX Graph Tracing</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Entry level ML-infra issue tagged for first-time core contributors; zero native C++ recompile needed."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 5 (shadcn/ui) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">shadcn/ui</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">69k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">TypeScript</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #3498: Command Dialog component keyboard trap on nested Popover elements
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-tertiary-container/30 text-tertiary font-label-code text-label-code font-bold ring-2 ring-tertiary/40">
+                88%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Tailwind</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Radix UI</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ ARIA focus trapping</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ CLI Registry Generators</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Perfect match for accessibility enthusiasts; fast review cycles driven by active core leads."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 6 (FastAPI) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">fastapi/tiangolo</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">75k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400">Python</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #10441: Async generators fail to release scoped DB sessions in streaming endpoints
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-secondary-container/50 text-secondary font-label-code text-label-code font-bold ring-2 ring-secondary/40">
+                85%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Starlette</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Asyncio Context</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ AnyIO TaskGroups</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ ASGI Specification</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Directly improves backend reliability for tens of thousands of real-time microservices."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 7 (Redis) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">redis/redis</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">65k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400">C</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #13102: Sentinel quorum fails to trigger leader election on intermittent network partition
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-secondary-container/50 text-secondary font-label-code text-label-code font-bold ring-2 ring-secondary/40">
+                82%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Systems Arch</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Sockets / TCP</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Raft Consensus</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Eventloop Ae Engine</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Deep distributed systems debugging with step-by-step reproduction scripts in TCL."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- CARD 8 (Go) -->
+<article class="relative flex flex-col justify-between p-6 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 shadow-md group">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-code text-label-code text-primary font-semibold truncate">golang/go</span>
+<span class="font-label-code text-label-code text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-high">123k ★</span>
+</div>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400">Go</span>
+</div>
+<div class="flex items-start justify-between gap-4 mb-4">
+<a class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors leading-snug" href="#">
+                #67120: net/http: Client transport does not recycle HTTP/2 streams during abrupt RST_STREAM
+              </a>
+<div class="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 rounded-full bg-secondary-container/50 text-secondary font-label-code text-label-code font-bold ring-2 ring-secondary/40">
+                80%
+              </div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Overlap:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Goroutines</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-tertiary-container/20 text-tertiary">✓ Net Interfaces</span>
+</div>
+<div class="flex items-center flex-wrap gap-1.5">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">Learn:</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ H2 HPACK framing</span>
+<span class="font-label-code text-label-code px-2 py-0.5 rounded bg-surface-container-high text-primary">+ Gerrit Workflow</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high flex flex-col gap-3">
+<p class="font-body-sm text-body-sm italic text-on-surface-variant">
+              "Standard library contribution with direct guidance from the Go network runtime working group."
+            </p>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+<span>View Contributor Spec</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</article>
+</div>
+</section>
+<!-- STEP 3: Interactive PR Guide & Code Review Assistant -->
+<section class="w-full flex flex-col gap-8 pt-4" id="step-3-workspace">
+<div class="flex flex-col gap-4" id="guide-anchor">
+<!-- Breadcrumb back & Repository Context -->
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-1 font-label-code text-label-code text-primary hover:text-on-surface transition-colors" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" type="button">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+            Back to matches
+          </button>
+<span class="text-outline-variant">/</span>
+<span class="font-label-code text-label-code text-on-surface-variant">Active Contribution Context</span>
+</div>
+<!-- Issue Banner -->
+<div class="p-6 rounded-xl bg-surface-container-low border-l-4 border-primary flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+<div class="flex flex-col">
+<div class="flex items-center gap-3 mb-1.5">
+<span class="font-label-code text-label-code text-tertiary bg-tertiary-container/30 px-2.5 py-0.5 rounded-full">Good First Issue</span>
+<span class="font-label-code text-label-code text-on-surface-variant">vercel/next.js</span>
+<span class="text-outline-variant">•</span>
+<span class="font-label-code text-label-code text-on-surface-variant">Opened 3 days ago by @timneutkens</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">
+              Issue #4921: Add support for custom header validation in middleware
+            </h2>
+</div>
+<div class="flex items-center gap-3 flex-shrink-0">
+<a class="px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-sm text-body-sm flex items-center gap-2 transition-colors" href="#" target="_blank">
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+              GitHub Spec
+            </a>
+<button class="px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-body-sm text-body-sm font-medium flex items-center gap-2 hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">bookmark_add</span>
+              Claim Issue
+            </button>
+</div>
+</div>
+</div>
+<!-- 4 Tab / Accordion Interactive Panels -->
+<div class="w-full bg-surface-container-lowest/80 rounded-xl p-6 shadow-md">
+<!-- Navigation Tabs -->
+<div class="flex items-center gap-2 border-b border-surface-container-high pb-3 mb-6 overflow-x-auto">
+<button class="guide-tab-btn px-4 py-2 rounded-lg font-body-md text-body-md font-semibold bg-surface-container-high text-primary flex items-center gap-2 whitespace-nowrap" id="tab-btn-setup" onclick="switchGuideTab('tab-setup')" type="button">
+<span class="material-symbols-outlined text-base">terminal</span>
+            1. Setup Steps
+          </button>
+<button class="guide-tab-btn px-4 py-2 rounded-lg font-body-md text-body-md font-medium text-on-surface-variant hover:text-on-surface flex items-center gap-2 whitespace-nowrap" id="tab-btn-files" onclick="switchGuideTab('tab-files')" type="button">
+<span class="material-symbols-outlined text-base">folder_open</span>
+            2. Files to Edit
+          </button>
+<button class="guide-tab-btn px-4 py-2 rounded-lg font-body-md text-body-md font-medium text-on-surface-variant hover:text-on-surface flex items-center gap-2 whitespace-nowrap" id="tab-btn-hints" onclick="switchGuideTab('tab-hints')" type="button">
+<span class="material-symbols-outlined text-base">lightbulb</span>
+            3. Implementation Hints
+          </button>
+<button class="guide-tab-btn px-4 py-2 rounded-lg font-body-md text-body-md font-medium text-on-surface-variant hover:text-on-surface flex items-center gap-2 whitespace-nowrap" id="tab-btn-template" onclick="switchGuideTab('tab-template')" type="button">
+<span class="material-symbols-outlined text-base">description</span>
+            4. PR Template
+          </button>
+</div>
+<!-- TAB 1: Setup Steps -->
+<div class="guide-tab-content flex flex-col gap-6" id="tab-setup">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Step 1 -->
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div>
+<span class="font-label-caps text-label-caps text-primary uppercase">Step 01</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Fork &amp; Clone</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-3">Fork the repository to your account and clone with turbo sparse checkout.</p>
+</div>
+<div class="relative bg-surface-container-lowest rounded p-3 flex items-center justify-between group">
+<code class="font-label-code text-label-code text-on-surface truncate">git clone https://github.com/YOU/next.js.git</code>
+<button class="text-on-surface-variant hover:text-primary transition-colors ml-2" onclick="copyCode(this, 'git clone https://github.com/YOU/next.js.git')" title="Copy" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div>
+<span class="font-label-caps text-label-caps text-primary uppercase">Step 02</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Install Dependencies</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-3">Ensure you are using pnpm v9+ to adhere to repo package lock configurations.</p>
+</div>
+<div class="relative bg-surface-container-lowest rounded p-3 flex items-center justify-between group">
+<code class="font-label-code text-label-code text-on-surface truncate">pnpm install --frozen-lockfile</code>
+<button class="text-on-surface-variant hover:text-primary transition-colors ml-2" onclick="copyCode(this, 'pnpm install --frozen-lockfile')" title="Copy" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div>
+<span class="font-label-caps text-label-caps text-primary uppercase">Step 03</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Run Isolated Tests</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-3">Target the middleware test runner specifically to save local CPU cycles.</p>
+</div>
+<div class="relative bg-surface-container-lowest rounded p-3 flex items-center justify-between group">
+<code class="font-label-code text-label-code text-on-surface truncate">pnpm test:dev test/middleware.test.ts</code>
+<button class="text-on-surface-variant hover:text-primary transition-colors ml-2" onclick="copyCode(this, 'pnpm test:dev test/middleware.test.ts')" title="Copy" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 2: Files to Edit (Hidden by default) -->
+<div class="guide-tab-content hidden flex-col gap-4" id="tab-files">
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm">edit_note</span>
+<code class="font-label-code text-label-code text-primary font-bold">packages/next/server/web/spec-extension/response.ts</code>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Extend standard response headers parser to respect forbidden character sanitization.</p>
+</div>
+<span class="font-label-code text-label-code text-tertiary px-3 py-1 rounded bg-tertiary-container/20 whitespace-nowrap">Lines 142 - 178</span>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">rule</span>
+<code class="font-label-code text-label-code text-primary font-bold">packages/next/server/web/middleware-manifest.ts</code>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Update the TypeScript interface for <code class="text-on-surface">MiddlewareManifestHeaderEntry</code> to declare validation predicates.</p>
+</div>
+<span class="font-label-code text-label-code text-secondary px-3 py-1 rounded bg-secondary-container/30 whitespace-nowrap">Lines 44 - 58</span>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">checklist</span>
+<code class="font-label-code text-label-code text-primary font-bold">test/integration/middleware-headers/test/index.test.js</code>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Add assertion cases verifying malformed header keys throw a 400 Bad Request instead of unhandled 500.</p>
+</div>
+<span class="font-label-code text-label-code text-primary px-3 py-1 rounded bg-primary-container/20 whitespace-nowrap">New Spec</span>
+</div>
+</div>
+<!-- TAB 3: Implementation Hints (Hidden by default) -->
+<div class="guide-tab-content hidden flex-col gap-4" id="tab-hints">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-5 rounded-xl bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined">warning</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Edge Runtime Caveat</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                Do not import Node.js core <code class="font-label-code text-label-code text-on-surface">node:crypto</code> directly. The middleware layer executes on V8 isolate boundaries. Use the globally exposed <code class="font-label-code text-label-code text-on-surface">crypto.subtle</code> Web API equivalent instead.
+              </p>
+</div>
+<div class="p-5 rounded-xl bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined">verified</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Backward Compatibility</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                Ensure custom header validation defaults to a lenient fallback if user application configs omit the validation callback rule. Avoid throwing errors during initialization.
+              </p>
+</div>
+</div>
+</div>
+<!-- TAB 4: PR Template (Hidden by default) -->
+<div class="guide-tab-content hidden flex-col gap-3" id="tab-template">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Ready-to-Paste GitHub Markdown</span>
+<button class="px-3 py-1 rounded bg-surface-container-high text-primary font-label-code text-label-code flex items-center gap-1 hover:bg-surface-bright" onclick="copyCode(this, document.getElementById('pr-template-body').innerText)" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span> Copy Markdown
+            </button>
+</div>
+<pre class="p-4 rounded-xl bg-surface-container-lowest font-label-code text-label-code text-on-surface-variant overflow-x-auto whitespace-pre leading-relaxed" id="pr-template-body">## Summary
+Resolves #4921 by adding header validation hooks inside middleware runtime response spec.
+
+## What changed?
+- Added `validateCustomHeaderKey` check before dispatching headers to the underlying Web Response.
+- Added comprehensive unit tests in `test/integration/middleware-headers`.
+- Updated typings for `MiddlewareManifestHeaderEntry`.
+
+## Tests added
+- [x] `test/integration/middleware-headers/test/index.test.js` passes in both dev and production build modes.
+- [x] Edge runtime isolate validation tests verified with pnpm test:dev.
+          </pre>
+</div>
+</div>
+<!-- AI Code Reviewer Interactive Area -->
+<div class="w-full bg-surface-container-lowest/90 rounded-xl p-6 md:p-8 shadow-xl">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-surface-container-high">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">neurology</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">AI Code Review Assistant</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Pre-screen your Git diff against repo contributing guidelines before opening the pull request.</p>
+</div>
+</div>
+<button class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-tertiary-container to-tertiary text-on-tertiary-container font-body-md text-body-md font-bold flex items-center gap-2 shadow-md hover:opacity-90 transition-all cursor-pointer" id="btn-run-review" type="button">
+<span class="material-symbols-outlined text-lg">fact_check</span>
+<span>Review My Code</span>
+</button>
+</div>
+<!-- Code Input / Sample Diff View -->
+<div class="flex flex-col gap-3 mb-6">
+<div class="flex items-center justify-between">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider" for="diff-input">Candidate Git Diff Snippet</label>
+<span class="font-label-code text-label-code text-on-surface-variant">TSX / TypeScript Unified Diff</span>
+</div>
+<textarea class="w-full font-label-code text-label-code bg-surface-container-low text-on-surface p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner resize-y" id="diff-input" rows="8">--- a/packages/next/server/web/spec-extension/response.ts
++++ b/packages/next/server/web/spec-extension/response.ts
+@@ -148,6 +148,12 @@ export class NextResponse extends Response {
++  public validateHeader(key: string, value: string): boolean {
++    const isValidKey = /^[a-zA-Z0-9\-_]+$/.test(key);
++    if (!isValidKey) {
++      throw new TypeError(`Invalid HTTP header key: ${key}`);
++    }
++    return true;
++  }
+   static json(body: any, init?: ResponseInit): NextResponse {
+          </textarea>
+</div>
+<!-- Review Result Card (Active Telemetry Output) -->
+<div class="flex flex-col gap-6 p-6 rounded-xl bg-surface-container-low shadow-md" id="review-result">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Review Verdict:</span>
+<span class="px-3 py-1 rounded-full font-label-code text-label-code font-semibold bg-tertiary-container text-on-tertiary-container flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-sm">verified</span>
+                Approved with Minor Suggestion
+              </span>
+</div>
+<span class="font-label-code text-label-code text-on-surface-variant">Linter pass rate: 98.4%</span>
+</div>
+<!-- Good Things vs Potential Issues Split -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Strengths -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/60 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">thumb_up</span>
+<span class="font-label-code text-label-code font-bold uppercase tracking-wide">Good Practices Observed</span>
+</div>
+<ul class="flex flex-col gap-2 mt-1">
+<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm mt-0.5">check_circle</span>
+<span>Strict regex enforcement adheres to RFC 7230 header field token definitions.</span>
+</li>
+<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm mt-0.5">check_circle</span>
+<span>Zero runtime footprint; does not add external third-party dependencies.</span>
+</li>
+</ul>
+</div>
+<!-- Suggestions -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/60 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-secondary">
+<span class="material-symbols-outlined text-sm">tips_and_updates</span>
+<span class="font-label-code text-label-code font-bold uppercase tracking-wide">Improvement Suggestions</span>
+</div>
+<ul class="flex flex-col gap-2 mt-1">
+<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5">info</span>
+<span>Avoid direct instantiation on every check; compile regex pattern outside method scope for micro-benchmark speed.</span>
+</li>
+<li class="font-body-sm text-body-sm text-on-surface flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5">info</span>
+<span>Next.js core standard favors returning structured diagnostic errors over unhandled <code class="font-label-code text-label-code">TypeError</code>.</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Revised Clean Code Snippet -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Recommended AI Revision</span>
+<button class="px-3 py-1 rounded bg-surface-container text-primary font-label-code text-label-code flex items-center gap-1 hover:bg-surface-bright" onclick="copyCode(this, document.getElementById('revised-code-block').innerText)" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span> Copy Clean Snippet
+              </button>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-lowest overflow-x-auto">
+<pre class="font-label-code text-label-code text-primary-fixed-dim leading-relaxed" id="revised-code-block">// Pre-compiled RFC 7230 header validation token
+const HEADER_KEY_REGEX = /^[a-zA-Z0-9\-_]+$/;
+
+export class NextResponse extends Response {
+  /**
+   * Validates custom headers against HTTP standards before dispatch
+   */
+  public validateHeader(key: string, value: string): boolean {
+    if (!HEADER_KEY_REGEX.test(key)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[NextResponse] Discarding invalid header key "${key}".`);
+      }
+      return false;
+    }
+    return true;
+  }
+              </pre>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  // Interactive Tag Chips Selection
+  document.querySelectorAll('.skill-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active');
+      if (chip.classList.contains('active')) {
+        chip.classList.remove('bg-surface-container-high', 'text-on-surface');
+        chip.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-md', 'shadow-primary/20');
+      } else {
+        chip.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-md', 'shadow-primary/20');
+        chip.classList.add('bg-surface-container-high', 'text-on-surface');
+      }
+    });
+  });
+
+  // Experience Toggle Selection
+  const expCards = [
+    { el: document.getElementById('exp-beginner'), radio: document.querySelector('input[value="beginner"]') },
+    { el: document.getElementById('exp-intermediate'), radio: document.querySelector('input[value="intermediate"]') },
+    { el: document.getElementById('exp-advanced'), radio: document.querySelector('input[value="advanced"]') }
+  ];
+
+  expCards.forEach(item => {
+    item.el.addEventListener('click', () => {
+      expCards.forEach(c => {
+        c.el.classList.remove('ring-2', 'ring-primary', 'bg-surface-container-high');
+        c.el.classList.add('bg-surface-container');
+        const indicator = c.el.querySelector('.rounded-full.flex');
+        if (indicator) {
+          indicator.className = 'w-3.5 h-3.5 rounded-full bg-surface-container-highest';
+          indicator.innerHTML = '';
+        }
+      });
+      item.el.classList.add('ring-2', 'ring-primary', 'bg-surface-container-high');
+      item.el.classList.remove('bg-surface-container');
+      const dot = item.el.querySelector('.rounded-full.bg-surface-container-highest');
+      if (dot) {
+        dot.className = 'w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center';
+        dot.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-on-primary"></span>';
+      }
+      item.radio.checked = true;
+    });
+  });
+
+  // Guide Tab Switching
+  function switchGuideTab(targetId) {
+    document.querySelectorAll('.guide-tab-content').forEach(c => {
+      c.classList.add('hidden');
+      c.classList.remove('flex');
+    });
+    document.querySelectorAll('.guide-tab-btn').forEach(btn => {
+      btn.classList.remove('bg-surface-container-high', 'text-primary', 'font-semibold');
+      btn.classList.add('text-on-surface-variant', 'font-medium');
+    });
+
+    const activeContent = document.getElementById(targetId);
+    activeContent.classList.remove('hidden');
+    activeContent.classList.add('flex');
+
+    const btnMap = {
+      'tab-setup': 'tab-btn-setup',
+      'tab-files': 'tab-btn-files',
+      'tab-hints': 'tab-btn-hints',
+      'tab-template': 'tab-btn-template'
+    };
+    const activeBtn = document.getElementById(btnMap[targetId]);
+    activeBtn.classList.add('bg-surface-container-high', 'text-primary', 'font-semibold');
+    activeBtn.classList.remove('text-on-surface-variant', 'font-medium');
+  }
+
+  // Copy Code Helper
+  function copyCode(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm text-tertiary">check</span> Copied!';
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+      }, 1800);
+    });
+  }
+
+  // Code Review Button Micro-interaction
+  document.getElementById('btn-run-review').addEventListener('click', function() {
+    const btn = this;
+    const initialText = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">refresh</span><span>Analyzing Diff...</span>';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      btn.innerHTML = initialText;
+      btn.disabled = false;
+      const res = document.getElementById('review-result');
+      res.classList.add('ring-2', 'ring-tertiary');
+      setTimeout(() => res.classList.remove('ring-2', 'ring-tertiary'), 1500);
+    }, 700);
+  });
+</script></main></div></body></html>
