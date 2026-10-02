@@ -1,36 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const LoadingSpinner = ({ messages = ['Processing with Llama 3.3 70B (Groq)...', 'Analyzing real-time signals...'] }) => {
+const LoadingSpinner = ({ messages = ['Processing request...'] }) => {
   const [msgIndex, setMsgIndex] = useState(0);
 
   useEffect(() => {
     if (!messages || messages.length <= 1) return;
     const interval = setInterval(() => {
       setMsgIndex((prev) => (prev + 1) % messages.length);
-    }, 2400);
+    }, 2200);
     return () => clearInterval(interval);
   }, [messages]);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '3rem 1.5rem',
-      gap: '1.25rem'
-    }}>
-      <div style={{ position: 'relative' }}>
-        <Loader2 size={44} className="live-pulse" style={{ color: 'var(--accent-cyan)' }} />
-      </div>
-      <p style={{
-        color: 'var(--text-muted)',
-        fontSize: '0.95rem',
-        fontWeight: 500,
-        letterSpacing: '0.01em',
-        transition: 'all 0.3s ease'
-      }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem 1.5rem',
+        gap: '1rem'
+      }}
+    >
+      <Loader2
+        size={24}
+        style={{
+          color: '#ffffff',
+          animation: 'spin 0.8s linear infinite'
+        }}
+      />
+      <p
+        style={{
+          color: 'var(--text-secondary)',
+          fontSize: '0.84rem',
+          fontWeight: 400,
+          fontFamily: 'var(--font-mono)'
+        }}
+      >
         {messages[msgIndex] || 'Loading...'}
       </p>
     </div>

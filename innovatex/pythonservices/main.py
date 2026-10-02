@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 # Load .env variables first
 load_dotenv()
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -26,10 +27,22 @@ from agents.opensource.pr_guide_agent import generate_pr_guide
 from agents.opensource.pr_reviewer import review_pr_code
 from utils.pdf_parser import extract_text_from_pdf
 
+@asynccontextmanager
+async def lifespan(app):
+    """Startup: initialize market scheduler and cold-start check."""
+    try:
+        import asyncio
+        start_market_scheduler()
+        asyncio.create_task(check_and_run_cold_start())
+    except Exception as e:
+        print(f"[Startup Warning] Market scheduler startup: {e}")
+    yield
+
 app = FastAPI(
     title="InnovateX AI Engine",
     description="Python FastAPI + LangGraph microservice powering Developer Intelligence Platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS Configuration
@@ -44,6 +57,17 @@ app.add_middleware(
 # Pydantic Request Models
 class GithubAnalyzeRequest(BaseModel):
     username: str
+
+class GithubAIGenerateRequest(BaseModel):
+    action_type: str
+    report: dict
+    target_repo: Optional[str] = None
+    custom_instructions: Optional[str] = None
+
+class GithubAIAskRequest(BaseModel):
+    query: str
+    report: dict
+    changes: Optional[list] = None
 
 class ResearchExplainRequest(BaseModel):
     input: str
@@ -77,21 +101,61 @@ async def health_check():
 # Module 1: GitHub Profile Analyzer
 @app.post("/github/analyze")
 async def analyze_github(payload: GithubAnalyzeRequest):
+    from utils.github_client import GitHubAPIError
     try:
         initial_state = {
             "username": payload.username.strip(),
             "raw_profile": {},
             "raw_repos": [],
+            "raw_events": [],
+            "rate_limit": {},
+            "fetched_at": "",
             "repo_analysis": {},
             "profile_score": {},
             "improvements": [],
+            "recommendations": [],
             "final_report": {}
         }
         result = await github_graph.ainvoke(initial_state)
         return result.get("final_report", {})
+    except GitHubAPIError as ge:
+        raise HTTPException(
+            status_code=ge.status_code,
+            detail={"message": ge.message, "rate_limit": ge.rate_limit}
+        )
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/github/ai-generate")
+async def github_ai_generate(payload: GithubAIGenerateRequest):
+    from agents.github.ai_assistant import generate_ai_fix
+    try:
+        res = await generate_ai_fix(
+            action_type=payload.action_type,
+            report=payload.report,
+            target_repo=payload.target_repo,
+            custom_instructions=payload.custom_instructions
+        )
+        return res
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/github/ai-ask")
+async def github_ai_ask(payload: GithubAIAskRequest):
+    from agents.github.ai_assistant import answer_ai_command
+    try:
+        res = await answer_ai_command(
+            query=payload.query,
+            report=payload.report,
+            changes=payload.changes
+        )
+        return res
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Module 2: Research Paper Agent
 @app.post("/research/explain")
@@ -160,7 +224,11 @@ async def review_opensource(payload: OpenSourceReviewRequest):
 
 # Module 5: Multi-Agent Job Search
 @app.post("/jobs/search")
-async def search_jobs(resume: UploadFile = File(...)):
+async def search_jobs(
+    resume: UploadFile = File(...),
+    query: Optional[str] = Form(None),
+    location: Optional[str] = Form(None)
+):
     try:
         file_bytes = await resume.read()
         extracted_text = extract_text_from_pdf(file_bytes)
@@ -169,6 +237,8 @@ async def search_jobs(resume: UploadFile = File(...)):
 
         initial_state = {
             "resume_text": extracted_text,
+            "query_override": query.strip() if query else None,
+            "location_override": location.strip() if location else None,
             "parsed_profile": {},
             "search_queries": [],
             "raw_jobs": [],
@@ -197,15 +267,6 @@ _market_cache: dict = {
     "snapshot": {"data": None, "timestamp": 0}
 }
 CACHE_TTL_SECONDS = 86400  # 24 hours
-
-@app.on_event("startup")
-async def startup_market_services():
-    try:
-        import asyncio
-        start_market_scheduler()
-        asyncio.create_task(check_and_run_cold_start())
-    except Exception as e:
-        print(f"[Startup Warning] Market scheduler startup: {e}")
 
 @app.post("/market/forecast")
 async def forecast_market_skill(payload: MarketForecastRequest):
@@ -253,25 +314,43 @@ async def get_market_trending():
         top_10 = top_skills[:10]
         top_5_emerging = emerging_skills[:5]
 
-        # In case snapshot is still empty before first scrape completes, provide baseline from live dictionary
+        # If snapshot is empty before first scrape completes, aggregate recent skilldatapoints from DB
         if not top_10:
-            top_10 = [
-                {"skill": "Python", "percentage": 54.2, "wow_change": 2.4, "trend": "RISING"},
-                {"skill": "React", "percentage": 48.6, "wow_change": 1.8, "trend": "RISING"},
-                {"skill": "TypeScript", "percentage": 45.1, "wow_change": 3.2, "trend": "RISING"},
-                {"skill": "AWS", "percentage": 42.0, "wow_change": 1.1, "trend": "STABLE"},
-                {"skill": "Docker", "percentage": 39.5, "wow_change": 2.1, "trend": "RISING"},
-                {"skill": "PostgreSQL", "percentage": 36.8, "wow_change": 1.5, "trend": "STABLE"},
-                {"skill": "Kubernetes", "percentage": 31.4, "wow_change": 4.5, "trend": "RISING"},
-                {"skill": "FastAPI", "percentage": 28.2, "wow_change": 5.1, "trend": "RISING"},
-                {"skill": "Next.js", "percentage": 26.5, "wow_change": 3.8, "trend": "RISING"},
-                {"skill": "PyTorch", "percentage": 24.1, "wow_change": 6.2, "trend": "RISING"}
+            pipeline = [
+                {"$sort": {"week_start": -1}},
+                {"$group": {
+                    "_id": "$skill",
+                    "latest_doc": {"$first": "$$ROOT"}
+                }},
+                {"$replaceRoot": {"newRoot": "$latest_doc"}},
+                {"$sort": {"percentage": -1}},
+                {"$limit": 10}
             ]
+            cursor = db["skilldatapoints"].aggregate(pipeline)
+            live_points = await cursor.to_list(length=10)
+            if live_points:
+                top_10 = [
+                    {
+                        "skill": doc.get("skill"),
+                        "percentage": doc.get("percentage", 0),
+                        "wow_change": doc.get("wow_change", 0.0),
+                        "trend": doc.get("trend", "STABLE")
+                    }
+                    for doc in live_points
+                ]
+            else:
+                top_10 = []
+
+        week_val = "2026-W38"
+        if snapshot and snapshot.get("week_start"):
+            ws = snapshot.get("week_start")
+            iso_yr, iso_wk, _ = ws.isocalendar()
+            week_val = f"{iso_yr}-W{iso_wk:02d}"
 
         response_data = {
             "top_10_rising": top_10,
             "top_5_emerging": top_5_emerging,
-            "week": snapshot.get("week_start").strftime("%Y-W%U") if (snapshot and snapshot.get("week_start")) else "2026-W38",
+            "week": week_val,
             "last_updated": snapshot.get("collected_at") if snapshot else None
         }
 

@@ -25,8 +25,16 @@ def get_groq_model(temperature: float = 0.2):
 def get_gemini_model(temperature: float = 0.2):
     return get_groq_model(temperature=temperature)
 
-def clean_json_text(text: str) -> str:
+def clean_json_text(text) -> str:
     """Removes markdown code fences like ```json ... ``` from LLM outputs."""
+    if isinstance(text, list):
+        text = "".join(
+            item.get("text", "") if isinstance(item, dict) else str(item)
+            for item in text
+        )
+    elif not isinstance(text, str):
+        text = str(text)
+
     cleaned = text.strip()
     if cleaned.startswith("```"):
         # remove starting ```json or ```

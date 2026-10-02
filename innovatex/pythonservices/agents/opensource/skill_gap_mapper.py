@@ -1,7 +1,9 @@
 import json
+import asyncio
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_fast
+from utils.llm_client import parse_json_from_llm
 
 async def skill_gap_mapper_node(state: Dict[str, Any]) -> Dict[str, Any]:
     skills = state.get("skills", [])
@@ -48,9 +50,12 @@ Return ONLY a valid JSON array where each item has:
 Sort the array strictly by match_score descending. Return top 8 items.
 Do not wrap with markdown blocks or include comments.
 """
-    model = get_gemini_model()
+    model = get_llm_fast()
     try:
-        res = await model.ainvoke([HumanMessage(content=prompt)])
+        res = await asyncio.wait_for(
+            model.ainvoke([HumanMessage(content=prompt)]),
+            timeout=15.0
+        )
         repo_recommendations = parse_json_from_llm(res.content)
     except Exception:
         # Fallback generator

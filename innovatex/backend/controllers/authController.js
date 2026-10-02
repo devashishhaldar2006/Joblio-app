@@ -73,7 +73,13 @@ const login = async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        githubUsername: user.githubUsername,
+        bio: user.bio,
+        targetRole: user.targetRole,
+        skills: user.skills,
+        location: user.location,
+        preferences: user.preferences
       }
     });
   } catch (err) {
@@ -82,7 +88,81 @@ const login = async (req, res) => {
   }
 };
 
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error('Get profile error:', err);
+    return res.status(500).json({ error: 'Failed to retrieve profile.' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const {
+      name,
+      githubUsername,
+      bio,
+      targetRole,
+      skills,
+      location,
+      preferences,
+      currentPassword,
+      newPassword
+    } = req.body;
+
+    if (name) user.name = name;
+    if (githubUsername !== undefined) user.githubUsername = githubUsername.trim();
+    if (bio !== undefined) user.bio = bio;
+    if (targetRole !== undefined) user.targetRole = targetRole;
+    if (Array.isArray(skills)) user.skills = skills;
+    if (location !== undefined) user.location = location;
+    if (preferences && typeof preferences === 'object') {
+      user.preferences = { ...user.preferences, ...preferences };
+    }
+
+    // Password change handling
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required to set a new password.' });
+      }
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Current password is incorrect.' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+      }
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+    }
+
+    user.updatedAt = new Date();
+    await user.save();
+
+    const sanitizedUser = await User.findById(user._id).select('-password');
+    return res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: sanitizedUser
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    return res.status(500).json({ error: 'Failed to update profile.' });
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  getProfile,
+  updateProfile
 };

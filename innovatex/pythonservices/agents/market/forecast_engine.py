@@ -47,8 +47,10 @@ def _run_prophet_forecast(
     df = pd.DataFrame({'ds': ds_list, 'y': percentages})
 
     # Tune Prophet for weekly skill demand series (additive mode, no intra-week seasonality)
+    # Enable yearly seasonality only when we have enough data to detect annual patterns
+    has_yearly_data = len(percentages) >= 52
     model = Prophet(
-        yearly_seasonality=False,
+        yearly_seasonality=has_yearly_data,
         weekly_seasonality=False,
         daily_seasonality=False,
         seasonality_mode='additive',
@@ -101,24 +103,26 @@ def _run_arima_forecast(
     except Exception:
         d = 1
 
-    # Grid search p, q using AIC
+    # Try targeted orders with fast convergence limits
+    candidate_orders = [(1, d, 0), (1, d, 1), (0, d, 1)]
+    best_result = None
     best_aic = float('inf')
-    best_order = (1, d, 1)
 
-    for p in range(0, 3):
-        for q in range(0, 3):
-            try:
-                model = ARIMA(percentages, order=(p, d, q))
-                result = model.fit()
-                if result.aic < best_aic:
-                    best_aic = result.aic
-                    best_order = (p, d, q)
-            except Exception:
-                continue
+    for order in candidate_orders:
+        try:
+            model = ARIMA(percentages, order=order)
+            res = model.fit(method_kwargs={"maxiter": 20})
+            if res.aic < best_aic:
+                best_aic = res.aic
+                best_result = res
+        except Exception:
+            continue
+
+    if best_result is None:
+        return _run_linear_regression_forecast(weeks, dates, percentages, weeks_ahead)
 
     try:
-        final_model = ARIMA(percentages, order=best_order)
-        result = final_model.fit()
+        result = best_result
         forecast_res = result.get_forecast(steps=weeks_ahead)
         preds = np.clip(forecast_res.predicted_mean, 0.0, 100.0)
         conf_int = forecast_res.conf_int(alpha=0.20)  # 80% interval

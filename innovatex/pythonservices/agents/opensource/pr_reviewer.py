@@ -1,9 +1,10 @@
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_fast
+from utils.llm_client import parse_json_from_llm
 
 async def review_pr_code(user_code: str, issue_url: str, original_code: str = "") -> Dict[str, Any]:
-    model = get_gemini_model()
+    model = get_llm_fast()
     prompt = f"""You are a strict but encouraging open source maintainer reviewing a pull request.
 
 Issue Context / URL: {issue_url}

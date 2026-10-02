@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage
 from utils.semantic_scholar_client import SemanticScholarClient
-from utils.llm_client import get_gemini_model
+from utils.llm_config import get_llm_smart
 
 async def find_related_papers_node(state: Dict[str, Any]) -> Dict[str, Any]:
     paper_id = state.get("paper_id")
@@ -17,7 +17,7 @@ async def find_related_papers_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Process and filter up to 6 papers
     candidates = recs[:6]
-    model = get_gemini_model()
+    model = get_llm_smart()
 
     async def get_relevance(rel_paper: Dict[str, Any]) -> str:
         rel_title = rel_paper.get("title", "")

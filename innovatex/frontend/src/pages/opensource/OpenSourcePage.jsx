@@ -21,8 +21,15 @@ import {
   Lightbulb,
   CheckCircle2,
   ThumbsUp,
-  Info
+  Info,
+  Bookmark,
+  BookmarkCheck,
+  History,
+  Printer
 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { exportOpenSourceGuidePdf } from '../../utils/exportUtils';
+import EmptyState from '../../components/common/EmptyState';
 
 const SKILL_OPTIONS = [
   'Python', 'JavaScript', 'TypeScript', 'React', 'Node.js',
@@ -30,6 +37,7 @@ const SKILL_OPTIONS = [
 ];
 
 const OpenSourcePage = () => {
+  const toast = useToast();
   // Step 1: Filters
   const [selectedSkills, setSelectedSkills] = useState(['TypeScript', 'React', 'Node.js']);
   const [experienceLevel, setExperienceLevel] = useState('beginner');
@@ -48,8 +56,14 @@ const OpenSourcePage = () => {
 
   // Step 4: PR Reviewer State
   const [userCode, setUserCode] = useState('');
+  const [originalCode, setOriginalCode] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [prReview, setPrReview] = useState(null);
+
+  // Bookmarks & History
+  const [bookmarkedMap, setBookmarkedMap] = useState({});
+  const [historyItems, setHistoryItems] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Copied feedback helper
   const [copiedKey, setCopiedKey] = useState(null);
@@ -57,6 +71,7 @@ const OpenSourcePage = () => {
   const copyToClipboard = (text, key) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
+    toast.success('Copied to clipboard');
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
@@ -84,10 +99,14 @@ const OpenSourcePage = () => {
         experience_level: experienceLevel,
         preferred_language: preferredLanguage
       });
-      setRecommendations(res.data || []);
+      const items = res.data || [];
+      setRecommendations(items);
+      toast.success(`Found ${items.length} open source opportunities!`);
     } catch (err) {
       console.error('Open source error:', err);
-      setError(err.response?.data?.error || 'Failed to fetch open source issues from GitHub Search API.');
+      const msg = err.response?.data?.error || 'Failed to fetch open source issues from GitHub Search API.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setFinding(false);
     }
@@ -105,14 +124,49 @@ const OpenSourcePage = () => {
       const res = await api.post('/opensource/guide', {
         issue_url: rec.issue_url,
         repo_name: rec.repo_name,
-        issue_number: rec.issue_number
+        issue_number: rec.issue_number,
+        issue_title: rec.issue_title
       });
       setPrGuide(res.data);
+      toast.success('Generated PR Architecture Guide');
     } catch (err) {
       console.error('Guide error:', err);
-      alert('Failed to generate PR guide: ' + (err.response?.data?.error || err.message));
+      const msg = 'Failed to generate PR guide: ' + (err.response?.data?.error || err.message);
+      toast.error(msg);
     } finally {
       setGuiding(false);
+    }
+  };
+
+  // Toggle Bookmark
+  const handleToggleBookmark = async (rec) => {
+    try {
+      const res = await api.post('/opensource/bookmark', {
+        issue_url: rec.issue_url,
+        repo_name: rec.repo_name,
+        issue_title: rec.issue_title,
+        issue_number: rec.issue_number,
+        metadata: { match_score: rec.match_score, language: rec.language }
+      });
+      setBookmarkedMap(prev => ({
+        ...prev,
+        [rec.issue_url]: res.data.bookmarked
+      }));
+      toast.info(res.data.bookmarked ? 'Issue saved to bookmarks' : 'Issue removed from bookmarks');
+    } catch (err) {
+      console.error('Bookmark error:', err);
+      toast.error('Failed to update bookmark');
+    }
+  };
+
+  const handleFetchHistory = async () => {
+    try {
+      const res = await api.get('/opensource/history');
+      setHistoryItems(res.data || []);
+      setShowHistory(prev => !prev);
+    } catch (err) {
+      console.error('Fetch history error:', err);
+      toast.error('Failed to load history');
     }
   };
 
@@ -128,12 +182,14 @@ const OpenSourcePage = () => {
       const res = await api.post('/opensource/review', {
         user_code: userCode,
         issue_url: selectedIssue.issue_url,
-        original_code: ''
+        original_code: originalCode || ''
       });
       setPrReview(res.data);
+      toast.success('AI Code Review generated!');
     } catch (err) {
       console.error('Review error:', err);
-      alert('Review failed: ' + (err.response?.data?.error || err.message));
+      const msg = 'Review failed: ' + (err.response?.data?.error || err.message);
+      toast.error(msg);
     } finally {
       setReviewing(false);
     }
@@ -377,16 +433,16 @@ const OpenSourcePage = () => {
                       onClick={() => toggleSkill(skill)}
                       className="font-label-code"
                       style={{
-                        padding: '0.4rem 0.9rem',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: '0.82rem',
-                        fontWeight: active ? 600 : 400,
-                        background: active ? 'linear-gradient(135deg, var(--inverse-primary), var(--secondary-container))' : 'var(--surface-container-high)',
-                        color: active ? '#fff' : 'var(--on-surface-variant)',
-                        border: active ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
-                        boxShadow: active ? '0 0 12px rgba(99, 102, 241, 0.35)' : 'none',
+                        padding: '0.35rem 0.8rem',
+                        borderRadius: 'var(--radius-xs)',
+                        fontSize: '0.8rem',
+                        fontWeight: active ? 600 : 500,
+                        background: active ? '#ffffff' : 'var(--surface-container)',
+                        color: active ? '#09090b' : 'var(--text-secondary)',
+                        border: active ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
+                        boxShadow: active ? '0 1px 3px rgba(0, 0, 0, 0.4)' : 'none',
                         cursor: 'pointer',
-                        transition: 'all 0.15s'
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       {active ? '✓ ' : ''}{skill}
@@ -417,9 +473,9 @@ const OpenSourcePage = () => {
                         borderRadius: '12px',
                         background: isSel ? 'var(--surface-container-high)' : 'var(--surface-container-low)',
                         border: isSel ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                        boxShadow: isSel ? '0 0 16px rgba(99, 102, 241, 0.25)' : 'none',
+                        boxShadow: isSel ? '0 2px 8px rgba(0, 0, 0, 0.4)' : 'none',
                         cursor: 'pointer',
-                        transition: 'all 0.15s'
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
@@ -449,20 +505,13 @@ const OpenSourcePage = () => {
             <button
               type="submit"
               disabled={finding}
+              className="btn-primary"
               style={{
                 alignSelf: 'flex-start',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '0.85rem 1.8rem',
-                borderRadius: 'var(--radius-sm)',
-                background: 'linear-gradient(135deg, var(--inverse-primary), var(--primary-container), var(--secondary-container))',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '0.92rem',
-                boxShadow: '0 0 20px rgba(128, 131, 255, 0.4)',
-                cursor: 'pointer',
-                border: 'none'
+                whiteSpace: 'nowrap'
               }}
             >
               <Sparkles size={16} />
@@ -495,6 +544,19 @@ const OpenSourcePage = () => {
               'Scoring repository ergonomics against your tech competencies...'
             ]} />
           </div>
+        )}
+
+        {/* Empty State */}
+        {recommendations.length === 0 && !finding && (
+          <EmptyState
+            icon={GitPullRequest}
+            badge="OPPORTUNITY ENGINE READY"
+            title="Configure your tech stack to discover live issues."
+            description="Select your competent programming languages and experience level above, then click 'Find Matches' to query live open-source repositories."
+            instruction="Queries real GitHub issues tagged 'good-first-issue' and generates files-to-edit blueprints."
+            actionLabel="Find Matches for Selected Stack"
+            onAction={handleFindOpportunities}
+          />
         )}
 
         {/* STEP 2: Recommendations Grid */}
@@ -603,37 +665,56 @@ const OpenSourcePage = () => {
                     </div>
                   </div>
 
-                  {/* Launch Guide Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRequestGuide(rec)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'var(--surface-container-high)',
-                      border: '1px solid var(--border-subtle)',
-                      color: 'var(--on-surface)',
-                      fontSize: '0.88rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--surface-bright)';
-                      e.currentTarget.style.borderColor = 'var(--primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--surface-container-high)';
-                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                    }}
-                  >
-                    <span>View Contributor Spec & PR Guide</span>
-                    <ChevronRight size={16} />
-                  </button>
+                  {/* Launch Guide Button & Bookmark Row */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestGuide(rec)}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: '0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--surface-container-high)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--on-surface)',
+                        fontSize: '0.88rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--surface-bright)';
+                        e.currentTarget.style.borderColor = 'var(--primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--surface-container-high)';
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      }}
+                    >
+                      <span>View PR Guide</span>
+                      <ChevronRight size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleBookmark(rec)}
+                      title={bookmarkedMap[rec.issue_url] ? 'Remove bookmark' : 'Bookmark this opportunity'}
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: bookmarkedMap[rec.issue_url] ? 'rgba(78, 222, 163, 0.15)' : 'var(--surface-container-high)',
+                        border: '1px solid var(--border-subtle)',
+                        color: bookmarkedMap[rec.issue_url] ? 'var(--tertiary)' : 'var(--on-surface-variant)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {bookmarkedMap[rec.issue_url] ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -700,6 +781,27 @@ const OpenSourcePage = () => {
                   <ExternalLink size={14} />
                   <span>GitHub Spec</span>
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => exportOpenSourceGuidePdf(selectedIssue, prGuide)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.6rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(192, 132, 252, 0.12)',
+                    border: '1px solid rgba(192, 132, 252, 0.35)',
+                    color: '#c084fc',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                  title="Export contribution blueprint as clean institutional PDF"
+                >
+                  <Printer size={14} />
+                  <span>Export PDF Blueprint</span>
+                </button>
                 <button
                   onClick={() => setPrGuide(null)}
                   style={{
@@ -951,54 +1053,79 @@ const OpenSourcePage = () => {
                   type="button"
                   onClick={handleReviewCode}
                   disabled={reviewing || !userCode.trim()}
+                  className="btn-primary"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    padding: '0.75rem 1.4rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'linear-gradient(135deg, var(--tertiary-container), var(--tertiary))',
-                    color: 'var(--on-tertiary-container)',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    border: 'none',
                     cursor: userCode.trim() ? 'pointer' : 'not-allowed',
-                    opacity: userCode.trim() ? 1 : 0.6
+                    opacity: userCode.trim() ? 1 : 0.5
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>fact_check</span>
+                  <Sparkles size={15} />
                   <span>{reviewing ? 'Simulating Maintainer Review...' : 'Review My Code'}</span>
                 </button>
               </div>
 
-              {/* Code Diff Input */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>
-                    Candidate Git Diff or Implementation Snippet:
-                  </label>
-                  <span className="font-label-code" style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                    Unified Diff / Implementation
-                  </span>
+              {/* Code Diff Inputs Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+                {/* Original Code Context (Optional) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>
+                      Original / Baseline Code (Optional):
+                    </label>
+                    <span className="font-label-code" style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                      Existing function or file snippet
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    placeholder="// Optional: Paste the original code before your modifications..."
+                    value={originalCode}
+                    onChange={(e) => setOriginalCode(e.target.value)}
+                    className="font-label-code"
+                    style={{
+                      width: '100%',
+                      background: 'var(--surface-container-low)',
+                      color: 'var(--on-surface)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '10px',
+                      padding: '1rem',
+                      fontSize: '0.85rem',
+                      lineHeight: '1.5'
+                    }}
+                  />
                 </div>
 
-                <textarea
-                  rows={8}
-                  placeholder="// Paste your proposed code fix or git diff here..."
-                  value={userCode}
-                  onChange={(e) => setUserCode(e.target.value)}
-                  className="font-label-code"
-                  style={{
-                    width: '100%',
-                    background: 'var(--surface-container-low)',
-                    color: 'var(--on-surface)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    fontSize: '0.85rem',
-                    lineHeight: '1.5'
-                  }}
-                />
+                {/* Candidate Implementation Snippet */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>
+                      Candidate Git Diff or Implementation Snippet:
+                    </label>
+                    <span className="font-label-code" style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                      Proposed solution
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    placeholder="// Paste your proposed code fix or git diff here..."
+                    value={userCode}
+                    onChange={(e) => setUserCode(e.target.value)}
+                    className="font-label-code"
+                    style={{
+                      width: '100%',
+                      background: 'var(--surface-container-low)',
+                      color: 'var(--on-surface)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '10px',
+                      padding: '1rem',
+                      fontSize: '0.85rem',
+                      lineHeight: '1.5'
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Review Output */}

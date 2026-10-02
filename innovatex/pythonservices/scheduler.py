@@ -42,7 +42,7 @@ async def save_skill_datapoint(data: Dict[str, Any]):
             "count": data["count"],
             "percentage_of_total": data["percentage_of_total"],
             "total_jobs_that_week": data["total_jobs_that_week"],
-            "collected_at": data.get("collected_at", datetime.datetime.utcnow())
+            "collected_at": data.get("collected_at", datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
         }
     }
     await col.update_one(query, update, upsert=True)
@@ -59,7 +59,7 @@ async def save_market_snapshot(data: Dict[str, Any]):
             "top_skills": data.get("top_skills", []),
             "emerging_skills": data.get("emerging_skills", []),
             "co_occurrences": data.get("co_occurrences", {}),
-            "collected_at": data.get("collected_at", datetime.datetime.utcnow())
+            "collected_at": data.get("collected_at", datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None))
         }
     }
     await col.update_one(query, update, upsert=True)
@@ -116,8 +116,10 @@ async def run_market_data_collection(is_cold_start: bool = False):
         import numpy as np
 
         # Create 16 historical weeks ending at current_wstart
+        prev_week_percentages: Dict[str, float] = {}
         for week_idx in range(16, 0, -1):
             past_wstart = current_wstart - datetime.timedelta(days=7 * week_idx)
+            current_week_percentages: Dict[str, float] = {}
             # Add minor natural weekly variance (+/- 1.5%) around the real observed frequency
             for skill_name, current_pct in skill_percentages.items():
                 noise = float(np.sin(week_idx * 0.4 + hash(skill_name) % 7) * 1.2)
@@ -125,6 +127,7 @@ async def run_market_data_collection(is_cold_start: bool = False):
                 trend_slope = -0.15 * week_idx
                 hist_pct = round(max(0.5, current_pct + trend_slope + noise), 2)
                 hist_count = int(round((hist_pct / 100.0) * total_w_jobs))
+                current_week_percentages[skill_name] = hist_pct
 
                 await save_skill_datapoint({
                     "skill_name": skill_name,
@@ -132,13 +135,14 @@ async def run_market_data_collection(is_cold_start: bool = False):
                     "count": hist_count,
                     "percentage_of_total": hist_pct,
                     "total_jobs_that_week": total_w_jobs,
-                    "collected_at": datetime.datetime.utcnow()
+                    "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
                 })
 
-            # Save snapshot for past week
+            # Save snapshot for past week — pass prev_week_percentages for WoW delta calculation
             top_skills_past = get_top_skills(
-                {s: int(round((max(0.5, skill_percentages[s] - 0.15 * week_idx) / 100.0) * total_w_jobs)) for s in skill_counts},
-                total_w_jobs
+                {s: int(round((current_week_percentages.get(s, 0.5) / 100.0) * total_w_jobs)) for s in skill_counts},
+                total_w_jobs,
+                prev_percentages=prev_week_percentages if prev_week_percentages else None
             )
             await save_market_snapshot({
                 "week_start": past_wstart,
@@ -146,8 +150,9 @@ async def run_market_data_collection(is_cold_start: bool = False):
                 "top_skills": top_skills_past,
                 "emerging_skills": skill_data.get("emerging_skills", []),
                 "co_occurrences": skill_data.get("co_occurrences", {}),
-                "collected_at": datetime.datetime.utcnow()
+                "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             })
+            prev_week_percentages = current_week_percentages
 
     # Save current week from real scraped jobs
     for skill_name, count in skill_counts.items():
@@ -157,7 +162,7 @@ async def run_market_data_collection(is_cold_start: bool = False):
             "count": count,
             "percentage_of_total": skill_percentages.get(skill_name, 0.0),
             "total_jobs_that_week": total_w_jobs,
-            "collected_at": datetime.datetime.utcnow()
+            "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         })
 
     top_skills_curr = get_top_skills(skill_counts, total_w_jobs)
@@ -167,7 +172,7 @@ async def run_market_data_collection(is_cold_start: bool = False):
         "top_skills": top_skills_curr,
         "emerging_skills": skill_data.get("emerging_skills", []),
         "co_occurrences": skill_data.get("co_occurrences", {}),
-        "collected_at": datetime.datetime.utcnow()
+        "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     })
 
     logger.info("Market collection and seeding complete.")

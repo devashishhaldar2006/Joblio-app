@@ -2,7 +2,8 @@ import asyncio
 import json
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_smart
+from utils.llm_client import parse_json_from_llm
 
 async def analyze_jd_node(state: Dict[str, Any]) -> Dict[str, Any]:
     parsed_profile = state.get("parsed_profile", {})
@@ -14,7 +15,7 @@ async def analyze_jd_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "analyzed_jobs": []
         }
 
-    model = get_gemini_model()
+    model = get_llm_smart()
 
     async def analyze_single_job(job: Dict[str, Any]) -> Dict[str, Any]:
         prompt = f"""Candidate: {json.dumps(parsed_profile, default=str)}

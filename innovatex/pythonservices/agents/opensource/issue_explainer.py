@@ -2,21 +2,22 @@ import asyncio
 import json
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_fast
+from utils.llm_client import parse_json_from_llm
 
 async def issue_explainer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     experience_level = state.get("experience_level", "beginner")
     filtered_repos = state.get("filtered_repos", [])
     issues_per_repo = state.get("issues_per_repo", {})
 
-    model = get_gemini_model()
+    model = get_llm_fast()
 
     async def explain_single_issue(repo: Dict[str, Any], issue: Dict[str, Any]) -> Dict[str, Any]:
         prompt = f"""Explain this GitHub issue to a {experience_level} developer.
 
-Repo: {repo.get('full_name')} (language: {repo.get('language')}, description: {repo.get('description')})
+Repo: {repo.get('full_name')} (language: {repo.get('language')})
 Issue title: {issue.get('title')}
-Issue body: {issue.get('body')[:1000]}
+Issue body: {issue.get('body')[:400]}
 
 Return ONLY valid JSON matching this exact schema:
 {{
@@ -31,7 +32,10 @@ difficulty must be one of: 'easy', 'medium', 'hard'.
 Do not wrap with markdown or preamble.
 """
         try:
-            res = await model.ainvoke([HumanMessage(content=prompt)])
+            res = await asyncio.wait_for(
+                model.ainvoke([HumanMessage(content=prompt)]),
+                timeout=12.0
+            )
             parsed = parse_json_from_llm(res.content)
             return {
                 **issue,
@@ -58,10 +62,12 @@ Do not wrap with markdown or preamble.
             }
 
     tasks = []
-    for repo in filtered_repos:
+    for repo in filtered_repos[:6]:
         repo_issues = issues_per_repo.get(repo.get("full_name"), [])
-        for issue in repo_issues[:2]:
-            tasks.append(explain_single_issue(repo, issue))
+        if repo_issues:
+            tasks.append(explain_single_issue(repo, repo_issues[0]))
+        if len(tasks) >= 5:
+            break
 
     if tasks:
         # Run concurrently with gather

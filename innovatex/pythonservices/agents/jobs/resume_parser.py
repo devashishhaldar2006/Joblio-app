@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_smart
+from utils.llm_client import parse_json_from_llm
 
 async def parse_resume_node(state: Dict[str, Any]) -> Dict[str, Any]:
     resume_text = state.get("resume_text", "")
@@ -26,7 +27,7 @@ Return ONLY valid JSON, no markdown, no surrounding comments:
 Resume Content:
 {resume_text[:4000]}
 """
-    model = get_gemini_model()
+    model = get_llm_smart()
     res = await model.ainvoke([HumanMessage(content=prompt)])
     parsed_profile = parse_json_from_llm(res.content)
 

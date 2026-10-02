@@ -53,19 +53,19 @@ def classify_trend(
     # Note priority: DYING before DECLINING; EMERGING takes precedence if current is small (<5%) and growing fast (>20%)
     if current_pct < 5.0 and change_pct > 20.0:
         trend = "EMERGING"
-        verdict = "Early mover advantage — high risk, high reward"
+        verdict = "Early mover advantage - high risk, high reward"
     elif change_pct < -30.0:
         trend = "DYING"
-        verdict = "Declining rapidly — prioritize migration"
+        verdict = "Declining rapidly - prioritize migration"
     elif change_pct < -10.0:
         trend = "DECLINING"
-        verdict = "Demand softening — consider complementing with modern alternatives"
+        verdict = "Demand softening - consider complementing with modern alternatives"
     elif change_pct > 10.0:
         trend = "RISING"
-        verdict = "Strong investment — demand accelerating"
+        verdict = "Strong investment - demand accelerating"
     else:
         trend = "STABLE"
-        verdict = "Safe skill — maintain and deepen"
+        verdict = "Safe skill - maintain and deepen"
 
     # Determine peak week from forecast series
     peak_week = forecast_series[0]["week"] if forecast_series else "Current"

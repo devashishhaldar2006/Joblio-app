@@ -2,6 +2,7 @@ const axios = require('axios');
 const MarketSnapshot = require('../models/MarketSnapshot');
 const SkillDataPoint = require('../models/SkillDataPoint');
 const JobSearchHistory = require('../models/JobSearchHistory');
+const User = require('../models/User');
 
 const getPythonBaseUrl = () => process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
@@ -19,14 +20,19 @@ const forecastSkill = async (req, res) => {
       return res.status(400).json({ error: 'Please specify a skill name to forecast.' });
     }
 
-    // If user_skills not supplied in payload, extract from latest JobSearchHistory if authenticated
+    // If user_skills not supplied in payload, extract from User profile or latest JobSearchHistory
     if ((!user_skills || user_skills.length === 0) && req.user && req.user._id) {
       try {
-        const lastSearch = await JobSearchHistory.findOne({ userId: req.user._id })
-          .sort({ searchedAt: -1 })
-          .select('parsedProfile.skills');
-        if (lastSearch?.parsedProfile?.skills && Array.isArray(lastSearch.parsedProfile.skills)) {
-          user_skills = lastSearch.parsedProfile.skills;
+        const userDoc = await User.findById(req.user._id).select('skills');
+        if (userDoc?.skills && Array.isArray(userDoc.skills) && userDoc.skills.length > 0) {
+          user_skills = userDoc.skills;
+        } else {
+          const lastSearch = await JobSearchHistory.findOne({ userId: req.user._id })
+            .sort({ searchedAt: -1 })
+            .select('parsedProfile.skills');
+          if (lastSearch?.parsedProfile?.skills && Array.isArray(lastSearch.parsedProfile.skills)) {
+            user_skills = lastSearch.parsedProfile.skills;
+          }
         }
       } catch (profileErr) {
         console.warn('[Market Controller] Could not load user profile skills:', profileErr.message);
@@ -62,10 +68,22 @@ const getTrending = async (req, res) => {
     if (latest && latest.collected_at && latest.collected_at > oneDayAgo) {
       const top10 = (latest.top_skills || []).slice(0, 10);
       const emerging5 = (latest.emerging_skills || []).slice(0, 5);
+
+      // Safely format week_start whether it's a Date object or string
+      let weekStr = 'Current';
+      if (latest.week_start) {
+        try {
+          const wsDate = latest.week_start instanceof Date ? latest.week_start : new Date(latest.week_start);
+          weekStr = wsDate.toISOString().slice(0, 10);
+        } catch {
+          weekStr = String(latest.week_start);
+        }
+      }
+
       return res.status(200).json({
         top_10_rising: top10,
         top_5_emerging: emerging5,
-        week: latest.week_start ? latest.week_start.toISOString().slice(0, 10) : 'Current',
+        week: weekStr,
         last_updated: latest.collected_at
       });
     }
@@ -125,13 +143,18 @@ const getGapReport = async (req, res) => {
     let user_skills = req.body.user_skills || [];
 
     // Fallback to profile skills if empty
-    if (!user_skills || user_skills.length === 0) {
+    if ((!user_skills || user_skills.length === 0) && req.user && req.user._id) {
       try {
-        const lastSearch = await JobSearchHistory.findOne({ userId: req.user._id })
-          .sort({ searchedAt: -1 })
-          .select('parsedProfile.skills');
-        if (lastSearch?.parsedProfile?.skills && Array.isArray(lastSearch.parsedProfile.skills)) {
-          user_skills = lastSearch.parsedProfile.skills;
+        const userDoc = await User.findById(req.user._id).select('skills');
+        if (userDoc?.skills && Array.isArray(userDoc.skills) && userDoc.skills.length > 0) {
+          user_skills = userDoc.skills;
+        } else {
+          const lastSearch = await JobSearchHistory.findOne({ userId: req.user._id })
+            .sort({ searchedAt: -1 })
+            .select('parsedProfile.skills');
+          if (lastSearch?.parsedProfile?.skills && Array.isArray(lastSearch.parsedProfile.skills)) {
+            user_skills = lastSearch.parsedProfile.skills;
+          }
         }
       } catch (e) {
         console.warn('[Market Controller] Failed loading profile skills for gap report:', e.message);

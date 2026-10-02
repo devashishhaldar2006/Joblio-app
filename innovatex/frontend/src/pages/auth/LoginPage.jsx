@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Sparkles, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import {
+  Lock,
+  Mail,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Layers
+} from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await login(email, password);
+      toast.success('Welcome back');
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid credentials or connection error.');
@@ -26,102 +38,161 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1.5rem'
-    }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan))',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '1rem',
-            boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)'
-          }}>
-            <Sparkles size={24} color="#fff" />
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem 1.5rem',
+        backgroundColor: '#09090b'
+      }}
+    >
+      <div
+        className="panel"
+        style={{
+          width: '100%',
+          maxWidth: '400px',
+          padding: '2.25rem 2rem',
+          position: 'relative'
+        }}
+      >
+        {/* Brand Header */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: '#1a1a22',
+              border: '1px solid var(--border-medium)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '1rem',
+              color: '#ffffff'
+            }}
+          >
+            <Layers size={20} />
           </div>
-          <h2 style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>Welcome Back</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-            Sign in to access your Developer Intelligence Dashboard
+
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+            Sign in to InnovateX
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+            Developer intelligence & engineering analytics platform
           </p>
         </div>
 
         {error && (
-          <div style={{
-            background: 'rgba(244, 63, 94, 0.15)',
-            border: '1px solid rgba(244, 63, 94, 0.3)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '0.75rem 1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            color: '#fda4af',
-            fontSize: '0.85rem',
-            marginBottom: '1.5rem'
-          }}>
-            <AlertCircle size={16} />
+          <div
+            style={{
+              background: 'rgba(244, 63, 94, 0.1)',
+              border: '1px solid rgba(244, 63, 94, 0.25)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '0.65rem 0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#fb7185',
+              fontSize: '0.8125rem',
+              marginBottom: '1.25rem'
+            }}
+          >
+            <AlertCircle size={15} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-              Email Address
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+              Email address
             </label>
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
                 required
-                placeholder="developer@innovatex.io"
+                placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', paddingLeft: '2.5rem' }}
+                style={{ width: '100%', paddingLeft: '2.25rem' }}
               />
-              <Mail size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+              <Mail
+                size={15}
+                style={{
+                  position: 'absolute',
+                  left: '0.85rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)'
+                }}
+              />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••"
+                placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ width: '100%', paddingLeft: '2.5rem' }}
+                style={{ width: '100%', paddingLeft: '2.25rem', paddingRight: '2.25rem' }}
               />
-              <Lock size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+              <Lock
+                size={15}
+                style={{
+                  position: 'absolute',
+                  left: '0.85rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '0.85rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
-            className="btn-gradient"
+            className="btn-primary"
             disabled={loading}
-            style={{ width: '100%', marginTop: '0.5rem' }}
+            style={{ width: '100%', marginTop: '0.25rem', padding: '0.65rem' }}
           >
-            <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-            <ArrowRight size={16} />
+            <span>{loading ? 'Signing in...' : 'Sign in'}</span>
+            <ArrowRight size={14} />
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
-            Create one
+          <Link to="/register" style={{ color: 'var(--text-main)', fontWeight: 500, textDecoration: 'underline' }}>
+            Create account
           </Link>
         </div>
       </div>

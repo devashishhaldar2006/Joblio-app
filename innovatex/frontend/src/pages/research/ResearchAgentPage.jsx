@@ -16,15 +16,30 @@ import {
   Calendar,
   Quote,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Download,
+  Printer,
+  Copy,
+  Check
 } from 'lucide-react';
+import {
+  downloadFile,
+  copyToClipboard,
+  printPage,
+  formatResearchPaperMarkdown,
+  exportResearchPaperPdf
+} from '../../utils/exportUtils';
+import { useToast } from '../../context/ToastContext';
+import EmptyState from '../../components/common/EmptyState';
 
 const ResearchAgentPage = () => {
+  const toast = useToast();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('explanation'); // 'explanation' | 'related'
+  const [copied, setCopied] = useState(false);
 
   const loadingMessages = [
     'Fetching paper metadata from ArXiv & Semantic Scholar...',
@@ -46,9 +61,12 @@ const ResearchAgentPage = () => {
       const res = await api.post('/research/explain', { input: query.trim() });
       setResult(res.data);
       setActiveTab('explanation');
+      toast.success('Paper synthesized with Llama 3.3 70B');
     } catch (err) {
       console.error('Research error:', err);
-      setError(err.response?.data?.error || 'Failed to explain research paper. Check URL or paper title.');
+      const msg = err.response?.data?.error || 'Failed to explain research paper. Check URL or paper title.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -57,6 +75,46 @@ const ResearchAgentPage = () => {
   const handlePresetClick = (preset) => {
     setInput(preset);
     handleExplain(null, preset);
+  };
+
+  const handleExportMarkdown = () => {
+    if (!result) return;
+    const content = formatResearchPaperMarkdown(result);
+    const safeTitle = (result.title || 'research_paper').slice(0, 30).replace(/[^a-zA-Z0-9_-]/g, '_');
+    downloadFile(`${safeTitle}_summary.md`, content);
+    toast.success('Downloaded Paper Synthesis Markdown');
+  };
+
+  const handleCopyInsights = async () => {
+    if (!result) return;
+    const exp = result.explanation || {};
+    const tldr = exp.simple_summary || exp.tldr || 'N/A';
+    let text = `Research Paper: ${result.title}\n\nTL;DR / Summary:\n${tldr}\n\n`;
+    
+    const problem = exp.what_problem_it_solves || exp.problem_statement;
+    if (problem) {
+      text += `Problem Solved:\n${problem}\n\n`;
+    }
+    
+    const howItWorks = exp.how_it_works || exp.methodology_breakdown;
+    if (howItWorks) {
+      text += `How It Works:\n${howItWorks}\n\n`;
+    }
+
+    const contributions = exp.key_contributions || exp.key_innovations || [];
+    if (contributions.length) {
+      text += `Key Contributions:\n` + contributions.map(k => `• ${k}`).join('\n') + '\n\n';
+    }
+
+    const audience = exp.who_should_read_this || exp.practical_takeaways;
+    if (audience) {
+      text += `Target Audience:\n${audience}\n`;
+    }
+
+    await copyToClipboard(text);
+    setCopied(true);
+    toast.success('Insights copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const getDifficultyBadge = (level) => {
@@ -111,42 +169,12 @@ const ResearchAgentPage = () => {
         
         {/* Top Command & Header Module */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
-          
-          {/* Ambient Glow */}
-          <div style={{
-            position: 'absolute',
-            top: '-2rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '500px',
-            height: '200px',
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.05) 60%, transparent 80%)',
-            filter: 'blur(70px)',
-            pointerEvents: 'none'
-          }} />
-
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.35rem 0.9rem',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--surface-container-high)',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: '1rem'
-            }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--tertiary)', boxShadow: '0 0 8px rgba(78,222,163,0.8)' }} className="animate-pulse" />
-              <span className="font-label-caps" style={{ color: 'var(--tertiary)' }}>
-                Deep Synthesis Engine v4.2
-              </span>
-            </div>
-
-            <h1 className="font-display" style={{ fontSize: '2.5rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--on-surface)', marginBottom: '0.5rem' }}>
-              Research Paper <span className="text-gradient">AI Agent</span>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
+              Research Paper Agent
             </h1>
-            <p style={{ color: 'var(--on-surface-variant)', fontSize: '1.05rem', maxWidth: '600px', lineHeight: '1.6' }}>
-              Paste any ArXiv URL, DOI, or computer science paper title to get an intuitive breakdown, mathematical intuition, and related work.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '580px', lineHeight: 1.5 }}>
+              Paste an ArXiv URL, DOI, or research paper title for mathematical intuition, key innovations, and ablation summaries.
             </p>
 
             {/* Command Search Input */}
@@ -185,20 +213,12 @@ const ResearchAgentPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
+                  className="btn-primary"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    padding: '0.75rem 1.4rem',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, var(--primary-container), var(--secondary-container))',
-                    color: '#fff',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    boxShadow: '0 0 20px rgba(128, 131, 255, 0.35)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    border: 'none'
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <Zap size={16} />
@@ -271,6 +291,19 @@ const ResearchAgentPage = () => {
           </div>
         )}
 
+        {/* Empty Workspace State */}
+        {!result && !loading && (
+          <EmptyState
+            icon={BookOpen}
+            badge="RESEARCH WORKSPACE READY"
+            title="Paste an ArXiv URL, DOI, or paper title to begin."
+            description="The Research Agent decomposes scientific publications into intuitive architectural mechanics, mathematical formulations, key innovations, and engineering implementation takeaways."
+            instruction="Supports ArXiv preprints (e.g. 1706.03762 or full URL) and paper titles."
+            actionLabel="Try Sample Paper: Attention Is All You Need"
+            onAction={() => handlePresetClick('Attention Is All You Need')}
+          />
+        )}
+
         {/* Paper Result Layout */}
         {result && !loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -279,12 +312,10 @@ const ResearchAgentPage = () => {
             <div className="glass-panel" style={{
               padding: '2rem',
               position: 'relative',
-              overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
               gap: '1.25rem'
             }}>
-              <div style={{ position: 'absolute', right: '-4rem', top: '-4rem', width: '16rem', height: '16rem', borderRadius: '50%', background: 'rgba(128, 131, 255, 0.1)', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ flex: 1, minWidth: '280px' }}>
@@ -312,27 +343,56 @@ const ResearchAgentPage = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={handleExportMarkdown}
+                    className="btn-secondary"
+                    title="Download literature review summary as Markdown (.md)"
+                    style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }}
+                  >
+                    <Download size={14} style={{ color: 'var(--primary)' }} />
+                    <span>Export .MD</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => exportResearchPaperPdf(result)}
+                    className="btn-secondary"
+                    title="Export clean institutional PDF dossier"
+                    style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }}
+                  >
+                    <Printer size={14} style={{ color: '#c084fc' }} />
+                    <span>Export PDF</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyInsights}
+                    className="btn-secondary"
+                    title="Copy TL;DR & key takeaways to clipboard"
+                    style={{ fontSize: '0.82rem', padding: '0.5rem 0.9rem' }}
+                  >
+                    {copied ? <Check size={14} color="#4edea3" /> : <Copy size={14} />}
+                    <span>{copied ? 'Copied!' : 'Copy Insights'}</span>
+                  </button>
+
                   {result.pdf_url && (
                     <a
                       href={result.pdf_url}
                       target="_blank"
                       rel="noreferrer"
+                      className="btn-secondary"
                       style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.65rem 1.2rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'linear-gradient(135deg, var(--tertiary-container), var(--tertiary))',
-                        color: 'var(--on-tertiary-container)',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        boxShadow: '0 0 16px rgba(0, 136, 93, 0.4)'
+                        gap: '0.45rem',
+                        padding: '0.45rem 0.9rem',
+                        fontSize: '0.8125rem'
                       }}
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>picture_as_pdf</span>
-                      <span>Open Original PDF ↗</span>
+                      <FileText size={15} />
+                      <span>ArXiv PDF ↗</span>
                     </a>
                   )}
 
@@ -342,17 +402,17 @@ const ResearchAgentPage = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.4rem',
-                      padding: '0.65rem 1rem',
+                      padding: '0.55rem 0.9rem',
                       borderRadius: 'var(--radius-sm)',
                       background: 'var(--surface-container-high)',
                       border: '1px solid var(--border-subtle)',
                       color: 'var(--on-surface)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       cursor: 'pointer'
                     }}
                   >
-                    <RotateCcw size={15} />
-                    <span>New Paper</span>
+                    <RotateCcw size={14} />
+                    <span>New Search</span>
                   </button>
                 </div>
               </div>
@@ -396,19 +456,19 @@ const ResearchAgentPage = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.6rem 1.4rem',
-                    borderRadius: '8px',
-                    fontSize: '0.88rem',
+                    gap: '0.45rem',
+                    padding: '0.45rem 1rem',
+                    borderRadius: 'var(--radius-xs)',
+                    fontSize: '0.8125rem',
                     fontWeight: activeTab === 'explanation' ? 600 : 500,
-                    background: activeTab === 'explanation' ? 'linear-gradient(135deg, var(--secondary-container), var(--surface-container-highest))' : 'transparent',
-                    color: activeTab === 'explanation' ? '#fff' : 'var(--on-surface-variant)',
-                    border: 'none',
-                    boxShadow: activeTab === 'explanation' ? '0 0 16px rgba(87,27,193,0.35)' : 'none',
-                    cursor: 'pointer'
+                    background: activeTab === 'explanation' ? '#27272e' : 'transparent',
+                    color: activeTab === 'explanation' ? '#fff' : 'var(--text-secondary)',
+                    border: activeTab === 'explanation' ? '1px solid #383842' : '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>auto_awesome</span>
+                  <Sparkles size={15} />
                   <span>Simple Explanation</span>
                 </button>
 
@@ -418,21 +478,21 @@ const ResearchAgentPage = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.6rem 1.4rem',
-                    borderRadius: '8px',
-                    fontSize: '0.88rem',
+                    gap: '0.45rem',
+                    padding: '0.45rem 1rem',
+                    borderRadius: 'var(--radius-xs)',
+                    fontSize: '0.8125rem',
                     fontWeight: activeTab === 'related' ? 600 : 500,
-                    background: activeTab === 'related' ? 'linear-gradient(135deg, var(--secondary-container), var(--surface-container-highest))' : 'transparent',
-                    color: activeTab === 'related' ? '#fff' : 'var(--on-surface-variant)',
-                    border: 'none',
-                    boxShadow: activeTab === 'related' ? '0 0 16px rgba(87,27,193,0.35)' : 'none',
-                    cursor: 'pointer'
+                    background: activeTab === 'related' ? '#27272e' : 'transparent',
+                    color: activeTab === 'related' ? '#fff' : 'var(--text-secondary)',
+                    border: activeTab === 'related' ? '1px solid #383842' : '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>account_tree</span>
+                  <Share2 size={15} />
                   <span>Related Papers</span>
-                  <span className="font-label-code" style={{ padding: '0.1rem 0.5rem', borderRadius: 'var(--radius-full)', background: 'var(--surface-container-high)', fontSize: '0.72rem' }}>
+                  <span className="font-label-code" style={{ padding: '0.1rem 0.5rem', borderRadius: 'var(--radius-full)', background: 'var(--surface-container-high)', fontSize: '0.72rem', color: '#fff' }}>
                     {result.related_papers?.length || 0}
                   </span>
                 </button>
@@ -450,61 +510,99 @@ const ResearchAgentPage = () => {
                 
                 {/* Visual Intuition Map */}
                 <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className="font-label-caps" style={{ color: 'var(--secondary)' }}>INTUITION MAP // ARCHITECTURAL SCHEMATIC</span>
-                    <span className="font-label-code" style={{ color: 'var(--tertiary)', fontSize: '0.75rem' }}>Parallel Representation</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span className="font-label-caps" style={{ color: 'var(--secondary)' }}>DYNAMIC ARCHITECTURAL SCHEMATIC // EXECUTION PIPELINE</span>
+                    <span className="font-label-code" style={{ color: 'var(--tertiary)', fontSize: '0.75rem' }}>Synthesized from Methodology</span>
                   </div>
 
                   <div style={{
                     background: 'var(--surface-container-lowest)',
-                    borderRadius: '10px',
-                    padding: '1.25rem',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
                     border: '1px solid var(--border-subtle)',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    flexDirection: 'column',
+                    gap: '1rem'
                   }}>
-                    <svg style={{ width: '100%', maxHeight: '120px' }} fill="none" viewBox="0 0 540 90">
-                      <rect x="10" y="10" width="46" height="70" rx="6" fill="var(--surface-container-high)" />
-                      <text x="33" y="48" fill="var(--on-surface-variant)" fontSize="11" fontFamily="JetBrains Mono" textAnchor="middle">Input</text>
+                    {/* Dynamic Pipeline Steps */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                      gap: '1rem',
+                      alignItems: 'stretch'
+                    }}>
+                      {(result.explanation?.architecture_steps || [
+                        { stage: '1. Input Layer', label: 'Input Representation', desc: 'Ingests contextual input matrices.' },
+                        { stage: '2. Core Algorithm', label: 'Feature Extraction', desc: 'Transforms parameters via optimized passes.' },
+                        { stage: '3. Normalization', label: 'Gradient Stabilization', desc: 'Regulates learning convergence and loss.' },
+                        { stage: '4. Output Projection', label: 'Task Inference', desc: 'Generates final predictions or output tokens.' }
+                      ]).map((step, idx, arr) => (
+                        <div
+                          key={idx}
+                          style={{
+                            background: 'var(--surface-container-low)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '10px',
+                            padding: '1rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            position: 'relative',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                              <span className="font-label-caps" style={{ color: 'var(--secondary)', fontSize: '0.7rem' }}>
+                                {step.stage || `Stage ${idx + 1}`}
+                              </span>
+                              <span style={{
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '50%',
+                                background: idx === 0 ? 'rgba(99, 102, 241, 0.2)' : idx === arr.length - 1 ? 'rgba(78, 222, 163, 0.2)' : 'rgba(168, 85, 247, 0.2)',
+                                color: idx === 0 ? 'var(--primary)' : idx === arr.length - 1 ? 'var(--tertiary)' : 'var(--secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.65rem',
+                                fontWeight: 700
+                              }}>
+                                {idx + 1}
+                              </span>
+                            </div>
+                            <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--on-surface)', marginBottom: '0.35rem' }}>
+                              {step.label}
+                            </h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--on-surface-variant)', lineHeight: '1.4' }}>
+                              {step.desc}
+                            </p>
+                          </div>
 
-                      <path d="M56 30 C 100 30, 110 20, 150 20" stroke="var(--primary)" strokeWidth="2" strokeDasharray="3 3" opacity="0.7" />
-                      <path d="M56 45 C 100 45, 110 45, 150 45" stroke="var(--secondary)" strokeWidth="2.5" />
-                      <path d="M56 60 C 100 60, 110 70, 150 70" stroke="var(--tertiary)" strokeWidth="2" strokeDasharray="3 3" opacity="0.7" />
-
-                      <g transform="translate(150, 8)">
-                        <rect x="0" y="0" width="80" height="20" rx="4" fill="rgba(192,193,255,0.2)" />
-                        <text x="40" y="14" fill="var(--primary)" fontSize="10" fontFamily="JetBrains Mono" textAnchor="middle">Head 1 (Q₁·K₁)</text>
-                        <rect x="0" y="24" width="80" height="20" rx="4" fill="rgba(208,188,255,0.2)" />
-                        <text x="40" y="38" fill="var(--secondary)" fontSize="10" fontFamily="JetBrains Mono" textAnchor="middle">Head 2 (Q₂·K₂)</text>
-                        <rect x="0" y="48" width="80" height="20" rx="4" fill="rgba(78,222,163,0.2)" />
-                        <text x="40" y="62" fill="var(--tertiary)" fontSize="10" fontFamily="JetBrains Mono" textAnchor="middle">Head 8 (Q₈·K₈)</text>
-                      </g>
-
-                      <path d="M230 45 L 290 45" stroke="var(--secondary)" strokeWidth="2" />
-
-                      <g transform="translate(290, 16)">
-                        <rect x="0" y="0" width="100" height="54" rx="6" fill="var(--surface-container-highest)" />
-                        <text x="50" y="26" fill="var(--on-surface)" fontSize="11" fontWeight="bold" textAnchor="middle">Concat & Linear</text>
-                        <text x="50" y="42" fill="var(--text-dim)" fontSize="9" fontFamily="JetBrains Mono" textAnchor="middle">Projection Layer</text>
-                      </g>
-
-                      <path d="M390 45 L 430 45" stroke="var(--tertiary)" strokeWidth="2.5" />
-
-                      <g transform="translate(430, 18)">
-                        <rect x="0" y="0" width="90" height="50" rx="6" fill="var(--tertiary-container)" opacity="0.4" />
-                        <text x="45" y="24" fill="var(--tertiary-fixed)" fontSize="11" fontWeight="bold" textAnchor="middle">LayerNorm</text>
-                        <text x="45" y="40" fill="var(--tertiary-fixed)" fontSize="9" fontFamily="JetBrains Mono" textAnchor="middle">+ FeedForward</text>
-                      </g>
-                    </svg>
+                          {idx < arr.length - 1 && (
+                            <div style={{
+                              display: 'none',
+                              position: 'absolute',
+                              right: '-0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              zIndex: 2,
+                              color: 'var(--border-focus)'
+                            }}>
+                              &rarr;
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 {/* Plain-English Summary */}
                 <div className="glass-panel" style={{
-                  padding: '2rem',
-                  borderLeft: '4px solid var(--primary)',
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(31, 31, 38, 0.7) 100%)'
+                  padding: '1.75rem',
+                  borderLeft: '3px solid #ffffff',
+                  background: 'var(--surface-container)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', marginBottom: '0.6rem' }}>
                     <Sparkles size={18} />
@@ -671,18 +769,15 @@ const ResearchAgentPage = () => {
                             href={p.pdf_url}
                             target="_blank"
                             rel="noreferrer"
+                            className="btn-secondary"
                             style={{
                               flex: 1,
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '0.4rem',
-                              padding: '0.55rem',
-                              borderRadius: 'var(--radius-sm)',
-                              background: 'linear-gradient(135deg, var(--primary-container), var(--secondary-container))',
-                              color: '#fff',
-                              fontSize: '0.82rem',
-                              fontWeight: 600
+                              padding: '0.45rem',
+                              fontSize: '0.8125rem'
                             }}
                           >
                             <FileText size={14} />

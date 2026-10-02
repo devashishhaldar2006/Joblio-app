@@ -13,6 +13,9 @@ import {
   Award,
   Flame
 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import DetailDrawer from '../../components/common/DetailDrawer';
+import EmptyState from '../../components/common/EmptyState';
 
 const PLATFORM_FILTERS = [
   { id: 'all', label: 'All Platforms' },
@@ -25,6 +28,7 @@ const PLATFORM_FILTERS = [
 ];
 
 const ContestTrackerPage = () => {
+  const toast = useToast();
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'list' | 'personalized'
@@ -32,6 +36,13 @@ const ContestTrackerPage = () => {
   const [timeFilter, setTimeFilter] = useState('7'); // '1' | '2' | '7'
   const [skillLevel, setSkillLevel] = useState('intermediate'); // for personalized
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [selectedContest, setSelectedContest] = useState(null);
+
+  // Next upcoming contest for Competitive Radar
+  const nextUpcomingContest = React.useMemo(() => {
+    const upcoming = contests.filter(c => new Date(c.start_time).getTime() > currentTime);
+    return upcoming.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))[0] || null;
+  }, [contests, currentTime]);
 
   // Update ticking countdown timer every second
   useEffect(() => {
@@ -127,50 +138,116 @@ const ContestTrackerPage = () => {
       <Navbar title="Competitive Programming Hub" subtitle="Live calendar & countdowns from Codeforces, LeetCode, CodeChef, and AtCoder" />
 
       <div className="page-container">
+        {/* Top COMPETITIVE RADAR Hero Banner */}
+        {nextUpcomingContest && (
+          <div
+            style={{
+              background: '#0d0d12',
+              border: '1px solid #1f1f2c',
+              borderLeft: '4px solid #f43f5e',
+              borderRadius: '4px',
+              padding: '1.25rem 1.5rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1.25rem'
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.625rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    background: 'rgba(244, 63, 94, 0.12)',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    color: '#f43f5e'
+                  }}
+                >
+                  COMPETITIVE RADAR // NEXT ROUND
+                </span>
+                <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>
+                  {nextUpcomingContest.platform}
+                </span>
+              </div>
+
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f4f4f6', margin: 0 }}>
+                {nextUpcomingContest.title}
+              </h2>
+
+              <div style={{ fontSize: '0.78rem', color: '#a1a1aa', marginTop: '0.35rem' }}>
+                Starts at {new Date(nextUpcomingContest.start_time).toLocaleString()} ({Math.round((new Date(nextUpcomingContest.end_time) - new Date(nextUpcomingContest.start_time)) / 3600000)}h duration)
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>COUNTDOWN</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#10b981' }}>
+                  {formatCountdown(nextUpcomingContest.start_time, nextUpcomingContest.end_time).text.replace('Starts in ', '')}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedContest(nextUpcomingContest)}
+                className="btn-secondary"
+                style={{ fontSize: '0.8125rem', padding: '0.5rem 0.9rem' }}
+              >
+                <span>Round Telemetry</span>
+              </button>
+
+              <a
+                href={nextUpcomingContest.url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary"
+                style={{ fontSize: '0.8125rem', padding: '0.5rem 0.95rem' }}
+              >
+                <span>Register</span>
+                <ExternalLink size={13} />
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Top Controls Bar */}
         <div className="glass-panel" style={{ padding: '1.25rem 1.75rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
             {/* View Toggle */}
-            <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.3rem', borderRadius: 'var(--radius-sm)' }}>
-              <button
-                onClick={() => setViewMode('calendar')}
-                style={{
-                  padding: '0.4rem 0.9rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  background: viewMode === 'calendar' ? 'var(--accent-indigo)' : 'transparent',
-                  color: viewMode === 'calendar' ? '#fff' : 'var(--text-muted)'
-                }}
-              >
-                7-Day Calendar
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                style={{
-                  padding: '0.4rem 0.9rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  background: viewMode === 'list' ? 'var(--accent-indigo)' : 'transparent',
-                  color: viewMode === 'list' ? '#fff' : 'var(--text-muted)'
-                }}
-              >
-                Chronological List
-              </button>
-              <button
-                onClick={() => setViewMode('personalized')}
-                style={{
-                  padding: '0.4rem 0.9rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  background: viewMode === 'personalized' ? 'linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan))' : 'transparent',
-                  color: viewMode === 'personalized' ? '#fff' : 'var(--text-muted)'
-                }}
-              >
-                Personalized Picks
-              </button>
+            <div style={{ display: 'flex', gap: '0.25rem', background: '#131317', border: '1px solid var(--border-subtle)', padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}>
+              {[
+                { id: 'calendar', label: '7-Day Calendar' },
+                { id: 'list', label: 'Chronological List' },
+                { id: 'personalized', label: 'Personalized Picks' }
+              ].map(tab => {
+                const active = viewMode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setViewMode(tab.id)}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.8125rem',
+                      fontWeight: active ? 600 : 500,
+                      background: active ? '#27272e' : 'transparent',
+                      color: active ? '#ffffff' : 'var(--text-secondary)',
+                      boxShadow: active ? '0 1px 2px rgba(0,0,0,0.4)' : 'none',
+                      border: active ? '1px solid #383842' : '1px solid transparent',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Time Filter (for non-personalized) */}
@@ -455,6 +532,72 @@ const ContestTrackerPage = () => {
             )}
           </div>
         )}
+        {/* Contest Detail Drawer */}
+        <DetailDrawer
+          isOpen={!!selectedContest}
+          onClose={() => setSelectedContest(null)}
+          title={selectedContest?.title || 'Contest Details'}
+          subtitle={`Platform: ${selectedContest?.platform || 'Codeforces'}`}
+          badge="RADAR TELEMETRY"
+        >
+          {selectedContest && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                <div style={{ background: '#111117', border: '1px solid #1a1a24', padding: '0.75rem', borderRadius: '4px' }}>
+                  <div style={{ fontSize: '0.625rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>PLATFORM</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#38bdf8' }}>{selectedContest.platform}</div>
+                </div>
+                <div style={{ background: '#111117', border: '1px solid #1a1a24', padding: '0.75rem', borderRadius: '4px' }}>
+                  <div style={{ fontSize: '0.625rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>STATUS</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10b981' }}>
+                    {formatCountdown(selectedContest.start_time, selectedContest.end_time).status.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#111117', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                  <span style={{ color: '#71717a' }}>Start Time (Local):</span>
+                  <span style={{ color: '#fff', fontFamily: 'var(--font-mono)' }}>{new Date(selectedContest.start_time).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                  <span style={{ color: '#71717a' }}>Start Time (UTC):</span>
+                  <span style={{ color: '#a1a1aa', fontFamily: 'var(--font-mono)' }}>{new Date(selectedContest.start_time).toUTCString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
+                  <span style={{ color: '#71717a' }}>Duration:</span>
+                  <span style={{ color: '#fff', fontFamily: 'var(--font-mono)' }}>
+                    {Math.round((new Date(selectedContest.end_time) - new Date(selectedContest.start_time)) / 3600000)} Hours
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '1rem' }}>
+                <a
+                  href={getGoogleCalendarUrl(selectedContest)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-secondary"
+                  style={{ fontSize: '0.82rem', padding: '0.55rem 1rem' }}
+                >
+                  <CalendarPlus size={14} />
+                  <span>Google Calendar</span>
+                </a>
+
+                <a
+                  href={selectedContest.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-primary"
+                  style={{ fontSize: '0.82rem', padding: '0.55rem 1rem' }}
+                >
+                  <span>Open Registration</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+          )}
+        </DetailDrawer>
       </div>
     </div>
   );

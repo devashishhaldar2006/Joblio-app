@@ -33,7 +33,7 @@ def get_sync_db():
     global _sync_client
     if _sync_client is None:
         uri = get_mongo_uri()
-        _sync_client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+        _sync_client = MongoClient(uri, serverSelectionTimeoutMS=15000, connectTimeoutMS=15000)
     db_name = get_db_name()
     return _sync_client[db_name]
 
@@ -42,6 +42,6 @@ def get_async_db():
     global _async_client
     if _async_client is None:
         uri = get_mongo_uri()
-        _async_client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+        _async_client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=15000, connectTimeoutMS=15000)
     db_name = get_db_name()
     return _async_client[db_name]

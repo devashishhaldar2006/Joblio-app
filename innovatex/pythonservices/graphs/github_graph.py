@@ -5,13 +5,17 @@ from agents.github.repo_analyzer import analyze_repos_node
 from agents.github.score_calculator import calculate_score_node
 from agents.github.improvement_agent import generate_improvements_node
 
-class GithubGraphState(TypedDict):
+class GithubGraphState(TypedDict, total=False):
     username: str
     raw_profile: Dict[str, Any]
     raw_repos: List[Dict[str, Any]]
+    raw_events: List[Dict[str, Any]]
+    rate_limit: Dict[str, Any]
+    fetched_at: str
     repo_analysis: Dict[str, Any]
     profile_score: Dict[str, Any]
     improvements: List[Dict[str, Any]]
+    recommendations: List[Dict[str, Any]]
     final_report: Dict[str, Any]
 
 def build_github_graph():

@@ -45,7 +45,7 @@ async function fetchFromCLIST() {
         limit: 100,
         start__gte: now.toISOString(),
         end__lte: sevenDaysLater.toISOString(),
-        resource__name__in: 'codeforces.com,leetcode.com,codechef.com,atcoder.jp,hackerrank.com,hackerearth.com,geeksforgeeks.org'
+        resource__in: 'codeforces.com,leetcode.com,codechef.com,atcoder.jp,hackerrank.com,hackerearth.com,geeksforgeeks.org'
       },
       timeout: 10000
     });
@@ -140,16 +140,98 @@ async function fetchFromLeetCode() {
   return [];
 }
 
+async function fetchFromCodeChef() {
+  try {
+    const resp = await axios.get(
+      'https://www.codechef.com/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all',
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 10000
+      }
+    );
+    if (resp.data && resp.data.status === 'success') {
+      const future = resp.data.future_contests || [];
+      const present = resp.data.present_contests || [];
+      const allUpcoming = [...present, ...future];
+
+      const now = Date.now();
+      const fourteenDaysLater = now + 14 * 24 * 60 * 60 * 1000;
+
+      return allUpcoming
+        .filter(c => {
+          const sTime = new Date(c.contest_start_date_iso || c.contest_start_date).getTime();
+          return sTime >= now - 4 * 60 * 60 * 1000 && sTime <= fourteenDaysLater;
+        })
+        .map(c => {
+          const startIso = new Date(c.contest_start_date_iso || c.contest_start_date).toISOString();
+          const endIso = new Date(c.contest_end_date_iso || c.contest_end_date).toISOString();
+          const durationMin = parseInt(c.contest_duration, 10) || 120;
+          return {
+            contest_id: `cc_${c.contest_code}`,
+            title: c.contest_name,
+            platform: 'CodeChef',
+            platform_logo_key: 'codechef',
+            start_time: startIso,
+            end_time: endIso,
+            duration_seconds: durationMin * 60,
+            url: `https://www.codechef.com/${c.contest_code}`,
+            difficulty: inferDifficulty(c.contest_name)
+          };
+        });
+    }
+  } catch (err) {
+    console.error('CodeChef API fetch failed:', err.message);
+  }
+  return [];
+}
+
+async function fetchFromAtCoder() {
+  try {
+    const resp = await axios.get('https://kenkoooo.com/atcoder/resources/contests.json', { timeout: 10000 });
+    if (Array.isArray(resp.data)) {
+      const nowSec = Math.floor(Date.now() / 1000);
+      const fourteenDaysSec = nowSec + 14 * 24 * 60 * 60;
+
+      const upcoming = resp.data.filter(
+        c => c.start_epoch_second && (c.start_epoch_second + c.duration_second) > nowSec && c.start_epoch_second <= fourteenDaysSec
+      );
+
+      return upcoming.map(c => {
+        const startIso = new Date(c.start_epoch_second * 1000).toISOString();
+        const endIso = new Date((c.start_epoch_second + c.duration_second) * 1000).toISOString();
+        return {
+          contest_id: `ac_${c.id}`,
+          title: c.title,
+          platform: 'AtCoder',
+          platform_logo_key: 'atcoder',
+          start_time: startIso,
+          end_time: endIso,
+          duration_seconds: c.duration_second,
+          url: `https://atcoder.jp/contests/${c.id}`,
+          difficulty: inferDifficulty(c.title)
+        };
+      });
+    }
+  } catch (err) {
+    console.error('AtCoder API fetch failed:', err.message);
+  }
+  return [];
+}
+
 async function updateContestCache() {
   console.log('[ContestFetcher] Starting multi-source contest fetch...');
 
-  const [clistList, cfList, lcList] = await Promise.all([
+  const [clistList, cfList, lcList, ccList, acList] = await Promise.all([
     fetchFromCLIST(),
     fetchFromCodeforces(),
-    fetchFromLeetCode()
+    fetchFromLeetCode(),
+    fetchFromCodeChef(),
+    fetchFromAtCoder()
   ]);
 
-  const combined = [...clistList, ...cfList, ...lcList];
+  const combined = [...clistList, ...cfList, ...lcList, ...ccList, ...acList];
 
   // Deduplicate by platform_logo_key + start_time
   const seen = new Set();
@@ -186,5 +268,8 @@ module.exports = {
   updateContestCache,
   fetchFromCodeforces,
   fetchFromLeetCode,
+  fetchFromCodeChef,
+  fetchFromAtCoder,
   inferDifficulty
 };
+

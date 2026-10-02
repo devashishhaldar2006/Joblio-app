@@ -2,7 +2,8 @@ import base64
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 from utils.github_client import GitHubClient
-from utils.llm_client import get_gemini_model, parse_json_from_llm
+from utils.llm_config import get_llm_fast
+from utils.llm_client import parse_json_from_llm
 
 async def generate_pr_guide(issue_url: str, repo_name: str, issue_number: int) -> Dict[str, Any]:
     client = GitHubClient()
@@ -26,8 +27,8 @@ async def generate_pr_guide(issue_url: str, repo_name: str, issue_number: int) -
     # Filter file paths from tree
     all_paths = [item.get("path") for item in tree_data.get("tree", []) if item.get("type") == "blob"][:150]
 
-    # Ask Gemini which 2-3 files are most relevant to inspect
-    model = get_gemini_model()
+    # Ask LLM which 2-3 files are most relevant to inspect
+    model = get_llm_fast()
     find_files_prompt = f"""Given this issue:
 Title: {issue_data.get('title')}
 Description: {issue_data.get('body', '')[:600]}
