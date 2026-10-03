@@ -13,7 +13,9 @@ import {
   MapPin,
   Trophy,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import api from '../../services/api';
 import DetailDrawer from '../../components/common/DetailDrawer';
@@ -51,12 +53,26 @@ const STATUS_CONFIG = {
   }
 };
 
+const getPlatformBadge = (organizer = '') => {
+  const o = organizer.toLowerCase();
+  if (o.includes('codeforces')) return { tag: 'CF', color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.15)' };
+  if (o.includes('leetcode')) return { tag: 'LC', color: '#fbbf24', bg: 'rgba(245, 158, 11, 0.15)' };
+  if (o.includes('atcoder')) return { tag: 'AC', color: '#f472b6', bg: 'rgba(236, 72, 153, 0.15)' };
+  if (o.includes('codechef')) return { tag: 'CC', color: '#c084fc', bg: 'rgba(168, 85, 247, 0.15)' };
+  if (o.includes('ctftime')) return { tag: 'CTF', color: '#34d399', bg: 'rgba(16, 185, 129, 0.15)' };
+  if (o.includes('kattis') || o.includes('icpc')) return { tag: 'ICPC', color: '#22d3ee', bg: 'rgba(6, 182, 212, 0.15)' };
+  if (o.includes('luogu')) return { tag: 'LG', color: '#818cf8', bg: 'rgba(99, 102, 241, 0.15)' };
+  if (o.includes('hackerrank')) return { tag: 'HR', color: '#4ade80', bg: 'rgba(34, 197, 94, 0.15)' };
+  if (o.includes('hackerearth')) return { tag: 'HE', color: '#a78bfa', bg: 'rgba(139, 92, 246, 0.15)' };
+  return { tag: organizer.slice(0, 3).toUpperCase(), color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.12)' };
+};
+
 const ContestTrackerPage = () => {
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Upcoming' | 'Active' | 'Closing Soon' | 'Recently Completed'
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'list'
 
-  // Monthly Calendar Navigation (Auto-anchored to current real date)
+  // Monthly Calendar Navigation (Auto-anchored to real current month/year)
   const initialDate = useMemo(() => new Date(), []);
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth()); // 0-indexed
@@ -69,8 +85,9 @@ const ContestTrackerPage = () => {
   const [organizerFilter, setOrganizerFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Drawer & Hover Tooltip
+  // Drawers & Modals
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedDaySchedule, setSelectedDaySchedule] = useState(null); // { dateStr, fullDate, events }
   const [hoveredEvent, setHoveredEvent] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
@@ -78,7 +95,6 @@ const ContestTrackerPage = () => {
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState(null);
 
   // Fetch real-time live contests from backend
   const fetchLiveContests = async (forceRefresh = false) => {
@@ -122,23 +138,21 @@ const ContestTrackerPage = () => {
 
           if (diffDays === 0) {
             status = 'closing_soon';
-            deadlineText = diffHours <= 1 ? 'Starts in under 1 hour' : `Starts in ${diffHours} hours`;
+            deadlineText = diffHours <= 1 ? 'Starts in < 1h' : `Starts in ${diffHours}h`;
           } else if (diffDays === 1) {
             status = 'closing_soon';
             deadlineText = 'Starts tomorrow';
           } else if (diffDays <= 3) {
             status = 'closing_soon';
-            deadlineText = `Registration closes in ${diffDays} days`;
+            deadlineText = `In ${diffDays} days`;
           } else {
             status = 'upcoming';
-            deadlineText = `Starts in ${diffDays} days`;
+            deadlineText = `Starts in ${diffDays}d`;
           }
         }
 
-        // Real organizer mapping
-        const organizer = c.platform || 'Competitive Programming';
+        const organizer = c.platform || 'Competitive';
 
-        // Prize estimation based on real tier
         let prizePool = 'Official Rating & Badges';
         let prizeNumeric = 3000;
         const titleLower = (c.title || '').toLowerCase();
@@ -166,7 +180,7 @@ const ContestTrackerPage = () => {
           deadlineText,
           status,
           registrationStatus: regStatus,
-          description: `Official live challenge on ${organizer}. Duration: ${durationHours} hours. Start time: ${new Date(c.start_time).toLocaleString()} (${new Date(c.start_time).toUTCString()}). Tested directly against official testcases.`,
+          description: `Official technical challenge on ${organizer}. Duration: ${durationHours} hours. Start time: ${new Date(c.start_time).toLocaleString()} (${new Date(c.start_time).toUTCString()}). Tested directly against official testcases.`,
           url: c.url,
           duration_seconds: c.duration_seconds,
           start_time: c.start_time,
@@ -186,7 +200,6 @@ const ContestTrackerPage = () => {
       }
 
       setCompetitions(deduped);
-      setLastSyncTime(new Date());
     } catch (err) {
       console.error('Failed to load real competitions:', err);
     } finally {
@@ -241,7 +254,7 @@ const ContestTrackerPage = () => {
     return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   }, [currentYear, currentMonth]);
 
-  // Dynamically derive real organizers & technologies from live data
+  // Derived filters
   const availableOrganizers = useMemo(() => {
     const orgs = new Set(competitions.map((c) => c.organizer).filter(Boolean));
     return Array.from(orgs).sort();
@@ -255,44 +268,37 @@ const ContestTrackerPage = () => {
     return Array.from(techs).sort();
   }, [competitions]);
 
-  // Tab Filtering & Query Filtering
+  // Filtered Competitions
   const filteredCompetitions = useMemo(() => {
     return competitions.filter((comp) => {
-      // Primary Tab Filtering
       if (activeTab === 'Upcoming' && comp.status !== 'upcoming') return false;
       if (activeTab === 'Active' && comp.status !== 'active') return false;
       if (activeTab === 'Closing Soon' && comp.status !== 'closing_soon') return false;
       if (activeTab === 'Recently Completed' && comp.status !== 'completed') return false;
 
-      // Technology Dropdown
       if (techFilter !== 'All') {
         const hasTech = (comp.technologies || []).some((t) => t.toLowerCase().includes(techFilter.toLowerCase()));
         if (!hasTech) return false;
       }
 
-      // Format Dropdown
       if (formatFilter !== 'All' && comp.format.toLowerCase() !== formatFilter.toLowerCase()) {
         return false;
       }
 
-      // Difficulty Dropdown
       if (difficultyFilter !== 'All' && comp.difficulty.toLowerCase() !== difficultyFilter.toLowerCase()) {
         return false;
       }
 
-      // Prize Pool Dropdown
       if (prizeFilter !== 'All') {
         if (prizeFilter === 'Any Prize' && comp.prizeNumeric <= 0) return false;
         if (prizeFilter === '$10k+' && comp.prizeNumeric < 10000) return false;
         if (prizeFilter === '$50k+' && comp.prizeNumeric < 50000) return false;
       }
 
-      // Organizer Dropdown
       if (organizerFilter !== 'All') {
         if (comp.organizer !== organizerFilter) return false;
       }
 
-      // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = (comp.title || '').toLowerCase().includes(q);
@@ -305,6 +311,34 @@ const ContestTrackerPage = () => {
       return true;
     });
   }, [competitions, activeTab, techFilter, formatFilter, difficultyFilter, prizeFilter, organizerFilter, searchQuery]);
+
+  // Index competitions by date string for lightning-fast, O(1) day cell lookups
+  const competitionsByDate = useMemo(() => {
+    const map = new Map();
+    filteredCompetitions.forEach((comp) => {
+      // Event spans from startDate to endDate
+      const start = comp.startDate;
+      const end = comp.endDate || comp.startDate;
+
+      if (start === end) {
+        if (!map.has(start)) map.set(start, []);
+        map.get(start).push(comp);
+      } else {
+        // Multi-day: add to all days in range (safeguarded to max 14 days)
+        let curr = new Date(start + 'T00:00:00');
+        const endDateObj = new Date(end + 'T00:00:00');
+        let safety = 0;
+        while (curr <= endDateObj && safety < 14) {
+          const key = curr.toISOString().split('T')[0];
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(comp);
+          curr.setDate(curr.getDate() + 1);
+          safety++;
+        }
+      }
+    });
+    return map;
+  }, [filteredCompetitions]);
 
   // Calendar Date Matrix Generation (Monday to Sunday, 7 columns)
   const calendarWeeks = useMemo(() => {
@@ -329,17 +363,29 @@ const ContestTrackerPage = () => {
           const prevMonthIdx = currentMonth === 0 ? 11 : currentMonth - 1;
           const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
           const dateStr = `${prevYear}-${String(prevMonthIdx + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+          const fullDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          });
           days.push({
             dayNum,
             dateStr,
+            fullDate,
             isCurrentMonth: false,
             isToday: dateStr === todayStr
           });
         } else if (dayCounter <= daysInMonth) {
           const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
+          const fullDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          });
           days.push({
             dayNum: dayCounter,
             dateStr,
+            fullDate,
             isCurrentMonth: true,
             isToday: dateStr === todayStr
           });
@@ -348,9 +394,15 @@ const ContestTrackerPage = () => {
           const nextMonthIdx = currentMonth === 11 ? 0 : currentMonth + 1;
           const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
           const dateStr = `${nextYear}-${String(nextMonthIdx + 1).padStart(2, '0')}-${String(nextMonthDayCounter).padStart(2, '0')}`;
+          const fullDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          });
           days.push({
             dayNum: nextMonthDayCounter,
             dateStr,
+            fullDate,
             isCurrentMonth: false,
             isToday: dateStr === todayStr
           });
@@ -361,53 +413,6 @@ const ContestTrackerPage = () => {
     }
     return weeks;
   }, [currentYear, currentMonth]);
-
-  // Calculate horizontal event spans for each week row
-  const getEventsForWeek = (week) => {
-    const weekStart = week[0].dateStr;
-    const weekEnd = week[6].dateStr;
-
-    const weekEvents = filteredCompetitions.filter((comp) => {
-      const start = comp.startDate;
-      const end = comp.endDate || comp.startDate;
-      return start <= weekEnd && end >= weekStart;
-    });
-
-    return weekEvents.map((comp) => {
-      const start = comp.startDate;
-      const end = comp.endDate || comp.startDate;
-
-      let startCol = 1;
-      let endCol = 7;
-
-      for (let i = 0; i < 7; i++) {
-        if (week[i].dateStr === start) {
-          startCol = i + 1;
-          break;
-        } else if (week[i].dateStr > start) {
-          startCol = Math.max(1, i);
-          break;
-        }
-      }
-
-      for (let i = 6; i >= 0; i--) {
-        if (week[i].dateStr === end) {
-          endCol = i + 1;
-          break;
-        } else if (week[i].dateStr < end) {
-          endCol = Math.min(7, i + 2);
-          break;
-        }
-      }
-
-      return {
-        comp,
-        startCol,
-        endCol,
-        isMultiDay: start !== end
-      };
-    });
-  };
 
   const handleClearFilters = () => {
     setActiveTab('All');
@@ -428,7 +433,7 @@ const ContestTrackerPage = () => {
     organizerFilter !== 'All' ||
     searchQuery.trim().length > 0;
 
-  // Real Upcoming and Recently Added Lists
+  // Upcoming and Recently Added Lists
   const upcomingList = useMemo(() => {
     return competitions
       .filter((c) => c.status === 'upcoming' || c.status === 'active' || c.status === 'closing_soon')
@@ -454,8 +459,8 @@ const ContestTrackerPage = () => {
         backgroundColor: '#0B0B0D',
         minHeight: '100vh',
         color: '#f4f4f6',
-        padding: '2.5rem 3.5rem 5rem 3.5rem',
-        maxWidth: '1440px',
+        padding: '2rem 2.5rem 5rem 2.5rem',
+        maxWidth: '1500px',
         margin: '0 auto',
         fontFamily: 'var(--font-sans)',
         boxSizing: 'border-box'
@@ -469,7 +474,7 @@ const ContestTrackerPage = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '2.5rem',
+          marginBottom: '2rem',
           paddingBottom: '0.85rem',
           borderBottom: '1px solid #18181D'
         }}
@@ -528,7 +533,7 @@ const ContestTrackerPage = () => {
       {/* ========================================================= */}
       {/* 2. EDITORIAL PAGE HEADER                                  */}
       {/* ========================================================= */}
-      <div style={{ marginBottom: '2.25rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <div
           style={{
             fontSize: '0.68rem',
@@ -544,10 +549,10 @@ const ContestTrackerPage = () => {
         </div>
         <h1
           style={{
-            fontSize: '1.875rem',
+            fontSize: '1.75rem',
             fontWeight: 700,
             letterSpacing: '-0.025em',
-            margin: '0 0 0.5rem 0',
+            margin: '0 0 0.4rem 0',
             color: '#f4f4f6'
           }}
         >
@@ -555,14 +560,14 @@ const ContestTrackerPage = () => {
         </h1>
         <p
           style={{
-            fontSize: '0.875rem',
+            fontSize: '0.85rem',
             color: '#8e8e99',
             margin: 0,
             maxWidth: '650px',
             lineHeight: '1.5'
           }}
         >
-          Live hackathons, coding competitions and technical challenges aggregated from Codeforces, LeetCode, AtCoder, CodeChef, and international competitive circuits.
+          Live hackathons, coding competitions and technical challenges aggregated from Codeforces, LeetCode, AtCoder, CodeChef, and international circuits.
         </p>
       </div>
 
@@ -593,7 +598,7 @@ const ContestTrackerPage = () => {
                   border: 'none',
                   borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
                   padding: '0.65rem 0',
-                  fontSize: '0.84rem',
+                  fontSize: '0.82rem',
                   fontWeight: isActive ? 600 : 400,
                   color: isActive ? '#f4f4f6' : '#71717a',
                   cursor: 'pointer',
@@ -676,11 +681,11 @@ const ContestTrackerPage = () => {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '0.75rem',
-          marginBottom: '2rem'
+          marginBottom: '1.75rem'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Real Technology Filter */}
+          {/* Technology */}
           <select
             value={techFilter}
             onChange={(e) => setTechFilter(e.target.value)}
@@ -828,22 +833,21 @@ const ContestTrackerPage = () => {
       {/* ========================================================= */}
       <div
         style={{
-          display: 'flex',
-          gap: '2.5rem',
-          alignItems: 'flex-start',
-          flexDirection: 'row',
-          flexWrap: 'nowrap'
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 280px',
+          gap: '2rem',
+          alignItems: 'start'
         }}
       >
         {/* LEFT / CENTER: THE MAIN VIEW (CALENDAR OR LIST) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           {loading ? (
             /* Clean Minimal Loading Skeleton */
             <div
               style={{
                 border: '1px solid #18181D',
                 borderRadius: '6px',
-                padding: '3rem',
+                padding: '3.5rem',
                 textAlign: 'center',
                 background: '#0B0B0D'
               }}
@@ -859,7 +863,7 @@ const ContestTrackerPage = () => {
                 LOADING LIVE COMPETITIONS...
               </div>
               <div style={{ fontSize: '0.75rem', color: '#52525b' }}>
-                Fetching official tournament feeds from Codeforces, LeetCode, AtCoder, CodeChef, and international organizers...
+                Fetching real tournament feeds from Codeforces, LeetCode, AtCoder, CodeChef, and international organizers...
               </div>
             </div>
           ) : viewMode === 'calendar' ? (
@@ -871,8 +875,8 @@ const ContestTrackerPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '1rem',
-                  padding: '0 0.25rem'
+                  marginBottom: '0.85rem',
+                  padding: '0 0.15rem'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -947,11 +951,11 @@ const ContestTrackerPage = () => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
                   borderTop: '1px solid #18181D',
                   borderBottom: '1px solid #18181D',
                   padding: '0.5rem 0',
-                  marginBottom: '0'
+                  background: '#0B0B0D'
                 }}
               >
                 {WEEKDAY_NAMES.map((day) => (
@@ -963,7 +967,7 @@ const ContestTrackerPage = () => {
                       fontWeight: 600,
                       color: '#71717a',
                       textAlign: 'left',
-                      paddingLeft: '0.75rem'
+                      paddingLeft: '0.65rem'
                     }}
                   >
                     {day}
@@ -971,142 +975,153 @@ const ContestTrackerPage = () => {
                 ))}
               </div>
 
-              {/* 5-Week Calendar Grid */}
+              {/* 5-Week Calendar Grid (Direct Clean Day-Cell Architecture) */}
               <div
                 style={{
                   borderLeft: '1px solid #18181D',
                   borderRight: '1px solid #18181D',
                   borderBottom: '1px solid #18181D',
-                  background: '#0B0B0D'
+                  background: '#0B0B0D',
+                  overflow: 'hidden'
                 }}
               >
-                {calendarWeeks.map((week, wIdx) => {
-                  const weekEvents = getEventsForWeek(week);
+                {calendarWeeks.map((week, wIdx) => (
+                  <div
+                    key={`week-${wIdx}`}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                      borderBottom: wIdx === calendarWeeks.length - 1 ? 'none' : '1px solid #18181D'
+                    }}
+                  >
+                    {week.map((day, dIdx) => {
+                      const dayEvents = competitionsByDate.get(day.dateStr) || [];
+                      const visibleEvents = dayEvents.slice(0, 2);
+                      const overflowCount = dayEvents.length - visibleEvents.length;
 
-                  return (
-                    <div
-                      key={`week-${wIdx}`}
-                      style={{
-                        minHeight: '115px',
-                        borderBottom: wIdx === calendarWeeks.length - 1 ? 'none' : '1px solid #18181D',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative'
-                      }}
-                    >
-                      {/* Grid Background Columns with Day Numbers */}
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(7, 1fr)',
-                          position: 'absolute',
-                          inset: 0,
-                          pointerEvents: 'none'
-                        }}
-                      >
-                        {week.map((day, dIdx) => (
+                      return (
+                        <div
+                          key={`cell-${day.dateStr}`}
+                          onClick={() => {
+                            if (dayEvents.length > 0) {
+                              setSelectedDaySchedule({
+                                dateStr: day.dateStr,
+                                fullDate: day.fullDate,
+                                events: dayEvents
+                              });
+                            }
+                          }}
+                          style={{
+                            minHeight: '120px',
+                            maxHeight: '145px',
+                            borderRight: dIdx === 6 ? 'none' : '1px solid #18181D',
+                            padding: '0.45rem 0.5rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            background: day.isCurrentMonth ? '#0B0B0D' : '#08080A',
+                            cursor: dayEvents.length > 0 ? 'pointer' : 'default',
+                            transition: 'background 0.15s ease',
+                            overflow: 'hidden'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (dayEvents.length > 0) e.currentTarget.style.backgroundColor = '#101015';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = day.isCurrentMonth ? '#0B0B0D' : '#08080A';
+                          }}
+                        >
+                          {/* Day Header */}
                           <div
-                            key={`cell-${day.dateStr}`}
                             style={{
-                              borderRight: dIdx === 6 ? 'none' : '1px solid #16161B',
-                              padding: '0.5rem 0.65rem',
-                              height: '100%',
-                              boxSizing: 'border-box'
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              marginBottom: '0.4rem'
                             }}
                           >
-                            <span
-                              style={{
-                                fontSize: '0.8rem',
-                                fontFamily: 'var(--font-mono)',
-                                fontWeight: day.isToday ? 700 : 400,
-                                color: day.isToday
-                                  ? '#3b82f6'
-                                  : day.isCurrentMonth
-                                  ? '#d4d4d8'
-                                  : '#3f3f46',
-                                display: 'inline-block'
-                              }}
-                            >
-                              {day.dayNum}
-                            </span>
-                            {day.isToday && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <span
                                 style={{
-                                  display: 'inline-block',
-                                  width: '4px',
-                                  height: '4px',
-                                  borderRadius: '50%',
-                                  background: '#3b82f6',
-                                  marginLeft: '4px',
-                                  verticalAlign: 'middle'
-                                }}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Event Bars Layer */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          paddingTop: '2rem',
-                          paddingBottom: '0.5rem',
-                          position: 'relative',
-                          zIndex: 2
-                        }}
-                      >
-                        {weekEvents.map(({ comp, startCol, endCol }) => {
-                          const statusTheme = STATUS_CONFIG[comp.status] || STATUS_CONFIG.upcoming;
-
-                          return (
-                            <div
-                              key={`${comp.id}-w${wIdx}`}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(7, 1fr)'
-                              }}
-                            >
-                              <div
-                                onClick={() => setSelectedEvent(comp)}
-                                onMouseEnter={(e) => {
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setTooltipPos({ x: rect.left, y: rect.bottom + 6 });
-                                  setHoveredEvent(comp);
-                                }}
-                                onMouseLeave={() => setHoveredEvent(null)}
-                                style={{
-                                  gridColumn: `${startCol} / ${endCol + 1}`,
-                                  margin: '0 4px',
-                                  background: statusTheme.barBg,
-                                  borderLeft: `3px solid ${statusTheme.barBorder}`,
-                                  borderRadius: '3px',
-                                  padding: '4px 8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: '0.5rem',
-                                  cursor: 'pointer',
-                                  overflow: 'hidden',
-                                  transition: 'filter 0.15s ease'
+                                  fontSize: '0.8rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontWeight: day.isToday ? 700 : 500,
+                                  color: day.isToday
+                                    ? '#3b82f6'
+                                    : day.isCurrentMonth
+                                    ? '#d4d4d8'
+                                    : '#3f3f46'
                                 }}
                               >
-                                <div
+                                {day.dayNum}
+                              </span>
+                              {day.isToday && (
+                                <span
                                   style={{
+                                    fontSize: '0.55rem',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 700,
+                                    background: 'rgba(59, 130, 246, 0.2)',
+                                    color: '#60a5fa',
+                                    padding: '1px 3px',
+                                    borderRadius: '2px'
+                                  }}
+                                >
+                                  TODAY
+                                </span>
+                              )}
+                            </div>
+
+                            {dayEvents.length > 0 && !day.isToday && (
+                              <span
+                                style={{
+                                  fontSize: '0.62rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  color: '#52525b'
+                                }}
+                              >
+                                {dayEvents.length}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Day Event Pills */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minHeight: 0 }}>
+                            {visibleEvents.map((comp) => {
+                              const statusTheme = STATUS_CONFIG[comp.status] || STATUS_CONFIG.upcoming;
+                              const pBadge = getPlatformBadge(comp.organizer);
+
+                              return (
+                                <div
+                                  key={comp.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedEvent(comp);
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setTooltipPos({ x: rect.left, y: rect.bottom + 4 });
+                                    setHoveredEvent(comp);
+                                  }}
+                                  onMouseLeave={() => setHoveredEvent(null)}
+                                  style={{
+                                    background: statusTheme.barBg,
+                                    borderLeft: `2.5px solid ${statusTheme.barBorder}`,
+                                    borderRadius: '2px',
+                                    padding: '2px 5px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.45rem',
+                                    gap: '4px',
                                     overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
+                                    cursor: 'pointer',
+                                    transition: 'filter 0.15s ease'
                                   }}
+                                  onMouseOver={(e) => (e.currentTarget.style.filter = 'brightness(1.25)')}
+                                  onMouseOut={(e) => (e.currentTarget.style.filter = 'none')}
                                 >
                                   <span
                                     style={{
-                                      width: '5px',
-                                      height: '5px',
+                                      width: '4px',
+                                      height: '4px',
                                       borderRadius: '50%',
                                       backgroundColor: statusTheme.dotColor,
                                       flexShrink: 0
@@ -1114,44 +1129,64 @@ const ContestTrackerPage = () => {
                                   />
                                   <span
                                     style={{
-                                      fontSize: '0.75rem',
-                                      fontWeight: 600,
+                                      fontSize: '0.58rem',
+                                      fontFamily: 'var(--font-mono)',
+                                      fontWeight: 700,
+                                      color: pBadge.color,
+                                      background: pBadge.bg,
+                                      padding: '0 2px',
+                                      borderRadius: '1px',
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    {pBadge.tag}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      fontWeight: 500,
                                       color: statusTheme.textColor,
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
+                                      whiteSpace: 'nowrap',
+                                      lineHeight: '1.2'
                                     }}
                                   >
                                     {comp.title}
                                   </span>
                                 </div>
+                              );
+                            })}
 
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    flexShrink: 0
-                                  }}
-                                >
-                                  <span
-                                    style={{
-                                      fontSize: '0.68rem',
-                                      fontFamily: 'var(--font-mono)',
-                                      color: '#71717a'
-                                    }}
-                                  >
-                                    {comp.organizer}
-                                  </span>
-                                </div>
+                            {overflowCount > 0 && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDaySchedule({
+                                    dateStr: day.dateStr,
+                                    fullDate: day.fullDate,
+                                    events: dayEvents
+                                  });
+                                }}
+                                style={{
+                                  fontSize: '0.66rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  color: '#3b82f6',
+                                  padding: '1px 3px',
+                                  cursor: 'pointer',
+                                  marginTop: '1px',
+                                  fontWeight: 600
+                                }}
+                              >
+                                +{overflowCount} more
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
 
               {/* Clean Empty State within calendar */}
@@ -1161,7 +1196,8 @@ const ContestTrackerPage = () => {
                     padding: '3rem',
                     textAlign: 'center',
                     border: '1px solid #18181D',
-                    borderTop: 'none'
+                    borderTop: 'none',
+                    background: '#0B0B0D'
                   }}
                 >
                   <div
@@ -1204,13 +1240,14 @@ const ContestTrackerPage = () => {
                   .sort((a, b) => a.startDate.localeCompare(b.startDate))
                   .map((comp) => {
                     const statusTheme = STATUS_CONFIG[comp.status] || STATUS_CONFIG.upcoming;
+                    const pBadge = getPlatformBadge(comp.organizer);
 
                     return (
                       <div
                         key={comp.id}
                         onClick={() => setSelectedEvent(comp)}
                         style={{
-                          padding: '1.25rem 0',
+                          padding: '1.1rem 0',
                           borderBottom: '1px solid #18181D',
                           display: 'flex',
                           alignItems: 'baseline',
@@ -1220,12 +1257,12 @@ const ContestTrackerPage = () => {
                           transition: 'background 0.15s ease'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '2rem', flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.5rem', flex: 1, minWidth: 0 }}>
                           {/* Strong Monospace Date */}
                           <div style={{ width: '85px', flexShrink: 0 }}>
                             <div
                               style={{
-                                fontSize: '0.9rem',
+                                fontSize: '0.88rem',
                                 fontWeight: 700,
                                 fontFamily: 'var(--font-mono)',
                                 color: '#f4f4f6'
@@ -1235,7 +1272,7 @@ const ContestTrackerPage = () => {
                             </div>
                             <div
                               style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.68rem',
                                 fontFamily: 'var(--font-mono)',
                                 color: '#71717a'
                               }}
@@ -1245,30 +1282,45 @@ const ContestTrackerPage = () => {
                           </div>
 
                           {/* Competition Details */}
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: '1rem',
-                                fontWeight: 600,
-                                color: '#f4f4f6',
-                                marginBottom: '0.25rem'
-                              }}
-                            >
-                              {comp.title}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.65rem',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontWeight: 700,
+                                  color: pBadge.color,
+                                  background: pBadge.bg,
+                                  padding: '1px 4px',
+                                  borderRadius: '2px'
+                                }}
+                              >
+                                {comp.organizer}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '0.96rem',
+                                  fontWeight: 600,
+                                  color: '#f4f4f6',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {comp.title}
+                              </span>
                             </div>
 
                             <div
                               style={{
-                                fontSize: '0.76rem',
+                                fontSize: '0.75rem',
                                 color: '#71717a',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.5rem',
+                                gap: '0.45rem',
                                 flexWrap: 'wrap'
                               }}
                             >
-                              <span style={{ color: '#a1a1aa' }}>{comp.organizer}</span>
-                              <span>·</span>
                               <span>{comp.technologies.join(' · ')}</span>
                               <span>·</span>
                               <span>{comp.format}</span>
@@ -1282,7 +1334,7 @@ const ContestTrackerPage = () => {
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div
                             style={{
-                              fontSize: '0.78rem',
+                              fontSize: '0.76rem',
                               fontFamily: 'var(--font-mono)',
                               color: statusTheme.textColor,
                               display: 'flex',
@@ -1342,14 +1394,12 @@ const ContestTrackerPage = () => {
         </div>
 
         {/* ========================================================= */}
-        {/* 6. RIGHT-SIDE UPCOMING PANEL (NARROW CONTEXTUAL LIST)     */}
+        {/* 6. RIGHT-SIDE UPCOMING PANEL (CLEAN CONTEXTUAL LIST)      */}
         {/* ========================================================= */}
         <div
           style={{
-            width: '290px',
-            flexShrink: 0,
             borderLeft: '1px solid #18181D',
-            paddingLeft: '2rem'
+            paddingLeft: '1.75rem'
           }}
         >
           {/* UPCOMING SECTION */}
@@ -1362,7 +1412,7 @@ const ContestTrackerPage = () => {
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 color: '#71717a',
-                marginBottom: '1.25rem'
+                marginBottom: '1rem'
               }}
             >
               UPCOMING
@@ -1375,7 +1425,7 @@ const ContestTrackerPage = () => {
                     key={item.id}
                     onClick={() => setSelectedEvent(item)}
                     style={{
-                      padding: '0.85rem 0',
+                      padding: '0.75rem 0',
                       borderBottom: idx === upcomingList.length - 1 ? 'none' : '1px solid #18181D',
                       cursor: 'pointer',
                       transition: 'opacity 0.15s ease'
@@ -1385,29 +1435,34 @@ const ContestTrackerPage = () => {
                   >
                     <div
                       style={{
-                        fontSize: '0.8rem',
+                        fontSize: '0.78rem',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 700,
                         color: '#f4f4f6',
-                        marginBottom: '0.2rem'
+                        marginBottom: '0.15rem'
                       }}
                     >
                       {formatShortDate(item.startDate)}
                     </div>
                     <div
                       style={{
-                        fontSize: '0.85rem',
+                        fontSize: '0.82rem',
                         fontWeight: 600,
                         color: '#d4d4d8',
-                        marginBottom: '0.25rem',
-                        lineHeight: '1.3'
+                        marginBottom: '0.2rem',
+                        lineHeight: '1.3',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
                       }}
                     >
                       {item.title}
                     </div>
                     <div
                       style={{
-                        fontSize: '0.72rem',
+                        fontSize: '0.7rem',
                         color: '#71717a',
                         fontFamily: 'var(--font-mono)'
                       }}
@@ -1434,7 +1489,7 @@ const ContestTrackerPage = () => {
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 color: '#71717a',
-                marginBottom: '1.25rem'
+                marginBottom: '1rem'
               }}
             >
               RECENTLY ADDED
@@ -1447,14 +1502,14 @@ const ContestTrackerPage = () => {
                     key={item.id}
                     onClick={() => setSelectedEvent(item)}
                     style={{
-                      padding: '0.75rem 0',
+                      padding: '0.7rem 0',
                       borderBottom: idx === recentlyAddedList.length - 1 ? 'none' : '1px solid #18181D',
                       cursor: 'pointer'
                     }}
                   >
                     <div
                       style={{
-                        fontSize: '0.78rem',
+                        fontSize: '0.76rem',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 700,
                         color: '#f4f4f6',
@@ -1465,9 +1520,12 @@ const ContestTrackerPage = () => {
                     </div>
                     <div
                       style={{
-                        fontSize: '0.82rem',
+                        fontSize: '0.8rem',
                         fontWeight: 500,
-                        color: '#a1a1aa'
+                        color: '#a1a1aa',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {item.title}
@@ -1497,16 +1555,16 @@ const ContestTrackerPage = () => {
             background: '#111116',
             border: '1px solid #242430',
             borderRadius: '4px',
-            padding: '0.65rem 0.85rem',
+            padding: '0.6rem 0.8rem',
             boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
             pointerEvents: 'none',
             maxWidth: '280px'
           }}
         >
-          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f4f4f6', marginBottom: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#f4f4f6', marginBottom: '0.2rem' }}>
             {hoveredEvent.title}
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#71717a', marginBottom: '0.35rem' }}>
+          <div style={{ fontSize: '0.7rem', color: '#71717a', marginBottom: '0.35rem' }}>
             {hoveredEvent.organizer}
           </div>
           <div
@@ -1519,9 +1577,7 @@ const ContestTrackerPage = () => {
               gap: '2px'
             }}
           >
-            <div>
-              Date: {hoveredEvent.startDate} {hoveredEvent.startDate !== hoveredEvent.endDate ? `→ ${hoveredEvent.endDate}` : ''}
-            </div>
+            <div>Date: {hoveredEvent.startDate}</div>
             <div>Status: {STATUS_CONFIG[hoveredEvent.status]?.label || 'Scheduled'}</div>
             <div>Prize: {hoveredEvent.prizePool}</div>
           </div>
@@ -1529,7 +1585,117 @@ const ContestTrackerPage = () => {
       )}
 
       {/* ========================================================= */}
-      {/* 8. EVENT DETAIL DRAWER (SLIDE-IN MODAL)                   */}
+      {/* 8. DAY SCHEDULE INSPECTOR DRAWER (When clicking "+N more")*/}
+      {/* ========================================================= */}
+      <DetailDrawer
+        isOpen={!!selectedDaySchedule}
+        onClose={() => setSelectedDaySchedule(null)}
+        title={selectedDaySchedule?.fullDate?.toUpperCase() || 'DAILY SCHEDULE'}
+        subtitle={`${selectedDaySchedule?.events?.length || 0} COMPETITIONS SCHEDULED`}
+        badge="SCHEDULE AGENDA"
+        width="580px"
+      >
+        {selectedDaySchedule && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: '#f4f4f6' }}>
+            <div style={{ fontSize: '0.8rem', color: '#8e8e99' }}>
+              All technical competitions scheduled for {selectedDaySchedule.fullDate}. Click any competition to view technical specifications.
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {selectedDaySchedule.events.map((comp) => {
+                const statusTheme = STATUS_CONFIG[comp.status] || STATUS_CONFIG.upcoming;
+                const pBadge = getPlatformBadge(comp.organizer);
+                const startTimeStr = comp.start_time
+                  ? new Date(comp.start_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+                  : 'All Day';
+
+                return (
+                  <div
+                    key={comp.id}
+                    onClick={() => {
+                      setSelectedDaySchedule(null);
+                      setSelectedEvent(comp);
+                    }}
+                    style={{
+                      background: '#0E0E12',
+                      border: '1px solid #1E1E26',
+                      borderRadius: '4px',
+                      padding: '0.85rem 1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '1rem',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#2c2c3c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1E1E26')}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.25rem' }}>
+                        <span
+                          style={{
+                            fontSize: '0.62rem',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            color: pBadge.color,
+                            background: pBadge.bg,
+                            padding: '1px 4px',
+                            borderRadius: '2px'
+                          }}
+                        >
+                          {comp.organizer}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontFamily: 'var(--font-mono)',
+                            color: '#71717a'
+                          }}
+                        >
+                          {startTimeStr}
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: '0.9rem',
+                          fontWeight: 600,
+                          color: '#f4f4f6',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {comp.title}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontFamily: 'var(--font-mono)',
+                          color: statusTheme.textColor,
+                          background: statusTheme.barBg,
+                          padding: '2px 6px',
+                          borderRadius: '3px'
+                        }}
+                      >
+                        {comp.deadlineText}
+                      </span>
+                      <ArrowRight size={14} color="#71717a" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </DetailDrawer>
+
+      {/* ========================================================= */}
+      {/* 9. EVENT DETAIL DRAWER (SLIDE-IN MODAL)                   */}
       {/* ========================================================= */}
       <DetailDrawer
         isOpen={!!selectedEvent}
