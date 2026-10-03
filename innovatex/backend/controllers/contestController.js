@@ -3,16 +3,17 @@ const { updateContestCache, inferDifficulty } = require('../utils/contestFetcher
 
 const getContests = async (req, res) => {
   try {
-    const { platform, days } = req.query;
-    const maxDays = days ? parseInt(days, 10) : 7;
+    const { platform, days, refresh } = req.query;
+    const maxDays = days ? parseInt(days, 10) : 60;
+    const forceRefresh = refresh === 'true' || refresh === '1';
 
     // Check existing cache
     let cacheDoc = await ContestCache.findOne({});
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
 
-    // If cache empty or stale, trigger refetch
-    if (!cacheDoc || !cacheDoc.fetchedAt || cacheDoc.fetchedAt < sixHoursAgo || !cacheDoc.contests || cacheDoc.contests.length === 0) {
-      console.log('[ContestController] Cache is stale or empty, refetching live...');
+    // If cache empty, stale, has very few items, or explicit refresh requested, trigger refetch
+    if (forceRefresh || !cacheDoc || !cacheDoc.fetchedAt || cacheDoc.fetchedAt < sixHoursAgo || !cacheDoc.contests || cacheDoc.contests.length < 15) {
+      console.log('[ContestController] Refreshing live multi-source contest cache...');
       const freshContests = await updateContestCache();
       cacheDoc = { contests: freshContests, fetchedAt: new Date() };
     }

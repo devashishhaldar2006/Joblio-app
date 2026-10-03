@@ -13,15 +13,66 @@ function inferDifficulty(title) {
 }
 
 function getPlatformKey(platformStr) {
-  const p = platformStr.toLowerCase();
+  const p = (platformStr || '').toLowerCase();
   if (p.includes('codeforces')) return 'codeforces';
   if (p.includes('leetcode')) return 'leetcode';
   if (p.includes('codechef')) return 'codechef';
   if (p.includes('atcoder')) return 'atcoder';
   if (p.includes('hackerrank')) return 'hackerrank';
   if (p.includes('hackerearth')) return 'hackerearth';
-  if (p.includes('geeksforgeeks')) return 'geeksforgeeks';
+  if (p.includes('geeksforgeeks') || p.includes('code360')) return 'geeksforgeeks';
+  if (p.includes('ctftime')) return 'ctftime';
+  if (p.includes('kattis')) return 'kattis';
+  if (p.includes('luogu')) return 'luogu';
+  if (p.includes('projecteuler')) return 'projecteuler';
+  if (p.includes('topcoder')) return 'topcoder';
   return 'other';
+}
+
+function getPlatformDisplayName(platformStr) {
+  const p = (platformStr || '').toLowerCase();
+  if (p.includes('codeforces')) return 'Codeforces';
+  if (p.includes('leetcode')) return 'LeetCode';
+  if (p.includes('codechef')) return 'CodeChef';
+  if (p.includes('atcoder')) return 'AtCoder';
+  if (p.includes('hackerrank')) return 'HackerRank';
+  if (p.includes('hackerearth')) return 'HackerEarth';
+  if (p.includes('geeksforgeeks') || p.includes('code360')) return 'GeeksforGeeks';
+  if (p.includes('ctftime')) return 'CTFtime';
+  if (p.includes('kattis')) return 'ICPC / Kattis';
+  if (p.includes('luogu')) return 'Luogu';
+  if (p.includes('projecteuler')) return 'Project Euler';
+  if (p.includes('topcoder')) return 'TopCoder';
+  return platformStr ? platformStr.replace(/\.com|\.org|\.jp|\.net|\.cn|\.ru|\.by|\.in/g, '').toUpperCase() : 'Competitive';
+}
+
+function inferTechnologies(title, platform) {
+  const t = (title + ' ' + platform).toLowerCase();
+  const techs = [];
+  if (t.includes('ctf') || t.includes('security') || t.includes('cyber') || t.includes('ctftime')) {
+    return ['Security', 'Reverse Eng', 'Cryptography'];
+  }
+  if (t.includes('ai') || t.includes('ml') || t.includes('machine learning') || t.includes('llm') || t.includes('gpt')) {
+    techs.push('AI / ML');
+  }
+  if (t.includes('web') || t.includes('fullstack') || t.includes('hackathon')) {
+    techs.push('Fullstack / Web');
+  }
+  if (t.includes('cloud') || t.includes('aws') || t.includes('azure') || t.includes('gcp')) {
+    techs.push('Cloud');
+  }
+  if (t.includes('atcoder') || t.includes('math') || t.includes('projecteuler')) {
+    techs.push('Mathematics');
+  }
+  if (t.includes('codeforces') || t.includes('c++')) {
+    techs.push('Systems & C++');
+  }
+  if (techs.length === 0) {
+    techs.push('Algorithms', 'Data Structures');
+  } else {
+    techs.push('Algorithms');
+  }
+  return techs.slice(0, 3);
 }
 
 async function fetchFromCLIST() {
@@ -32,7 +83,7 @@ async function fetchFromCLIST() {
   }
 
   const now = new Date();
-  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const sixtyDaysLater = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
 
   try {
     const resp = await axios.get('https://clist.by/api/v2/contest/', {
@@ -42,26 +93,32 @@ async function fetchFromCLIST() {
       params: {
         upcoming: 'true',
         order_by: 'start',
-        limit: 100,
+        limit: 200,
         start__gte: now.toISOString(),
-        end__lte: sevenDaysLater.toISOString(),
-        resource__in: 'codeforces.com,leetcode.com,codechef.com,atcoder.jp,hackerrank.com,hackerearth.com,geeksforgeeks.org'
+        end__lte: sixtyDaysLater.toISOString()
       },
-      timeout: 10000
+      timeout: 15000
     });
 
     if (resp.data && resp.data.objects) {
-      return resp.data.objects.map(c => ({
-        contest_id: `clist_${c.id}`,
-        title: c.event,
-        platform: c.resource,
-        platform_logo_key: getPlatformKey(c.resource),
-        start_time: c.start,
-        end_time: c.end,
-        duration_seconds: c.duration,
-        url: c.href,
-        difficulty: inferDifficulty(c.event)
-      }));
+      return resp.data.objects.map(c => {
+        const platformKey = getPlatformKey(c.resource || c.host);
+        const displayName = getPlatformDisplayName(c.resource || c.host);
+        return {
+          contest_id: `clist_${c.id}`,
+          title: c.event,
+          platform: displayName,
+          platform_logo_key: platformKey,
+          start_time: c.start,
+          end_time: c.end,
+          duration_seconds: c.duration,
+          url: c.href,
+          difficulty: inferDifficulty(c.event),
+          technologies: inferTechnologies(c.event, displayName),
+          format: 'Online',
+          location: 'Global · Virtual'
+        };
+      });
     }
   } catch (err) {
     console.error('CLIST API fetch failed or rate-limited:', err.message);
@@ -74,9 +131,9 @@ async function fetchFromCodeforces() {
     const resp = await axios.get('https://codeforces.com/api/contest.list', { timeout: 10000 });
     if (resp.data && resp.data.status === 'OK' && Array.isArray(resp.data.result)) {
       const nowSec = Math.floor(Date.now() / 1000);
-      const sevenDaysSec = nowSec + 7 * 24 * 60 * 60;
+      const sixtyDaysSec = nowSec + 60 * 24 * 60 * 60;
 
-      const upcoming = resp.data.result.filter(c => c.phase === 'BEFORE' && c.startTimeSeconds && c.startTimeSeconds <= sevenDaysSec);
+      const upcoming = resp.data.result.filter(c => c.phase === 'BEFORE' && c.startTimeSeconds && c.startTimeSeconds <= sixtyDaysSec);
 
       return upcoming.map(c => {
         const startIso = new Date(c.startTimeSeconds * 1000).toISOString();
@@ -90,7 +147,10 @@ async function fetchFromCodeforces() {
           end_time: endIso,
           duration_seconds: c.durationSeconds,
           url: `https://codeforces.com/contest/${c.id}`,
-          difficulty: inferDifficulty(c.name)
+          difficulty: inferDifficulty(c.name),
+          technologies: ['Competitive Programming', 'C++', 'Algorithms'],
+          format: 'Online',
+          location: 'Global · Virtual'
         };
       });
     }
@@ -107,16 +167,16 @@ async function fetchFromLeetCode() {
       'https://leetcode.com/graphql',
       { query },
       {
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'InnovateX' },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
         timeout: 10000
       }
     );
 
     if (resp.data && resp.data.data && resp.data.data.allContests) {
       const nowSec = Math.floor(Date.now() / 1000);
-      const sevenDaysSec = nowSec + 7 * 24 * 60 * 60;
+      const sixtyDaysSec = nowSec + 60 * 24 * 60 * 60;
 
-      const upcoming = resp.data.data.allContests.filter(c => c.startTime > nowSec && c.startTime <= sevenDaysSec);
+      const upcoming = resp.data.data.allContests.filter(c => c.startTime > nowSec && c.startTime <= sixtyDaysSec);
 
       return upcoming.map((c, idx) => {
         const startIso = new Date(c.startTime * 1000).toISOString();
@@ -130,7 +190,10 @@ async function fetchFromLeetCode() {
           end_time: endIso,
           duration_seconds: c.duration,
           url: `https://leetcode.com/contest/${c.titleSlug}`,
-          difficulty: inferDifficulty(c.title)
+          difficulty: inferDifficulty(c.title),
+          technologies: ['Algorithms', 'Data Structures', 'Python / Java'],
+          format: 'Online',
+          location: 'Global · Virtual'
         };
       });
     }
@@ -157,12 +220,12 @@ async function fetchFromCodeChef() {
       const allUpcoming = [...present, ...future];
 
       const now = Date.now();
-      const fourteenDaysLater = now + 14 * 24 * 60 * 60 * 1000;
+      const sixtyDaysLater = now + 60 * 24 * 60 * 60 * 1000;
 
       return allUpcoming
         .filter(c => {
           const sTime = new Date(c.contest_start_date_iso || c.contest_start_date).getTime();
-          return sTime >= now - 4 * 60 * 60 * 1000 && sTime <= fourteenDaysLater;
+          return sTime >= now - 4 * 60 * 60 * 1000 && sTime <= sixtyDaysLater;
         })
         .map(c => {
           const startIso = new Date(c.contest_start_date_iso || c.contest_start_date).toISOString();
@@ -177,7 +240,10 @@ async function fetchFromCodeChef() {
             end_time: endIso,
             duration_seconds: durationMin * 60,
             url: `https://www.codechef.com/${c.contest_code}`,
-            difficulty: inferDifficulty(c.contest_name)
+            difficulty: inferDifficulty(c.contest_name),
+            technologies: ['Algorithms', 'Data Structures', 'Problem Solving'],
+            format: 'Online',
+            location: 'Global · Virtual'
           };
         });
     }
@@ -192,10 +258,10 @@ async function fetchFromAtCoder() {
     const resp = await axios.get('https://kenkoooo.com/atcoder/resources/contests.json', { timeout: 10000 });
     if (Array.isArray(resp.data)) {
       const nowSec = Math.floor(Date.now() / 1000);
-      const fourteenDaysSec = nowSec + 14 * 24 * 60 * 60;
+      const sixtyDaysSec = nowSec + 60 * 24 * 60 * 60;
 
       const upcoming = resp.data.filter(
-        c => c.start_epoch_second && (c.start_epoch_second + c.duration_second) > nowSec && c.start_epoch_second <= fourteenDaysSec
+        c => c.start_epoch_second && (c.start_epoch_second + c.duration_second) > nowSec && c.start_epoch_second <= sixtyDaysSec
       );
 
       return upcoming.map(c => {
@@ -210,7 +276,10 @@ async function fetchFromAtCoder() {
           end_time: endIso,
           duration_seconds: c.duration_second,
           url: `https://atcoder.jp/contests/${c.id}`,
-          difficulty: inferDifficulty(c.title)
+          difficulty: inferDifficulty(c.title),
+          technologies: ['Algorithms', 'Mathematics', 'C++'],
+          format: 'Online',
+          location: 'Global · Virtual'
         };
       });
     }
