@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import Navbar from '../../components/Navbar';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import {
   GitPullRequest,
@@ -25,36 +23,201 @@ import {
   Bookmark,
   BookmarkCheck,
   History,
-  Printer
+  Printer,
+  Search,
+  X,
+  ArrowUpRight,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
+  GitFork,
+  GitBranch,
+  ShieldCheck,
+  Play,
+  ArrowRight
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { exportOpenSourceGuidePdf } from '../../utils/exportUtils';
 import EmptyState from '../../components/common/EmptyState';
 
 const SKILL_OPTIONS = [
-  'Python', 'JavaScript', 'TypeScript', 'React', 'Node.js',
-  'Go', 'Rust', 'Docker', 'FastAPI', 'GraphQL', 'PostgreSQL'
+  'TypeScript', 'React', 'Node.js', 'Python', 'Go',
+  'Rust', 'Docker', 'FastAPI', 'GraphQL', 'PostgreSQL', 'JavaScript'
 ];
+
+const CONTRIBUTION_FLOW_STEPS = [
+  {
+    step: '01',
+    title: 'Triage & Match',
+    subtitle: 'Find verified issue',
+    token: 'tag: good-first-issue',
+    icon: GitPullRequest,
+    summary: 'Identify an issue tagged "good first issue" where problem reproduction and scope are clearly defined.',
+    commands: [
+      '# Query GitHub for active beginner issues',
+      'gh issue list --label "good first issue" --state open'
+    ],
+    rule: 'Rule: Confirm with maintainers by commenting on the issue before writing code to prevent duplicate work.'
+  },
+  {
+    step: '02',
+    title: 'Hermetic Setup',
+    subtitle: 'Fork & upstream clone',
+    token: 'git remote upstream',
+    icon: GitFork,
+    summary: 'Fork the repository to your account, clone locally, and add the original project as upstream remote.',
+    commands: [
+      'git clone https://github.com/YOUR_USER/project.git',
+      'cd project && git remote add upstream https://github.com/ORIGINAL_OWNER/project.git',
+      'git checkout -b fix/issue-number-short-desc'
+    ],
+    rule: 'Rule: Always branch from latest upstream/main to avoid merge conflicts later.'
+  },
+  {
+    step: '03',
+    title: 'Repro Test',
+    subtitle: 'Failing test first',
+    token: 'pytest -k test_repro',
+    icon: Terminal,
+    summary: 'Write a targeted unit test that triggers the exact bug reported. Confirm it fails (Red stage) before editing code.',
+    commands: [
+      '# Run reproduction test (must fail initially)',
+      'pytest tests/analyzers/test_dead_code.py -k "test_docs_unreachable"',
+      'npm test -- -t "should ignore docs examples"'
+    ],
+    rule: 'Rule: If you cannot reproduce the bug with a test case, maintainers cannot verify your fix.'
+  },
+  {
+    step: '04',
+    title: 'Surgical Patch',
+    subtitle: 'Target AST files only',
+    token: 'zero diff pollution',
+    icon: Code,
+    summary: 'Implement the fix touching only the required source files. Avoid formatting untouched files or reordering imports.',
+    commands: [
+      '# Inspect git diff to ensure zero unrelated changes',
+      'git diff --stat',
+      'git status'
+    ],
+    rule: 'Rule: Maintainers reject PRs with noisy diffs or unrelated auto-formatting changes.'
+  },
+  {
+    step: '05',
+    title: 'Verified PR',
+    subtitle: 'Pre-review & merge',
+    token: 'Closes #issue',
+    icon: CheckCircle2,
+    summary: 'Run linter and test suite. Draft conventional PR title and link the issue number in description.',
+    commands: [
+      '# Commit following Conventional Commits',
+      'git commit -m "fix(core): exclude docs from unreachable check (#2997)"',
+      'git push origin fix/issue-number-short-desc'
+    ],
+    rule: 'Rule: Always include "Closes #123" so GitHub automatically resolves the issue upon merge.'
+  }
+];
+
+const SAMPLE_WORKING_GUIDE = {
+  issue: {
+    repo_name: 'repowise-dev/repowise',
+    issue_number: 2997,
+    issue_title: 'Dead code reports docs site and docs/ example files as unreachable',
+    issue_url: 'https://github.com/repowise-dev/repowise/issues/2997',
+    language: 'Python',
+    repo_stars: 3840,
+    match_score: 92,
+    why_good_fit: 'Isolated dead-code analysis heuristic with clear reproduction commands and dedicated AST test suite.'
+  },
+  guide: {
+    setup_steps: [
+      'git clone https://github.com/repowise-dev/repowise.git',
+      'cd repowise',
+      'python -m venv .venv && source .venv/bin/activate',
+      'pip install -e ".[dev,test]"',
+      'pytest tests/analyzers/test_dead_code.py'
+    ],
+    files_to_edit: [
+      {
+        file_path: 'src/repowise/analyzers/dead_code.py',
+        reason: 'Filter docs and example directories from unreachable code diagnostics.',
+        what_to_change: 'Add exclude patterns for `docs/` and `examples/` in `DeadCodeVisitor.visit_Module`.'
+      },
+      {
+        file_path: 'src/repowise/config/defaults.py',
+        reason: 'Register default ignore globs for documentation source files.',
+        what_to_change: 'Append `docs/**` and `site/**` to `DEFAULT_EXCLUDED_PATTERNS`.'
+      },
+      {
+        file_path: 'tests/analyzers/test_dead_code.py',
+        reason: 'Add regression tests ensuring docs example snippets are ignored.',
+        what_to_change: 'Add `test_dead_code_ignores_docs_examples` test case.'
+      }
+    ],
+    implementation_hints: [
+      'Use Path.match() or fnmatchcase against resolved relative paths to ensure cross-platform Windows and Unix consistency.',
+      'Check existing AST traversal in `DeadCodeVisitor` before adding new node checks to avoid performance regressions.',
+      'Verify that user-configured `--include-docs` flag still allows users to explicitly scan docs if desired.'
+    ],
+    things_to_avoid: [
+      'Do not hardcode forward slashes without Path.as_posix() or os.path.normpath.',
+      'Avoid modifying the global CLI parser defaults without updating documentation in docs/cli.md.',
+      'Do not suppress syntax errors occurring in production code paths.'
+    ],
+    pr_title_suggestion: 'fix(analyzer): exclude docs and example files from unreachable code diagnostics (#2997)',
+    pr_description_template: `### Summary of Changes
+- Excludes \`docs/\` and \`examples/\` directory trees from default dead-code reporting.
+- Preserves explicit opt-in scanning via \`--include-docs\` flag.
+- Adds regression unit test verifying docs snippets do not trigger false positive unreachable code warnings.
+
+### Closes
+Closes #2997
+
+### Verification
+\`\`\`bash
+pytest tests/analyzers/test_dead_code.py -v
+\`\`\`
+All tests passing with 100% branch coverage on modified lines.`
+  }
+};
 
 const OpenSourcePage = () => {
   const toast = useToast();
-  // Step 1: Filters
+
+  // Navigation tab: 'opportunities' | 'guide' | 'playbook' | 'reviewer' | 'saved'
+  const [activeTab, setActiveTab] = useState('opportunities');
+
+  // Inline Flow Diagram State
+  const [activeFlowStep, setActiveFlowStep] = useState(0);
+  const [showFlowDiagram, setShowFlowDiagram] = useState(true);
+
+  // Step 1: Filters & Search Config
   const [selectedSkills, setSelectedSkills] = useState(['TypeScript', 'React', 'Node.js']);
   const [experienceLevel, setExperienceLevel] = useState('beginner');
   const [preferredLanguage, setPreferredLanguage] = useState('typescript');
+  const [showConfig, setShowConfig] = useState(false);
+
+  // In-results search & filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('match'); // 'match' | 'stars'
 
   // Loading & Results
   const [finding, setFinding] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [error, setError] = useState('');
 
-  // Step 3: PR Guide State
+  // Step 2: PR Guide State
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [guiding, setGuiding] = useState(false);
   const [prGuide, setPrGuide] = useState(null);
   const [guideTab, setGuideTab] = useState('setup'); // 'setup' | 'files' | 'hints' | 'template'
 
-  // Step 4: PR Reviewer State
+  // Custom Guide On-Demand Inputs
+  const [manualRepo, setManualRepo] = useState('');
+  const [manualIssueNum, setManualIssueNum] = useState('');
+  const [manualIssueUrl, setManualIssueUrl] = useState('');
+
+  // Step 3: PR Reviewer State
   const [userCode, setUserCode] = useState('');
   const [originalCode, setOriginalCode] = useState('');
   const [reviewing, setReviewing] = useState(false);
@@ -63,7 +226,7 @@ const OpenSourcePage = () => {
   // Bookmarks & History
   const [bookmarkedMap, setBookmarkedMap] = useState({});
   const [historyItems, setHistoryItems] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Copied feedback helper
   const [copiedKey, setCopiedKey] = useState(null);
@@ -77,21 +240,45 @@ const OpenSourcePage = () => {
 
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
-      setSelectedSkills(selectedSkills.filter(s => s !== skill));
+      setSelectedSkills(selectedSkills.filter((s) => s !== skill));
     } else {
       setSelectedSkills([...selectedSkills, skill]);
     }
   };
 
-  // Step 1 -> Step 2
+  // Fetch bookmarks & past activity from history
+  const fetchHistoryAndBookmarks = async () => {
+    try {
+      setLoadingHistory(true);
+      const res = await api.get('/opensource/history');
+      const items = res.data || [];
+      setHistoryItems(items);
+
+      // Pre-fill bookmarkedMap from bookmarks in history
+      const map = {};
+      items.filter((item) => item.actionType === 'bookmark').forEach((b) => {
+        if (b.issueUrl) map[b.issueUrl] = true;
+      });
+      setBookmarkedMap(map);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistoryAndBookmarks();
+  }, []);
+
+  // Search opportunities
   const handleFindOpportunities = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
     setFinding(true);
     setRecommendations([]);
     setSelectedIssue(null);
     setPrGuide(null);
-    setPrReview(null);
 
     try {
       const res = await api.post('/opensource/find', {
@@ -101,10 +288,11 @@ const OpenSourcePage = () => {
       });
       const items = res.data || [];
       setRecommendations(items);
-      toast.success(`Found ${items.length} open source opportunities!`);
+      toast.success(`Discovered ${items.length} vetted open source opportunities`);
+      fetchHistoryAndBookmarks();
     } catch (err) {
       console.error('Open source error:', err);
-      const msg = err.response?.data?.error || 'Failed to fetch open source issues from GitHub Search API.';
+      const msg = err.response?.data?.error || 'Failed to fetch issues from GitHub Search API.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -112,13 +300,14 @@ const OpenSourcePage = () => {
     }
   };
 
-  // Step 2 -> Step 3: Guide Me
+  // Guide Me on Issue
   const handleRequestGuide = async (rec) => {
     setSelectedIssue(rec);
     setGuiding(true);
     setPrGuide(null);
     setPrReview(null);
     setGuideTab('setup');
+    setActiveTab('guide');
 
     try {
       const res = await api.post('/opensource/guide', {
@@ -128,7 +317,8 @@ const OpenSourcePage = () => {
         issue_title: rec.issue_title
       });
       setPrGuide(res.data);
-      toast.success('Generated PR Architecture Guide');
+      toast.success('Generated PR Architecture Blueprint');
+      fetchHistoryAndBookmarks();
     } catch (err) {
       console.error('Guide error:', err);
       const msg = 'Failed to generate PR guide: ' + (err.response?.data?.error || err.message);
@@ -136,6 +326,33 @@ const OpenSourcePage = () => {
     } finally {
       setGuiding(false);
     }
+  };
+
+  // Load interactive sample guide demo
+  const handleLoadSampleGuide = () => {
+    setSelectedIssue(SAMPLE_WORKING_GUIDE.issue);
+    setPrGuide(SAMPLE_WORKING_GUIDE.guide);
+    setGuideTab('setup');
+    setActiveTab('guide');
+    toast.success('Loaded working contribution blueprint demo');
+  };
+
+  // Request Guide manually
+  const handleManualGuide = async (e) => {
+    e.preventDefault();
+    if (!manualRepo.trim() || !manualIssueNum.trim()) {
+      toast.error('Please provide a repository name and issue number.');
+      return;
+    }
+
+    const manualRec = {
+      repo_name: manualRepo.trim(),
+      issue_number: Number(manualIssueNum.trim()),
+      issue_url: manualIssueUrl.trim() || `https://github.com/${manualRepo.trim()}/issues/${manualIssueNum.trim()}`,
+      issue_title: `Issue #${manualIssueNum.trim()}`
+    };
+
+    handleRequestGuide(manualRec);
   };
 
   // Toggle Bookmark
@@ -146,34 +363,25 @@ const OpenSourcePage = () => {
         repo_name: rec.repo_name,
         issue_title: rec.issue_title,
         issue_number: rec.issue_number,
-        metadata: { match_score: rec.match_score, language: rec.language }
+        metadata: { match_score: rec.match_score, language: rec.language, repo_stars: rec.repo_stars }
       });
-      setBookmarkedMap(prev => ({
+      const isBookmarked = res.data.bookmarked;
+      setBookmarkedMap((prev) => ({
         ...prev,
-        [rec.issue_url]: res.data.bookmarked
+        [rec.issue_url]: isBookmarked
       }));
-      toast.info(res.data.bookmarked ? 'Issue saved to bookmarks' : 'Issue removed from bookmarks');
+      toast.info(isBookmarked ? 'Saved to bookmarks' : 'Removed from bookmarks');
+      fetchHistoryAndBookmarks();
     } catch (err) {
       console.error('Bookmark error:', err);
       toast.error('Failed to update bookmark');
     }
   };
 
-  const handleFetchHistory = async () => {
-    try {
-      const res = await api.get('/opensource/history');
-      setHistoryItems(res.data || []);
-      setShowHistory(prev => !prev);
-    } catch (err) {
-      console.error('Fetch history error:', err);
-      toast.error('Failed to load history');
-    }
-  };
-
-  // Step 3 -> Step 4: Review Code
+  // Review Code
   const handleReviewCode = async (e) => {
-    e.preventDefault();
-    if (!userCode.trim() || !selectedIssue) return;
+    if (e) e.preventDefault();
+    if (!userCode.trim()) return;
 
     setReviewing(true);
     setPrReview(null);
@@ -181,11 +389,12 @@ const OpenSourcePage = () => {
     try {
       const res = await api.post('/opensource/review', {
         user_code: userCode,
-        issue_url: selectedIssue.issue_url,
+        issue_url: selectedIssue?.issue_url || 'https://github.com/opensource/contribution',
         original_code: originalCode || ''
       });
       setPrReview(res.data);
-      toast.success('AI Code Review generated!');
+      toast.success('Simulated maintainer review generated');
+      fetchHistoryAndBookmarks();
     } catch (err) {
       console.error('Review error:', err);
       const msg = 'Review failed: ' + (err.response?.data?.error || err.message);
@@ -195,792 +404,1596 @@ const OpenSourcePage = () => {
     }
   };
 
+  // Processed Recommendations (Filter & Sort)
+  let processedRecs = [...recommendations];
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    processedRecs = processedRecs.filter(
+      (r) =>
+        (r.repo_name || '').toLowerCase().includes(q) ||
+        (r.issue_title || '').toLowerCase().includes(q) ||
+        (r.language || '').toLowerCase().includes(q) ||
+        (r.why_good_fit || '').toLowerCase().includes(q)
+    );
+  }
+  if (sortBy === 'match') {
+    processedRecs.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+  } else {
+    processedRecs.sort((a, b) => (b.repo_stars || 0) - (a.repo_stars || 0));
+  }
+
+  const bookmarkedItems = historyItems.filter((item) => item.actionType === 'bookmark');
+
+  const renderFitBadge = (score) => {
+    const isHigh = score >= 85;
+    const isGood = score >= 70;
+    const color = isHigh ? '#34d399' : isGood ? '#3b82f6' : '#fbbf24';
+    const bg = isHigh ? 'rgba(52, 211, 153, 0.10)' : isGood ? 'rgba(59, 130, 246, 0.10)' : 'rgba(251, 191, 36, 0.10)';
+
+    return (
+      <span
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.72rem',
+          fontWeight: 600,
+          color,
+          backgroundColor: bg,
+          padding: '0.2rem 0.55rem',
+          borderRadius: '3px',
+          letterSpacing: '-0.01em',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.3rem'
+        }}
+      >
+        <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: color }} />
+        {score}% match
+      </span>
+    );
+  };
+
   const getVerdictBadge = (verdict) => {
     const v = (verdict || '').toLowerCase();
     if (v === 'approve') {
       return (
-        <span className="font-label-code" style={{
-          padding: '0.3rem 0.85rem',
-          borderRadius: 'var(--radius-full)',
-          background: 'rgba(78, 222, 163, 0.15)',
-          color: 'var(--tertiary)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontWeight: 600
-        }}>
-          <CheckCircle2 size={14} /> Merge Ready & Approved
+        <span
+          style={{
+            padding: '0.25rem 0.65rem',
+            borderRadius: '3px',
+            background: 'rgba(52, 211, 153, 0.12)',
+            color: '#34d399',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.74rem',
+            fontWeight: 600
+          }}
+        >
+          <CheckCircle2 size={13} /> Merge Ready & Approved
         </span>
       );
     }
     if (v === 'request_changes') {
       return (
-        <span className="font-label-code" style={{
-          padding: '0.3rem 0.85rem',
-          borderRadius: 'var(--radius-full)',
-          background: 'rgba(239, 68, 68, 0.15)',
-          color: 'var(--error)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontWeight: 600
-        }}>
-          <AlertCircle size={14} /> Changes Requested
+        <span
+          style={{
+            padding: '0.25rem 0.65rem',
+            borderRadius: '3px',
+            background: 'rgba(244, 63, 94, 0.12)',
+            color: '#fb7185',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.74rem',
+            fontWeight: 600
+          }}
+        >
+          <AlertCircle size={13} /> Changes Requested
         </span>
       );
     }
     return (
-      <span className="font-label-code" style={{
-        padding: '0.3rem 0.85rem',
-        borderRadius: 'var(--radius-full)',
-        background: 'rgba(245, 158, 11, 0.15)',
-        color: '#f59e0b',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.4rem',
-        fontWeight: 600
-      }}>
-        <Info size={14} /> Approved with Suggestions
+      <span
+        style={{
+          padding: '0.25rem 0.65rem',
+          borderRadius: '3px',
+          background: 'rgba(251, 191, 36, 0.12)',
+          color: '#fbbf24',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.74rem',
+          fontWeight: 600
+        }}
+      >
+        <Info size={13} /> Approved with Suggestions
       </span>
     );
   };
 
+  const currentFlow = CONTRIBUTION_FLOW_STEPS[activeFlowStep] || CONTRIBUTION_FLOW_STEPS[0];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-      <Navbar title="Open Source Opportunity Matcher" subtitle="Tailored first issues with step-by-step PR guidance and AI pre-review" />
+    <div
+      style={{
+        backgroundColor: '#0B0B0D',
+        minHeight: '100vh',
+        color: '#f4f4f6',
+        padding: '3rem 3.5rem 5rem 3.5rem',
+        maxWidth: '1280px',
+        margin: '0 auto',
+        fontFamily: 'var(--font-sans)',
+        boxSizing: 'border-box'
+      }}
+    >
+      {/* Top Telemetry & Global Controls */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '2rem',
+          paddingBottom: '1rem',
+          borderBottom: '1px solid #18181d'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#71717a'
+            }}
+          >
+            OPEN SOURCE · CONTRIBUTION FINDER & ARCHITECTURE GUIDANCE
+          </span>
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#3b82f6',
+              display: 'inline-block'
+            }}
+          />
+        </div>
 
-      <div className="page-container" style={{ maxWidth: '1440px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        
-        {/* Top Header & Stepper Tracker */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                <span className="font-label-caps" style={{ padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', background: 'rgba(192, 193, 255, 0.12)', color: 'var(--primary)' }}>
-                  Telemetry v2.4
-                </span>
-                <span className="font-label-code" style={{ color: 'var(--on-surface-variant)' }}>
-                  OSS Intelligence Engine
-                </span>
-              </div>
-              <h1 className="font-headline-lg" style={{ color: 'var(--on-surface)', lineHeight: 1.2 }}>
-                Open Source Contribution Finder
-              </h1>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {prGuide && selectedIssue && activeTab === 'guide' && (
+            <button
+              type="button"
+              onClick={() => exportOpenSourceGuidePdf(selectedIssue, prGuide)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #202026',
+                color: '#d4d4d8',
+                fontSize: '0.74rem',
+                fontFamily: 'var(--font-mono)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '4px',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#363642';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#202026';
+                e.currentTarget.style.color = '#d4d4d8';
+              }}
+              title="Export Contribution Blueprint (PDF)"
+            >
+              <Printer size={12} />
+              <span>Export Blueprint (PDF)</span>
+            </button>
+          )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--tertiary)', boxShadow: '0 0 8px rgba(78, 222, 163, 0.8)' }} className="animate-pulse" />
-              <span className="font-label-code" style={{ color: 'var(--on-surface-variant)' }}>
-                Indexed Repos: <strong style={{ color: 'var(--on-surface)' }}>14,289 active</strong>
-              </span>
-            </div>
+          {recommendations.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setRecommendations([]);
+                setSelectedIssue(null);
+                setPrGuide(null);
+                setPrReview(null);
+                setSearchQuery('');
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#71717a',
+                fontSize: '0.74rem',
+                fontFamily: 'var(--font-mono)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                cursor: 'pointer',
+                padding: '0.35rem 0.5rem'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#d4d4d8')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
+            >
+              <RotateCcw size={11} />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Page Title & Philosophy */}
+      <section style={{ marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+          <div>
+            <h1
+              style={{
+                fontSize: '2.25rem',
+                fontWeight: 600,
+                letterSpacing: '-0.035em',
+                color: '#ffffff',
+                margin: '0 0 0.5rem 0',
+                lineHeight: 1.15
+              }}
+            >
+              Open Source Contributions
+            </h1>
+            <p
+              style={{
+                fontSize: '0.96rem',
+                color: '#8e8e99',
+                margin: 0,
+                maxWidth: '650px',
+                lineHeight: 1.55
+              }}
+            >
+              Curated first issues matched to your technical stack, with step-by-step PR architecture guides and automated diff pre-review.
+            </p>
           </div>
 
-          {/* 3-Step Process Tracker */}
-          <div style={{
-            background: 'var(--surface-container-lowest)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '14px',
-            padding: '1rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '0.75rem'
-          }}>
-            {/* Step 1 */}
-            <div style={{
+          {/* Quick Metrics Bar */}
+          <div
+            style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '10px',
-              background: 'var(--surface-container-high)',
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: 'var(--tertiary)',
-                color: '#000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.85rem'
-              }}>
-                <Check size={16} />
+              gap: '2.5rem',
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#101014',
+              border: '1px solid #18181f',
+              borderRadius: '6px'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                {recommendations.length}
               </div>
-              <div>
-                <div className="font-label-caps" style={{ color: 'var(--tertiary)' }}>Step 01 • Parameterized</div>
-                <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--on-surface)' }}>Stack & Experience</div>
+              <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Discovered Issues
               </div>
             </div>
 
-            {/* Step 2 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '10px',
-              background: recommendations.length > 0 ? 'var(--surface-container-high)' : 'transparent',
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: recommendations.length > 0 ? 'var(--primary)' : 'var(--surface-container-highest)',
-                color: '#000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.85rem'
-              }}>
-                02
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#1f1f28' }} />
+            <div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#3b82f6', fontFamily: 'var(--font-mono)' }}>
+                {bookmarkedItems.length}
               </div>
-              <div>
-                <div className="font-label-caps" style={{ color: recommendations.length > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>
-                  {recommendations.length > 0 ? 'Step 02 • Active' : 'Step 02 • Pending'}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--on-surface)' }}>Curated Opportunities</div>
+              <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Bookmarked
               </div>
             </div>
 
-            {/* Step 3 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '10px',
-              background: prGuide ? 'var(--surface-container-high)' : 'transparent',
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: prGuide ? 'var(--secondary)' : 'var(--surface-container-highest)',
-                color: '#000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.85rem'
-              }}>
-                03
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#1f1f28' }} />
+            <div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)', textTransform: 'capitalize' }}>
+                {preferredLanguage}
               </div>
-              <div>
-                <div className="font-label-caps" style={{ color: prGuide ? 'var(--secondary)' : 'var(--text-dim)' }}>
-                  {prGuide ? 'Step 03 • Loaded' : 'Step 03 • Blueprint & Review'}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--on-surface)' }}>PR Guide & AI Review</div>
+              <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Target Stack
               </div>
             </div>
           </div>
         </div>
 
-        {/* STEP 1: Input Matrix Card */}
-        <section className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
-            <div>
-              <span className="font-label-code" style={{ color: 'var(--secondary)', fontSize: '0.8rem' }}>PHASE 1 // PROFILE PARAMETERS</span>
-              <h2 className="font-headline-md" style={{ color: 'var(--on-surface)', marginTop: '0.25rem' }}>Find Your Target Open Source Contribution</h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--on-surface-variant)', marginTop: '0.2rem' }}>
-                Configure your active toolset, proficiency bracket, and ecosystem focus.
-              </p>
+        {/* INLINE VISUAL CONTRIBUTION FLOW DIAGRAM */}
+        <div
+          style={{
+            marginTop: '2.25rem',
+            backgroundColor: '#101014',
+            border: '1px solid #1a1a22',
+            borderRadius: '6px',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}
+        >
+          {/* Flow Diagram Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#3b82f6',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  fontWeight: 600
+                }}
+              >
+                CONTRIBUTION LIFECYCLE ARCHITECTURE FLOW
+              </span>
+              <span style={{ fontSize: '0.74rem', color: '#71717a' }}>
+                · Interactive 5-phase execution pipeline
+              </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <label className="font-label-code" style={{ color: 'var(--on-surface-variant)', fontSize: '0.82rem' }}>Target Core:</label>
-              <select
-                value={preferredLanguage}
-                onChange={(e) => setPreferredLanguage(e.target.value)}
+              <button
+                type="button"
+                onClick={handleLoadSampleGuide}
                 style={{
-                  background: 'var(--surface-container-high)',
-                  color: 'var(--on-surface)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-subtle)',
-                  fontSize: '0.88rem'
+                  background: 'transparent',
+                  border: '1px solid #282834',
+                  color: '#d4d4d8',
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: '3px',
+                  fontSize: '0.72rem',
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#3b82f6')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#d4d4d8')}
+              >
+                <Play size={10} />
+                <span>Load Sample Guide</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowFlowDiagram(!showFlowDiagram)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#71717a',
+                  fontSize: '0.72rem',
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
                 }}
               >
-                <option value="typescript">TypeScript / Node</option>
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python / ML</option>
-                <option value="go">Go / Cloud Native</option>
-                <option value="rust">Rust / Systems</option>
-              </select>
+                <span>{showFlowDiagram ? 'Hide Inspector' : 'Show Inspector'}</span>
+                {showFlowDiagram ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+              </button>
             </div>
           </div>
 
-          <form onSubmit={handleFindOpportunities} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            
-            {/* Skills selection chips */}
-            <div>
-              <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)', display: 'block', marginBottom: '0.6rem' }}>
-                Active Tooling & Competencies (Click to toggle):
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {SKILL_OPTIONS.map((skill) => {
-                  const active = selectedSkills.includes(skill);
-                  return (
-                    <button
-                      type="button"
-                      key={skill}
-                      onClick={() => toggleSkill(skill)}
-                      className="font-label-code"
-                      style={{
-                        padding: '0.35rem 0.8rem',
-                        borderRadius: 'var(--radius-xs)',
-                        fontSize: '0.8rem',
-                        fontWeight: active ? 600 : 500,
-                        background: active ? '#ffffff' : 'var(--surface-container)',
-                        color: active ? '#09090b' : 'var(--text-secondary)',
-                        border: active ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                        boxShadow: active ? '0 1px 3px rgba(0, 0, 0, 0.4)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {active ? '✓ ' : ''}{skill}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Experience Level Cards Deck */}
-            <div>
-              <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)', display: 'block', marginBottom: '0.6rem' }}>
-                Target Scope & Experience Bracket:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                {[
-                  { id: 'beginner', title: 'Beginner / First Steps', subtitle: '100 - 2,500 repo stars', desc: 'Curated "good first issue" tags with isolated scopes and test repros.' },
-                  { id: 'intermediate', title: 'Intermediate', subtitle: '2,000 - 10,000 repo stars', desc: 'Core features, performance patches, and multi-file refactors.' },
-                  { id: 'advanced', title: 'Advanced / Systems', subtitle: '> 5,000 repo stars', desc: 'Subsystem architecture, concurrency fixes, and memory tracing.' }
-                ].map((tier) => {
-                  const isSel = experienceLevel === tier.id;
-                  return (
-                    <div
-                      key={tier.id}
-                      onClick={() => setExperienceLevel(tier.id)}
-                      style={{
-                        padding: '1.25rem',
-                        borderRadius: '12px',
-                        background: isSel ? 'var(--surface-container-high)' : 'var(--surface-container-low)',
-                        border: isSel ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                        boxShadow: isSel ? '0 2px 8px rgba(0, 0, 0, 0.4)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.95rem', color: isSel ? 'var(--primary)' : 'var(--on-surface)' }}>
-                          {tier.title}
-                        </span>
-                        <span style={{
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          border: `2px solid ${isSel ? 'var(--primary)' : 'var(--border-subtle)'}`,
-                          background: isSel ? 'var(--primary)' : 'transparent'
-                        }} />
-                      </div>
-                      <div className="font-label-code" style={{ fontSize: '0.78rem', color: 'var(--tertiary)', marginBottom: '0.4rem' }}>
-                        {tier.subtitle}
-                      </div>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--on-surface-variant)', lineHeight: '1.4' }}>
-                        {tier.desc}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={finding}
-              className="btn-primary"
-              style={{
-                alignSelf: 'flex-start',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <Sparkles size={16} />
-              <span>{finding ? 'Searching Live Repositories...' : 'Find Matches'}</span>
-            </button>
-          </form>
-        </section>
-
-        {/* Error Notification */}
-        {error && (
-          <div style={{
-            background: 'rgba(244, 63, 94, 0.12)',
-            border: '1px solid rgba(244, 63, 94, 0.35)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '1rem 1.25rem',
-            color: '#fda4af',
-            fontSize: '0.88rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Loading Spinner */}
-        {finding && (
-          <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <LoadingSpinner messages={[
-              'Querying GitHub Search API for active open-source repositories...',
-              'Filtering open discussions tagged "good first issue"...',
-              'Extracting issue requirements and testing guidelines with Llama 3.3 70B (Groq)...',
-              'Scoring repository ergonomics against your tech competencies...'
-            ]} />
-          </div>
-        )}
-
-        {/* Empty State */}
-        {recommendations.length === 0 && !finding && (
-          <EmptyState
-            icon={GitPullRequest}
-            badge="OPPORTUNITY ENGINE READY"
-            title="Configure your tech stack to discover live issues."
-            description="Select your competent programming languages and experience level above, then click 'Find Matches' to query live open-source repositories."
-            instruction="Queries real GitHub issues tagged 'good-first-issue' and generates files-to-edit blueprints."
-            actionLabel="Find Matches for Selected Stack"
-            onAction={handleFindOpportunities}
-          />
-        )}
-
-        {/* STEP 2: Recommendations Grid */}
-        {recommendations.length > 0 && !finding && (
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 className="font-headline-sm" style={{ color: 'var(--on-surface)' }}>
-                  Matched Contribution Opportunities ({recommendations.length})
-                </h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--on-surface-variant)' }}>
-                  Ranked by compatibility percentage, language fit, and maintainer activity.
-                </p>
-              </div>
-              <span className="font-label-code" style={{ color: 'var(--tertiary)' }}>Live GitHub Sync</span>
-            </div>
-
-            <div style={{
+          {/* Visual Track (5 Connected Nodes) */}
+          <div
+            style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-              gap: '1.5rem'
-            }}>
-              {recommendations.map((rec, idx) => (
+              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+              gap: '0.75rem',
+              alignItems: 'stretch'
+            }}
+          >
+            {CONTRIBUTION_FLOW_STEPS.map((item, idx) => {
+              const Icon = item.icon;
+              const isActive = activeFlowStep === idx;
+
+              return (
                 <div
-                  key={idx}
-                  className="glass-card"
+                  key={item.step}
+                  onClick={() => {
+                    setActiveFlowStep(idx);
+                    setShowFlowDiagram(true);
+                  }}
                   style={{
-                    padding: '1.75rem',
+                    backgroundColor: isActive ? '#14141c' : '#0d0d10',
+                    border: isActive ? '1px solid #3b82f6' : '1px solid #1a1a22',
+                    borderRadius: '4px',
+                    padding: '0.85rem 1rem',
+                    cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: '1.25rem'
+                    gap: '0.65rem',
+                    transition: 'all 0.15s ease',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.borderColor = '#2c2c36';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.borderColor = '#1a1a22';
                   }}
                 >
-                  <div>
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className="font-label-code" style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                          {rec.repo_name}
-                        </span>
-                        <span className="font-label-code" style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'var(--surface-container-high)', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
-                          ★ {rec.repo_stars}
-                        </span>
-                      </div>
-                      <span className="font-label-code" style={{ padding: '0.15rem 0.55rem', borderRadius: 'var(--radius-full)', background: 'rgba(78, 222, 163, 0.15)', color: 'var(--tertiary)', fontSize: '0.75rem', fontWeight: 600 }}>
-                        {rec.language}
-                      </span>
-                    </div>
-
-                    {/* Issue Title + Score */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                      <a
-                        href={rec.issue_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--on-surface)', lineHeight: '1.35' }}
+                  {/* Top Step Number & Icon */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          color: isActive ? '#3b82f6' : '#71717a'
+                        }}
                       >
-                        #{rec.issue_number}: {rec.issue_title}
-                      </a>
-                      <div style={{
-                        width: '42px',
-                        height: '42px',
-                        borderRadius: '50%',
-                        background: 'var(--tertiary-container)',
-                        color: 'var(--tertiary-fixed)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        flexShrink: 0,
-                        border: '2px solid var(--tertiary)'
-                      }}>
-                        {rec.match_score}%
-                      </div>
+                        {item.step}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: '#52525b' }}>/ 05</span>
                     </div>
 
-                    {/* Why Good Fit */}
-                    <p style={{ fontSize: '0.84rem', color: 'var(--on-surface-variant)', lineHeight: '1.45', marginBottom: '1rem' }}>
-                      "{rec.why_good_fit}"
-                    </p>
+                    <Icon size={14} color={isActive ? '#3b82f6' : '#71717a'} />
+                  </div>
 
-                    {/* Skill Overlap & Learn Chips */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {rec.skills_overlap && rec.skills_overlap.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.35rem' }}>
-                          <span className="font-label-caps" style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>OVERLAP:</span>
-                          {rec.skills_overlap.map((s, i) => (
-                            <span key={i} className="font-label-code" style={{ padding: '0.1rem 0.45rem', borderRadius: '4px', background: 'rgba(78, 222, 163, 0.12)', color: 'var(--tertiary)', fontSize: '0.72rem' }}>
-                              ✓ {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {rec.skills_to_learn && rec.skills_to_learn.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.35rem' }}>
-                          <span className="font-label-caps" style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>LEARN:</span>
-                          {rec.skills_to_learn.map((s, i) => (
-                            <span key={i} className="font-label-code" style={{ padding: '0.1rem 0.45rem', borderRadius: '4px', background: 'var(--surface-container-high)', color: 'var(--primary)', fontSize: '0.72rem' }}>
-                              + {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                  {/* Title & Subtitle */}
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.2, marginBottom: '0.2rem' }}>
+                      {item.title}
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#8e8e99' }}>
+                      {item.subtitle}
                     </div>
                   </div>
 
-                  {/* Launch Guide Button & Bookmark Row */}
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleRequestGuide(rec)}
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--surface-container-high)',
-                        border: '1px solid var(--border-subtle)',
-                        color: 'var(--on-surface)',
-                        fontSize: '0.88rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--surface-bright)';
-                        e.currentTarget.style.borderColor = 'var(--primary)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'var(--surface-container-high)';
-                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                      }}
-                    >
-                      <span>View PR Guide</span>
-                      <ChevronRight size={16} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleBookmark(rec)}
-                      title={bookmarkedMap[rec.issue_url] ? 'Remove bookmark' : 'Bookmark this opportunity'}
-                      style={{
-                        padding: '0.75rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: bookmarkedMap[rec.issue_url] ? 'rgba(78, 222, 163, 0.15)' : 'var(--surface-container-high)',
-                        border: '1px solid var(--border-subtle)',
-                        color: bookmarkedMap[rec.issue_url] ? 'var(--tertiary)' : 'var(--on-surface-variant)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {bookmarkedMap[rec.issue_url] ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Guiding Loading */}
-        {guiding && (
-          <div className="glass-panel" style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <LoadingSpinner messages={[
-              'Cloning target repository structure and AST...',
-              'Extracting relevant source files and imports...',
-              'Synthesizing isolated local setup commands and test specs...',
-              'Generating ready-to-paste Pull Request description template...'
-            ]} />
-          </div>
-        )}
-
-        {/* STEP 3 & 4: PR GUIDE & AI CODE REVIEWER WORKSPACE */}
-        {prGuide && selectedIssue && !guiding && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Issue Banner */}
-            <div className="glass-panel" style={{
-              padding: '1.75rem 2rem',
-              borderLeft: '4px solid var(--primary)',
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '1.5rem'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                  <span className="font-label-code" style={{ padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', background: 'rgba(78, 222, 163, 0.15)', color: 'var(--tertiary)', fontSize: '0.75rem' }}>
-                    Active Blueprint
-                  </span>
-                  <span className="font-label-code" style={{ color: 'var(--on-surface-variant)' }}>
-                    {selectedIssue.repo_name}
-                  </span>
-                </div>
-                <h2 className="font-headline-sm" style={{ color: 'var(--on-surface)', fontSize: '1.35rem' }}>
-                  Issue #{selectedIssue.issue_number}: {selectedIssue.issue_title}
-                </h2>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <a
-                  href={selectedIssue.issue_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.6rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--surface-container-high)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--on-surface)',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <ExternalLink size={14} />
-                  <span>GitHub Spec</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => exportOpenSourceGuidePdf(selectedIssue, prGuide)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.6rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(192, 132, 252, 0.12)',
-                    border: '1px solid rgba(192, 132, 252, 0.35)',
-                    color: '#c084fc',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                  title="Export contribution blueprint as clean institutional PDF"
-                >
-                  <Printer size={14} />
-                  <span>Export PDF Blueprint</span>
-                </button>
-                <button
-                  onClick={() => setPrGuide(null)}
-                  style={{
-                    padding: '0.6rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--surface-container-high)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-dim)',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Close Guide
-                </button>
-              </div>
-            </div>
-
-            {/* 4-Tab Blueprint Navigation */}
-            <div className="glass-panel" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                borderBottom: '1px solid var(--border-subtle)',
-                paddingBottom: '0.75rem',
-                overflowX: 'auto'
-              }}>
-                {[
-                  { id: 'setup', label: '1. Setup Steps', icon: 'terminal' },
-                  { id: 'files', label: '2. Files to Edit', icon: 'folder_open' },
-                  { id: 'hints', label: '3. Implementation Hints', icon: 'lightbulb' },
-                  { id: 'template', label: '4. PR Template', icon: 'description' }
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setGuideTab(t.id)}
+                  {/* Mini Token Indicator */}
+                  <div
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      padding: '0.6rem 1.1rem',
-                      borderRadius: '8px',
-                      background: guideTab === t.id ? 'var(--surface-container-high)' : 'transparent',
-                      color: guideTab === t.id ? 'var(--primary)' : 'var(--on-surface-variant)',
-                      fontWeight: guideTab === t.id ? 600 : 500,
-                      border: 'none',
-                      fontSize: '0.88rem',
-                      cursor: 'pointer',
+                      fontSize: '0.68rem',
+                      fontFamily: 'var(--font-mono)',
+                      color: isActive ? '#34d399' : '#71717a',
+                      backgroundColor: isActive ? 'rgba(52, 211, 153, 0.08)' : '#101014',
+                      padding: '0.15rem 0.4rem',
+                      borderRadius: '2px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>{t.icon}</span>
-                    <span>{t.label}</span>
-                  </button>
-                ))}
+                    {item.token}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Active Flow Step Inspector (Interactive Command & Guidance Panel) */}
+          {showFlowDiagram && (
+            <div
+              style={{
+                backgroundColor: '#0c0c0f',
+                border: '1px solid #1a1a22',
+                borderRadius: '4px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontFamily: 'var(--font-mono)',
+                      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                      color: '#3b82f6',
+                      padding: '0.15rem 0.45rem',
+                      borderRadius: '3px',
+                      fontWeight: 600
+                    }}
+                  >
+                    PHASE {currentFlow.step}
+                  </span>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#ffffff' }}>
+                    {currentFlow.title}: {currentFlow.summary}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {activeFlowStep === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('opportunities')}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#3b82f6',
+                        fontSize: '0.74rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      Explore Matched Issues →
+                    </button>
+                  )}
+                  {activeFlowStep === 1 && (
+                    <button
+                      type="button"
+                      onClick={handleLoadSampleGuide}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#3b82f6',
+                        fontSize: '0.74rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      View Blueprint Setup Commands →
+                    </button>
+                  )}
+                  {activeFlowStep === 4 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('reviewer')}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#3b82f6',
+                        fontSize: '0.74rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    >
+                      Open Diff Pre-Reviewer →
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* TAB 1: Setup Steps */}
+              {/* Shell Commands Box */}
+              <div
+                style={{
+                  backgroundColor: '#101014',
+                  border: '1px solid #18181f',
+                  borderRadius: '4px',
+                  padding: '0.85rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
+                  {currentFlow.commands.map((cmd, i) => (
+                    <code
+                      key={i}
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.8rem',
+                        color: cmd.startsWith('#') ? '#71717a' : '#34d399',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {cmd}
+                    </code>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      currentFlow.commands.filter((c) => !c.startsWith('#')).join('\n'),
+                      `flow_cmd_${activeFlowStep}`
+                    )
+                  }
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#71717a',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                    flexShrink: 0
+                  }}
+                  title="Copy command"
+                >
+                  {copiedKey === `flow_cmd_${activeFlowStep}` ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                </button>
+              </div>
+
+              {/* Maintainer Rule / Heuristic */}
+              <div style={{ fontSize: '0.82rem', color: '#a1a1aa', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Lightbulb size={13} color="#fbbf24" style={{ flexShrink: 0 }} />
+                <span>{currentFlow.rule}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Tab Switcher: Linear Style */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '2.2rem',
+            marginTop: '2.5rem',
+            borderBottom: '1px solid #18181d',
+            overflowX: 'auto'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActiveTab('opportunities')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'opportunities' ? '2px solid #3b82f6' : '2px solid transparent',
+              padding: '0.75rem 0.2rem',
+              fontSize: '0.86rem',
+              fontWeight: activeTab === 'opportunities' ? 500 : 400,
+              color: activeTab === 'opportunities' ? '#ffffff' : '#71717a',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>Find Opportunities</span>
+            {recommendations.length > 0 && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: activeTab === 'opportunities' ? '#3b82f6' : '#71717a',
+                  backgroundColor: activeTab === 'opportunities' ? 'rgba(59, 130, 246, 0.12)' : '#121216',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '3px'
+                }}
+              >
+                {recommendations.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('guide')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'guide' ? '2px solid #3b82f6' : '2px solid transparent',
+              padding: '0.75rem 0.2rem',
+              fontSize: '0.86rem',
+              fontWeight: activeTab === 'guide' ? 500 : 400,
+              color: activeTab === 'guide' ? '#ffffff' : '#71717a',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>PR Blueprint Guide</span>
+            {selectedIssue && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#34d399',
+                  backgroundColor: 'rgba(52, 211, 153, 0.10)',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '3px'
+                }}
+              >
+                #{selectedIssue.issue_number}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('playbook')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'playbook' ? '2px solid #3b82f6' : '2px solid transparent',
+              padding: '0.75rem 0.2rem',
+              fontSize: '0.86rem',
+              fontWeight: activeTab === 'playbook' ? 500 : 400,
+              color: activeTab === 'playbook' ? '#ffffff' : '#71717a',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <BookOpen size={14} />
+            <span>Contribution Playbook</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('reviewer')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'reviewer' ? '2px solid #3b82f6' : '2px solid transparent',
+              padding: '0.75rem 0.2rem',
+              fontSize: '0.86rem',
+              fontWeight: activeTab === 'reviewer' ? 500 : 400,
+              color: activeTab === 'reviewer' ? '#ffffff' : '#71717a',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>Diff Pre-Reviewer</span>
+            {prReview && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#c084fc',
+                  backgroundColor: 'rgba(192, 132, 252, 0.12)',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '3px'
+                }}
+              >
+                Reviewed
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('saved')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'saved' ? '2px solid #3b82f6' : '2px solid transparent',
+              padding: '0.75rem 0.2rem',
+              fontSize: '0.86rem',
+              fontWeight: activeTab === 'saved' ? 500 : 400,
+              color: activeTab === 'saved' ? '#ffffff' : '#71717a',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>Saved & History</span>
+            <span
+              style={{
+                fontSize: '0.7rem',
+                fontFamily: 'var(--font-mono)',
+                color: activeTab === 'saved' ? '#3b82f6' : '#71717a',
+                backgroundColor: activeTab === 'saved' ? 'rgba(59, 130, 246, 0.12)' : '#121216',
+                padding: '0.1rem 0.45rem',
+                borderRadius: '3px'
+              }}
+            >
+              {bookmarkedItems.length}
+            </span>
+          </button>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* TAB 1: OPPORTUNITIES FEED & PARAMETER SEARCH             */}
+      {/* ======================================================== */}
+      {activeTab === 'opportunities' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Quick Parameters Bar */}
+          <div
+            style={{
+              backgroundColor: '#101014',
+              border: '1px solid #1a1a22',
+              borderRadius: '6px',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem'
+            }}
+          >
+            {/* Top Config Row: Language + Experience + Find Button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                {/* Language Select */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                    Language:
+                  </span>
+                  <select
+                    value={preferredLanguage}
+                    onChange={(e) => setPreferredLanguage(e.target.value)}
+                    style={{
+                      backgroundColor: '#0c0c0f',
+                      border: '1px solid #1f1f28',
+                      color: '#ffffff',
+                      fontSize: '0.82rem',
+                      padding: '0.45rem 0.75rem',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="typescript">TypeScript</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                  </select>
+                </div>
+
+                {/* Experience Tier Selector */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                    Level:
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {[
+                      { id: 'beginner', label: 'Good First Issue' },
+                      { id: 'intermediate', label: 'Intermediate' },
+                      { id: 'advanced', label: 'Systems / Core' }
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setExperienceLevel(t.id)}
+                        style={{
+                          background: experienceLevel === t.id ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                          color: experienceLevel === t.id ? '#ffffff' : '#71717a',
+                          border: experienceLevel === t.id ? '1px solid #2e2e38' : '1px solid transparent',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '3px',
+                          fontSize: '0.76rem',
+                          fontFamily: 'var(--font-mono)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowConfig(!showConfig)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #202028',
+                    color: '#8e8e99',
+                    padding: '0.45rem 0.75rem',
+                    borderRadius: '4px',
+                    fontSize: '0.76rem',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8e8e99')}
+                >
+                  <SlidersHorizontal size={12} />
+                  <span>Skills ({selectedSkills.length})</span>
+                  {showConfig ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleFindOpportunities}
+                  disabled={finding}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#0B0B0D',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '0.45rem 1.25rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: finding ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!finding) e.currentTarget.style.backgroundColor = '#e4e4e7';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!finding) e.currentTarget.style.backgroundColor = '#ffffff';
+                  }}
+                >
+                  <Sparkles size={13} />
+                  <span>{finding ? 'Searching GitHub...' : 'Find Matches'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible Skills Selector */}
+            {showConfig && (
+              <div style={{ paddingTop: '1rem', borderTop: '1px solid #18181f' }}>
+                <div style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                  Select competencies to bias relevance:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {SKILL_OPTIONS.map((skill) => {
+                    const active = selectedSkills.includes(skill);
+                    return (
+                      <button
+                        type="button"
+                        key={skill}
+                        onClick={() => toggleSkill(skill)}
+                        style={{
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '3px',
+                          fontSize: '0.74rem',
+                          fontFamily: 'var(--font-mono)',
+                          background: active ? '#ffffff' : '#0e0e12',
+                          color: active ? '#0B0B0D' : '#8e8e99',
+                          border: active ? '1px solid #ffffff' : '1px solid #1c1c24',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {active ? '✓ ' : ''}{skill}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div
+              style={{
+                backgroundColor: 'rgba(244, 63, 94, 0.08)',
+                border: '1px solid rgba(244, 63, 94, 0.25)',
+                color: '#fb7185',
+                fontSize: '0.82rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '4px'
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Finding Progress Bar */}
+          {finding && (
+            <div style={{ padding: '2rem 0', maxWidth: '560px' }}>
+              <div style={{ fontSize: '0.88rem', color: '#ffffff', fontWeight: 500, marginBottom: '0.4rem' }}>
+                Querying live open-source repositories...
+              </div>
+              <div style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '1.25rem' }}>
+                Filtering active issues tagged "good first issue" and scoring skill overlap via Groq Llama 3.3
+              </div>
+              <div style={{ height: '2px', backgroundColor: '#18181f', borderRadius: '1px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '70%', backgroundColor: '#3b82f6', animation: 'pulse 1.5s infinite ease-in-out' }} />
+              </div>
+            </div>
+          )}
+
+          {/* Filter Bar (When Results Exist) */}
+          {recommendations.length > 0 && !finding && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                paddingBottom: '0.75rem',
+                borderBottom: '1px solid #18181d'
+              }}
+            >
+              <div style={{ position: 'relative', width: '280px' }}>
+                <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter by repo or keyword..."
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#101014',
+                    border: '1px solid #1f1f28',
+                    color: '#ffffff',
+                    fontSize: '0.8rem',
+                    padding: '0.45rem 0.75rem 0.45rem 2rem',
+                    borderRadius: '4px'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                  SHOWING {processedRecs.length} OF {recommendations.length}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>SORT:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    style={{
+                      background: '#101014',
+                      border: '1px solid #1f1f28',
+                      color: '#d4d4d8',
+                      fontSize: '0.76rem',
+                      fontFamily: 'var(--font-mono)',
+                      cursor: 'pointer',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '3px'
+                    }}
+                  >
+                    <option value="match">Match Score</option>
+                    <option value="stars">GitHub Stars</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Opportunities List (Editorial Feed, No Cards, Divided by 1px rules) */}
+          {recommendations.length > 0 && !finding && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {processedRecs.map((rec, idx) => {
+                const isBookmarked = !!bookmarkedMap[rec.issue_url];
+
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '1.75rem 0',
+                      borderBottom: '1px solid #18181d',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem'
+                    }}
+                  >
+                    {/* Top Row: Repo Name, Stars, Language, Match Score & Action */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.86rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#3b82f6' }}>
+                            {rec.repo_name}
+                          </span>
+                          <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', backgroundColor: '#141419', padding: '0.15rem 0.45rem', borderRadius: '3px' }}>
+                            ★ {rec.repo_stars?.toLocaleString() || '0'}
+                          </span>
+                          <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#a1a1aa' }}>
+                            {rec.language}
+                          </span>
+                          {renderFitBadge(rec.match_score)}
+                        </div>
+
+                        {/* Issue Title with External Link */}
+                        <a
+                          href={rec.issue_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            fontSize: '1.18rem',
+                            fontWeight: 600,
+                            color: '#ffffff',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            letterSpacing: '-0.02em',
+                            lineHeight: 1.3
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#3b82f6')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#ffffff')}
+                        >
+                          <span>#{rec.issue_number}: {rec.issue_title}</span>
+                          <ArrowUpRight size={13} color="#71717a" />
+                        </a>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleBookmark(rec)}
+                          style={{
+                            background: isBookmarked ? 'rgba(59, 130, 246, 0.10)' : 'transparent',
+                            border: isBookmarked ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #202028',
+                            color: isBookmarked ? '#60a5fa' : '#8e8e99',
+                            borderRadius: '4px',
+                            padding: '0.4rem 0.75rem',
+                            fontSize: '0.76rem',
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}
+                          title={isBookmarked ? 'Remove bookmark' : 'Bookmark this opportunity'}
+                        >
+                          {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+                          <span>{isBookmarked ? 'Saved' : 'Save'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRequestGuide(rec)}
+                          style={{
+                            backgroundColor: '#ffffff',
+                            color: '#0B0B0D',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0.4rem 0.85rem',
+                            fontSize: '0.76rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            transition: 'background-color 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e4e4e7')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                        >
+                          <span>PR Blueprint</span>
+                          <ChevronRight size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Why Good Fit Note */}
+                    <p style={{ fontSize: '0.88rem', color: '#8e8e99', lineHeight: 1.55, margin: '0.2rem 0' }}>
+                      {rec.why_good_fit}
+                    </p>
+
+                    {/* Skill Overlap & Learning Opportunities */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem' }}>
+                      {rec.skills_overlap?.map((sk, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: '0.7rem',
+                            fontFamily: 'var(--font-mono)',
+                            color: '#34d399',
+                            backgroundColor: 'rgba(52, 211, 153, 0.08)',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '2px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          <Check size={10} />
+                          <span>{sk}</span>
+                        </span>
+                      ))}
+
+                      {rec.skills_to_learn?.map((sk, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: '0.7rem',
+                            fontFamily: 'var(--font-mono)',
+                            color: '#71717a',
+                            backgroundColor: '#121217',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '2px'
+                          }}
+                        >
+                          + {sk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {processedRecs.length === 0 && (
+                <div style={{ padding: '3rem 0', textAlign: 'center', color: '#71717a', fontSize: '0.88rem' }}>
+                  No issues matched your search query. Try clearing your filter.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Empty State When No Results Loaded */}
+          {recommendations.length === 0 && !finding && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', textAlign: 'center', padding: '3.5rem 1rem' }}>
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '6px',
+                  backgroundColor: '#121218',
+                  border: '1px solid #1f1f28',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#3b82f6',
+                  margin: '0 auto'
+                }}
+              >
+                <GitPullRequest size={20} />
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.4rem' }}>
+                  Discover Vetted Open Source Contributions
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: '#8e8e99', maxWidth: '520px', lineHeight: 1.55, margin: '0 auto' }}>
+                  Find active issues tagged <code>good first issue</code>, or inspect the 5-phase contribution lifecycle diagram above.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleFindOpportunities}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#0B0B0D',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Find Matches for Selected Stack
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLoadSampleGuide}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid #282834',
+                    color: '#3b82f6',
+                    borderRadius: '4px',
+                    padding: '0.65rem 1.25rem',
+                    fontSize: '0.84rem',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <Play size={12} />
+                  <span>Load Working Blueprint Demo</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 2: PR BLUEPRINT GUIDE WORKSPACE                      */}
+      {/* ======================================================== */}
+      {activeTab === 'guide' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Guide Loading State */}
+          {guiding && (
+            <div style={{ padding: '3rem 0', maxWidth: '560px' }}>
+              <div style={{ fontSize: '0.92rem', color: '#ffffff', fontWeight: 500, marginBottom: '0.4rem' }}>
+                Synthesizing Pull Request architecture blueprint...
+              </div>
+              <div style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '1.25rem' }}>
+                Analyzing repository AST, target files, reproduction commands, and PR templates via Groq Llama 3.3
+              </div>
+              <div style={{ height: '2px', backgroundColor: '#18181f', borderRadius: '1px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '80%', backgroundColor: '#3b82f6', animation: 'pulse 1.5s infinite ease-in-out' }} />
+              </div>
+            </div>
+          )}
+
+          {/* Active Blueprint View */}
+          {prGuide && selectedIssue && !guiding && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+              {/* Active Issue Header Bar */}
+              <div
+                style={{
+                  padding: '1.5rem',
+                  backgroundColor: '#101014',
+                  border: '1px solid #1a1a22',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>
+                      {selectedIssue.repo_name}
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: '#71717a' }}>·</span>
+                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
+                      Issue #{selectedIssue.issue_number}
+                    </span>
+                  </div>
+
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
+                    {selectedIssue.issue_title}
+                  </h2>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <a
+                    href={selectedIssue.issue_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #24242e',
+                      color: '#d4d4d8',
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: '4px',
+                      fontSize: '0.76rem',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <span>GitHub Issue</span>
+                    <ArrowUpRight size={12} />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('reviewer');
+                    }}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      color: '#0B0B0D',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '0.4rem 0.85rem',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <Code size={13} />
+                    <span>Review Diff</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Blueprint Sub-tabs */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  borderBottom: '1px solid #18181d',
+                  paddingBottom: '0.75rem',
+                  overflowX: 'auto'
+                }}
+              >
+                {[
+                  { id: 'setup', label: '1. Setup & Repro', icon: Terminal },
+                  { id: 'files', label: '2. Files to Edit', icon: FolderOpen },
+                  { id: 'hints', label: '3. Technical Hints', icon: Lightbulb },
+                  { id: 'template', label: '4. PR Template', icon: FileText }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isSelected = guideTab === tab.id;
+
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setGuideTab(tab.id)}
+                      style={{
+                        background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                        color: isSelected ? '#ffffff' : '#71717a',
+                        border: isSelected ? '1px solid #2e2e38' : '1px solid transparent',
+                        padding: '0.4rem 0.85rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        transition: 'all 0.15s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <Icon size={13} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* SUB-TAB 1: SETUP STEPS */}
               {guideTab === 'setup' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {prGuide.setup_steps?.map((cmd, idx) => (
                     <div
                       key={idx}
                       style={{
-                        padding: '1.25rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--surface-container-low)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        gap: '0.75rem'
-                      }}
-                    >
-                      <div>
-                        <span className="font-label-caps" style={{ color: 'var(--primary)' }}>STEP 0{idx + 1}</span>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--on-surface)', marginTop: '0.2rem' }}>
-                          Command Execution
-                        </div>
-                      </div>
-                      <div style={{
-                        background: 'var(--surface-container-lowest)',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '6px',
+                        padding: '1rem 1.25rem',
+                        backgroundColor: '#101014',
+                        border: '1px solid #18181f',
+                        borderRadius: '4px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        gap: '0.5rem',
-                        border: '1px solid var(--border-subtle)'
-                      }}>
-                        <code className="font-label-code" style={{ fontSize: '0.8rem', color: 'var(--on-surface)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {cmd}
-                        </code>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(cmd, `cmd_${idx}`)}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', flexShrink: 0 }}
-                          title="Copy command"
-                        >
-                          {copiedKey === `cmd_${idx}` ? <Check size={14} color="var(--tertiary)" /> : <Copy size={14} />}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* TAB 2: Files to Edit */}
-              {guideTab === 'files' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {prGuide.files_to_edit?.map((f, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '1.25rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--surface-container-low)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.4rem'
+                        gap: '1rem'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className="material-symbols-outlined" style={{ color: 'var(--tertiary)', fontSize: '1.1rem' }}>edit_note</span>
-                        <code className="font-label-code" style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.88rem' }}>
-                          {f.file_path}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
+                          0{idx + 1}
+                        </span>
+                        <code
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.82rem',
+                            color: '#34d399',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {cmd}
                         </code>
                       </div>
-                      <p style={{ fontSize: '0.84rem', color: 'var(--on-surface-variant)', lineHeight: '1.4' }}>
-                        <strong style={{ color: 'var(--on-surface)' }}>Reason:</strong> {f.reason}
-                      </p>
-                      <p style={{ fontSize: '0.84rem', color: 'var(--on-surface-variant)', lineHeight: '1.4' }}>
-                        <strong style={{ color: 'var(--on-surface)' }}>What to change:</strong> {f.what_to_change}
-                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(cmd, `cmd_${idx}`)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#71717a',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '4px'
+                        }}
+                        title="Copy command"
+                      >
+                        {copiedKey === `cmd_${idx}` ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* TAB 3: Implementation Hints */}
+              {/* SUB-TAB 2: FILES TO EDIT */}
+              {guideTab === 'files' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {prGuide.files_to_edit?.map((f, idx) => {
+                    const filePath = typeof f === 'string' ? f : (f.file_path || f.file || f.path || f.name || 'Target File');
+                    const reason = typeof f === 'object' ? f.reason : '';
+                    const whatToChange = typeof f === 'object' ? f.what_to_change : '';
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '1.25rem',
+                          backgroundColor: '#101014',
+                          border: '1px solid #18181f',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <FolderOpen size={14} color="#3b82f6" />
+                          <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#ffffff', fontSize: '0.86rem' }}>
+                            {filePath}
+                          </code>
+                        </div>
+
+                        {reason && (
+                          <div style={{ fontSize: '0.84rem', color: '#a1a1aa', lineHeight: 1.5 }}>
+                            <span style={{ color: '#71717a', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>REASON: </span>
+                            {reason}
+                          </div>
+                        )}
+
+                        {whatToChange && (
+                          <div style={{ fontSize: '0.84rem', color: '#d4d4d8', lineHeight: 1.5 }}>
+                            <span style={{ color: '#71717a', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>MODIFICATION: </span>
+                            {whatToChange}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* SUB-TAB 3: TECHNICAL HINTS */}
               {guideTab === 'hints' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     {prGuide.implementation_hints?.map((hint, idx) => (
                       <div
                         key={idx}
                         style={{
                           padding: '1.25rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--surface-container-low)',
-                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: '#101014',
+                          border: '1px solid #18181f',
+                          borderRadius: '4px',
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.4rem'
+                          alignItems: 'flex-start',
+                          gap: '0.85rem'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)' }}>
-                          <Lightbulb size={16} />
-                          <span className="font-label-caps">Implementation Note {idx + 1}</span>
-                        </div>
-                        <p style={{ fontSize: '0.86rem', color: 'var(--on-surface)', lineHeight: '1.5' }}>
+                        <Lightbulb size={16} color="#fbbf24" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ fontSize: '0.88rem', color: '#d4d4d8', lineHeight: 1.55 }}>
                           {hint}
-                        </p>
+                        </div>
                       </div>
                     ))}
                   </div>
 
                   {prGuide.things_to_avoid && prGuide.things_to_avoid.length > 0 && (
-                    <div style={{
-                      padding: '1.25rem',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                      marginTop: '0.5rem'
-                    }}>
-                      <div className="font-label-caps" style={{ color: 'var(--error)', marginBottom: '0.5rem' }}>COMMON TRAPS TO AVOID</div>
-                      <ul style={{ paddingLeft: '1.25rem', fontSize: '0.85rem', color: 'var(--on-surface-variant)', lineHeight: '1.6' }}>
+                    <div
+                      style={{
+                        padding: '1.25rem',
+                        backgroundColor: 'rgba(244, 63, 94, 0.06)',
+                        border: '1px solid rgba(244, 63, 94, 0.2)',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#fb7185', fontWeight: 600, marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Traps & Gotchas to Avoid
+                      </div>
+                      <ul style={{ margin: '0 0 0 1.25rem', padding: 0, fontSize: '0.84rem', color: '#d4d4d8', lineHeight: 1.6 }}>
                         {prGuide.things_to_avoid.map((trap, idx) => (
                           <li key={idx}>{trap}</li>
                         ))}
@@ -990,249 +2003,825 @@ const OpenSourcePage = () => {
                 </div>
               )}
 
-              {/* TAB 4: PR Template */}
+              {/* SUB-TAB 4: PR TEMPLATE */}
               {guideTab === 'template' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>READY-TO-PASTE GITHUB MARKDOWN</span>
+                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                      Ready-to-Paste GitHub Markdown
+                    </span>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(`## ${prGuide.pr_title_suggestion}\n\n${prGuide.pr_description_template}`, 'full_template')}
-                      className="font-label-code"
+                      onClick={() =>
+                        copyToClipboard(
+                          `## ${prGuide.pr_title_suggestion}\n\n${prGuide.pr_description_template}`,
+                          'full_template'
+                        )
+                      }
                       style={{
-                        padding: '0.35rem 0.85rem',
-                        borderRadius: '6px',
-                        background: 'var(--surface-container-high)',
-                        color: 'var(--primary)',
-                        border: '1px solid var(--border-subtle)',
+                        background: 'transparent',
+                        border: '1px solid #202028',
+                        color: '#d4d4d8',
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '3px',
+                        fontSize: '0.76rem',
+                        fontFamily: 'var(--font-mono)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.4rem'
+                        gap: '0.35rem'
                       }}
                     >
-                      {copiedKey === 'full_template' ? <Check size={14} color="var(--tertiary)" /> : <Copy size={14} />}
-                      <span>Copy Full PR Markdown</span>
+                      {copiedKey === 'full_template' ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                      <span>Copy PR Markdown</span>
                     </button>
                   </div>
 
-                  <pre className="font-label-code" style={{
-                    padding: '1.25rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--surface-container-lowest)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--on-surface)',
-                    fontSize: '0.84rem',
-                    lineHeight: '1.5',
-                    whiteSpace: 'pre-wrap',
-                    overflowX: 'auto'
-                  }}>
+                  <pre
+                    style={{
+                      padding: '1.25rem',
+                      backgroundColor: '#101014',
+                      border: '1px solid #18181f',
+                      borderRadius: '4px',
+                      color: '#e4e4e7',
+                      fontSize: '0.84rem',
+                      fontFamily: 'var(--font-mono)',
+                      lineHeight: 1.55,
+                      whiteSpace: 'pre-wrap',
+                      overflowX: 'auto',
+                      margin: 0
+                    }}
+                  >
                     {`## ${prGuide.pr_title_suggestion}\n\n${prGuide.pr_description_template}`}
                   </pre>
                 </div>
               )}
-
             </div>
+          )}
 
-            {/* STEP 4: Built-in AI Code Reviewer Assistant */}
-            <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'var(--surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.4rem' }}>neurology</span>
-                  </div>
-                  <div>
-                    <h3 className="font-headline-sm" style={{ color: 'var(--on-surface)' }}>AI Code Review Assistant</h3>
-                    <p style={{ fontSize: '0.84rem', color: 'var(--on-surface-variant)' }}>
-                      Pre-screen your candidate code diff against repo contributing guidelines before opening the pull request.
-                    </p>
-                  </div>
+          {/* Empty State / Quick Load Sample Working Guide & Custom Generator */}
+          {!prGuide && !guiding && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', maxWidth: '720px' }}>
+              {/* Working Blueprint Demo Card */}
+              <div
+                style={{
+                  padding: '1.75rem',
+                  backgroundColor: '#101014',
+                  border: '1px solid #1f1f28',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                    WORKING BLUEPRINT DEMO
+                  </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleReviewCode}
-                  disabled={reviewing || !userCode.trim()}
-                  className="btn-primary"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    cursor: userCode.trim() ? 'pointer' : 'not-allowed',
-                    opacity: userCode.trim() ? 1 : 0.5
-                  }}
-                >
-                  <Sparkles size={15} />
-                  <span>{reviewing ? 'Simulating Maintainer Review...' : 'Review My Code'}</span>
-                </button>
-              </div>
-
-              {/* Code Diff Inputs Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
-                {/* Original Code Context (Optional) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>
-                      Original / Baseline Code (Optional):
-                    </label>
-                    <span className="font-label-code" style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                      Existing function or file snippet
-                    </span>
-                  </div>
-                  <textarea
-                    rows={8}
-                    placeholder="// Optional: Paste the original code before your modifications..."
-                    value={originalCode}
-                    onChange={(e) => setOriginalCode(e.target.value)}
-                    className="font-label-code"
-                    style={{
-                      width: '100%',
-                      background: 'var(--surface-container-low)',
-                      color: 'var(--on-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '10px',
-                      padding: '1rem',
-                      fontSize: '0.85rem',
-                      lineHeight: '1.5'
-                    }}
-                  />
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: '0 0 0.35rem 0' }}>
+                    repowise-dev/repowise #2997
+                  </h3>
+                  <p style={{ fontSize: '0.86rem', color: '#8e8e99', lineHeight: 1.5, margin: 0 }}>
+                    Dead code reports docs site and docs/ example files as unreachable. Explore reproduction shell commands, target AST analyzer files, and PR description template.
+                  </p>
                 </div>
 
-                {/* Candidate Implementation Snippet */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>
-                      Candidate Git Diff or Implementation Snippet:
-                    </label>
-                    <span className="font-label-code" style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
-                      Proposed solution
-                    </span>
-                  </div>
-                  <textarea
-                    rows={8}
-                    placeholder="// Paste your proposed code fix or git diff here..."
-                    value={userCode}
-                    onChange={(e) => setUserCode(e.target.value)}
-                    className="font-label-code"
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleLoadSampleGuide}
                     style={{
-                      width: '100%',
-                      background: 'var(--surface-container-low)',
-                      color: 'var(--on-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '10px',
-                      padding: '1rem',
-                      fontSize: '0.85rem',
-                      lineHeight: '1.5'
+                      backgroundColor: '#ffffff',
+                      color: '#0B0B0D',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '0.6rem 1.25rem',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem'
                     }}
-                  />
+                  >
+                    <Play size={13} />
+                    <span>Load Working Guide Demo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('playbook')}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: '1px solid #282834',
+                      color: '#d4d4d8',
+                      borderRadius: '4px',
+                      padding: '0.6rem 1rem',
+                      fontSize: '0.82rem',
+                      fontFamily: 'var(--font-mono)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Read Contribution Playbook →
+                  </button>
                 </div>
               </div>
 
-              {/* Review Output */}
-              {prReview && (
-                <div style={{
-                  padding: '1.5rem',
-                  borderRadius: '12px',
-                  background: 'var(--surface-container-low)',
-                  border: '1px solid var(--border-subtle)',
+              {/* Custom On-Demand Generator */}
+              <div
+                style={{
+                  padding: '1.75rem',
+                  backgroundColor: '#101014',
+                  border: '1px solid #1a1a22',
+                  borderRadius: '6px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '1.25rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>MAINTAINER VERDICT</span>
-                    {getVerdictBadge(prReview.verdict)}
-                  </div>
-
-                  <p style={{ fontSize: '0.92rem', color: 'var(--on-surface)', lineHeight: '1.5' }}>
-                    {prReview.overall_feedback}
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem' }}>
+                    Generate Blueprint on Demand
+                  </h3>
+                  <p style={{ fontSize: '0.86rem', color: '#8e8e99', lineHeight: 1.5, margin: 0 }}>
+                    Enter any public GitHub repository and issue number to automatically generate a step-by-step reproduction and PR guide.
                   </p>
+                </div>
 
-                  {/* Strengths & Issues Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                    {/* Strengths */}
-                    {prReview.good_things && prReview.good_things.length > 0 && (
-                      <div style={{ padding: '1rem', borderRadius: '8px', background: 'var(--surface-container-lowest)', border: '1px solid var(--border-subtle)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--tertiary)', marginBottom: '0.6rem' }}>
-                          <ThumbsUp size={15} />
-                          <span className="font-label-caps">GOOD PRACTICES OBSERVED</span>
-                        </div>
-                        <ul style={{ paddingLeft: '1.2rem', fontSize: '0.84rem', color: 'var(--on-surface-variant)', lineHeight: '1.5' }}>
-                          {prReview.good_things.map((g, idx) => (
-                            <li key={idx}>{g}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Issues / Suggestions */}
-                    {prReview.issues && prReview.issues.length > 0 && (
-                      <div style={{ padding: '1rem', borderRadius: '8px', background: 'var(--surface-container-lowest)', border: '1px solid var(--border-subtle)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--secondary)', marginBottom: '0.6rem' }}>
-                          <Lightbulb size={15} />
-                          <span className="font-label-caps">IMPROVEMENT SUGGESTIONS</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {prReview.issues.map((iss, idx) => (
-                            <div key={idx} style={{ fontSize: '0.82rem', color: 'var(--on-surface-variant)' }}>
-                              <strong style={{ color: 'var(--on-surface)' }}>[{iss.type}] {iss.description}:</strong> {iss.suggestion}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <form onSubmit={handleManualGuide} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                      Repository (owner/repo)
+                    </label>
+                    <input
+                      type="text"
+                      value={manualRepo}
+                      onChange={(e) => setManualRepo(e.target.value)}
+                      placeholder="e.g. facebook/react or vercel/next.js"
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#0c0c0f',
+                        border: '1px solid #1f1f28',
+                        color: '#ffffff',
+                        fontSize: '0.84rem',
+                        padding: '0.55rem 0.75rem',
+                        borderRadius: '4px'
+                      }}
+                    />
                   </div>
 
-                  {/* Revised Clean Code Snippet */}
-                  {prReview.revised_code_suggestion && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span className="font-label-caps" style={{ color: 'var(--on-surface-variant)' }}>RECOMMENDED AI REVISION</span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(prReview.revised_code_suggestion, 'revised_code')}
-                          className="font-label-code"
-                          style={{
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '4px',
-                            background: 'var(--surface-container-high)',
-                            color: 'var(--primary)',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.35rem'
-                          }}
-                        >
-                          {copiedKey === 'revised_code' ? <Check size={13} color="var(--tertiary)" /> : <Copy size={13} />}
-                          <span>Copy Clean Snippet</span>
-                        </button>
-                      </div>
-
-                      <pre className="font-label-code" style={{
-                        padding: '1rem',
-                        borderRadius: '8px',
-                        background: 'var(--surface-container-lowest)',
-                        border: '1px solid var(--border-subtle)',
-                        color: 'var(--primary-fixed-dim)',
-                        fontSize: '0.82rem',
-                        lineHeight: '1.5',
-                        overflowX: 'auto'
-                      }}>
-                        {prReview.revised_code_suggestion}
-                      </pre>
+                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                        Issue #
+                      </label>
+                      <input
+                        type="number"
+                        value={manualIssueNum}
+                        onChange={(e) => setManualIssueNum(e.target.value)}
+                        placeholder="e.g. 104"
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0c0c0f',
+                          border: '1px solid #1f1f28',
+                          color: '#ffffff',
+                          fontSize: '0.84rem',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: '4px'
+                        }}
+                      />
                     </div>
-                  )}
 
-                </div>
-              )}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                        Issue URL (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={manualIssueUrl}
+                        onChange={(e) => setManualIssueUrl(e.target.value)}
+                        placeholder="https://github.com/..."
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0c0c0f',
+                          border: '1px solid #1f1f28',
+                          color: '#ffffff',
+                          fontSize: '0.84rem',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: '4px'
+                        }}
+                      />
+                    </div>
+                  </div>
 
+                  <button
+                    type="submit"
+                    disabled={guiding || !manualRepo.trim() || !manualIssueNum.trim()}
+                    style={{
+                      backgroundColor: manualRepo.trim() && manualIssueNum.trim() ? '#ffffff' : '#18181f',
+                      color: manualRepo.trim() && manualIssueNum.trim() ? '#0B0B0D' : '#52525b',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '0.65rem 1.25rem',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      cursor: manualRepo.trim() && manualIssueNum.trim() ? 'pointer' : 'not-allowed',
+                      alignSelf: 'flex-start',
+                      marginTop: '0.25rem'
+                    }}
+                  >
+                    Generate Blueprint
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 3: CONTRIBUTION PLAYBOOK (MASTER WORKING GUIDE)      */}
+      {/* ======================================================== */}
+      {activeTab === 'playbook' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', maxWidth: '860px' }}>
+          <div>
+            <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.35rem' }}>
+              PRACTICAL OPEN SOURCE PLAYBOOK
+            </div>
+            <h2 style={{ fontSize: '1.65rem', fontWeight: 600, color: '#ffffff', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+              The Engineering Lifecycle of a Pull Request
+            </h2>
+            <p style={{ fontSize: '0.94rem', color: '#8e8e99', lineHeight: 1.6, margin: 0 }}>
+              A battle-tested protocol for contributing to open-source codebases, minimizing maintainer friction, and getting PRs merged cleanly.
+            </p>
+          </div>
+
+          {/* Quick Action Banner */}
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              backgroundColor: '#101014',
+              border: '1px solid #1f1f28',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.2rem' }}>
+                Want to practice on a real issue?
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#8e8e99' }}>
+                Load our verified architecture blueprint demo for repowise-dev/repowise #2997.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLoadSampleGuide}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#0B0B0D',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '0.45rem 1rem',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Play size={12} />
+              <span>Load Interactive Blueprint</span>
+            </button>
+          </div>
+
+          {/* 5-Phase Playbook Steps */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Phase 1 */}
+            <div style={{ paddingBottom: '2rem', borderBottom: '1px solid #18181d' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>01</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>
+                  Fork, Clone & Establish Isolated Hermetic Toolchains
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Always fork the repository on GitHub, then clone your personal fork. Set the original repository as <code>upstream</code> to easily fetch new changes without merging conflicts.
+              </p>
+              <div
+                style={{
+                  backgroundColor: '#101014',
+                  border: '1px solid #1a1a22',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8rem',
+                  color: '#34d399',
+                  lineHeight: 1.55
+                }}
+              >
+                <div>git clone https://github.com/YOUR_USERNAME/project.git</div>
+                <div>cd project</div>
+                <div>git remote add upstream https://github.com/ORIGINAL_OWNER/project.git</div>
+                <div>git checkout -b fix/issue-number-short-description</div>
+              </div>
             </div>
 
-          </div>
-        )}
+            {/* Phase 2 */}
+            <div style={{ paddingBottom: '2rem', borderBottom: '1px solid #18181d' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>02</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>
+                  Reproduction-First: Write a Failing Unit Test
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Never jump straight into modifying core logic. First write a minimal test reproducing the exact failure reported in the issue. Run the test and ensure it fails for the expected reason (Red stage).
+              </p>
+              <div
+                style={{
+                  backgroundColor: '#101014',
+                  border: '1px solid #1a1a22',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8rem',
+                  color: '#fbbf24',
+                  lineHeight: 1.55
+                }}
+              >
+                <div># Example: run the targeted test file to confirm reproduction</div>
+                <div>pytest tests/analyzers/test_dead_code.py -k "test_docs_unreachable"</div>
+                <div># or in Node.js:</div>
+                <div>npm test -- -t "should ignore docs examples"</div>
+              </div>
+            </div>
 
-      </div>
+            {/* Phase 3 */}
+            <div style={{ paddingBottom: '2rem', borderBottom: '1px solid #18181d' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>03</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>
+                  Minimal Surgical Implementation
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Implement the fix with the smallest possible diff. Avoid auto-formatting unrelated files, renaming untouched functions, or reorganizing imports outside your modification scope. Maintainers reject PRs with noisy diffs.
+              </p>
+              <ul style={{ margin: '0 0 0 1.25rem', padding: 0, fontSize: '0.85rem', color: '#a1a1aa', lineHeight: 1.6 }}>
+                <li>Keep code idiomatic to the surrounding codebase style.</li>
+                <li>Verify your new test passes (Green stage).</li>
+                <li>Run the entire test suite to ensure zero regressions across existing modules.</li>
+              </ul>
+            </div>
+
+            {/* Phase 4 */}
+            <div style={{ paddingBottom: '2rem', borderBottom: '1px solid #18181d' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>04</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>
+                  Pre-Commit Linting & Diff Pre-Review
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Before pushing to GitHub, run linters, type checks, and pre-commit hooks locally. Paste your diff into the <strong>Diff Pre-Reviewer</strong> tab to simulate a maintainer code review.
+              </p>
+              <div
+                style={{
+                  backgroundColor: '#101014',
+                  border: '1px solid #1a1a22',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8rem',
+                  color: '#e4e4e7',
+                  lineHeight: 1.55
+                }}
+              >
+                <div>git diff HEAD~1   # Inspect your diff carefully</div>
+                <div>ruff check .      # or eslint / golangci-lint</div>
+                <div>mypy src/         # or tsc --noEmit</div>
+              </div>
+            </div>
+
+            {/* Phase 5 */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>05</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>
+                  Pull Request Drafting & Maintainer Review Cycles
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '1rem' }}>
+                Write a concise, descriptive PR title using Conventional Commits (e.g. <code>fix(analyzer): ignore docs from dead code check (#123)</code>). Link the issue with <code>Closes #123</code> so GitHub automatically resolves it upon merge.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('guide')}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    color: '#0B0B0D',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '0.55rem 1.25rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Generate PR Blueprint for an Issue →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 4: DIFF PRE-REVIEWER WORKSPACE                       */}
+      {/* ======================================================== */}
+      {activeTab === 'reviewer' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
+                  Simulated Maintainer Diff Pre-Review
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: '#8e8e99', margin: 0 }}>
+                  Pre-screen your candidate code diff against repo standards before submitting the pull request.
+                </p>
+              </div>
+
+              {selectedIssue && (
+                <div style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.10)', padding: '0.3rem 0.65rem', borderRadius: '3px' }}>
+                  Target: {selectedIssue.repo_name} #{selectedIssue.issue_number}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Code Input Panels */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+            {/* Baseline Code */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                Baseline Code (Optional)
+              </label>
+              <textarea
+                rows={9}
+                value={originalCode}
+                onChange={(e) => setOriginalCode(e.target.value)}
+                placeholder="// Optional: Existing function or baseline snippet..."
+                style={{
+                  width: '100%',
+                  backgroundColor: '#101014',
+                  border: '1px solid #1f1f28',
+                  borderRadius: '4px',
+                  color: '#ffffff',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.82rem',
+                  padding: '0.75rem',
+                  lineHeight: 1.5,
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {/* Proposed Solution */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                Proposed Solution / Code Diff (Required)
+              </label>
+              <textarea
+                rows={9}
+                value={userCode}
+                onChange={(e) => setUserCode(e.target.value)}
+                placeholder="// Paste your proposed patch or git diff snippet..."
+                style={{
+                  width: '100%',
+                  backgroundColor: '#101014',
+                  border: '1px solid #1f1f28',
+                  borderRadius: '4px',
+                  color: '#ffffff',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.82rem',
+                  padding: '0.75rem',
+                  lineHeight: 1.5,
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleReviewCode}
+            disabled={reviewing || !userCode.trim()}
+            style={{
+              backgroundColor: userCode.trim() ? '#ffffff' : '#18181f',
+              color: userCode.trim() ? '#0B0B0D' : '#52525b',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '0.65rem 1.5rem',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              cursor: userCode.trim() ? 'pointer' : 'not-allowed',
+              alignSelf: 'flex-start',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem'
+            }}
+          >
+            <Sparkles size={14} />
+            <span>{reviewing ? 'Analyzing Diff...' : 'Run Simulated Maintainer Review'}</span>
+          </button>
+
+          {/* Review Output */}
+          {prReview && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1.75rem',
+                backgroundColor: '#101014',
+                border: '1px solid #1a1a22',
+                borderRadius: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.5rem'
+              }}
+            >
+              {/* Verdict Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                  MAINTAINER VERDICT
+                </span>
+                {getVerdictBadge(prReview.verdict)}
+              </div>
+
+              <p style={{ fontSize: '0.92rem', color: '#ffffff', lineHeight: 1.6, margin: 0 }}>
+                {prReview.overall_feedback}
+              </p>
+
+              {/* Observed Strengths & Issues Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                {prReview.good_things && prReview.good_things.length > 0 && (
+                  <div style={{ padding: '1.25rem', backgroundColor: '#0e0e12', border: '1px solid #18181f', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#34d399', marginBottom: '0.5rem', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                      <ThumbsUp size={13} />
+                      <span>Strengths Observed</span>
+                    </div>
+                    <ul style={{ margin: '0 0 0 1.25rem', padding: 0, fontSize: '0.84rem', color: '#a1a1aa', lineHeight: 1.6 }}>
+                      {prReview.good_things.map((g, idx) => (
+                        <li key={idx}>{g}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {prReview.issues && prReview.issues.length > 0 && (
+                  <div style={{ padding: '1.25rem', backgroundColor: '#0e0e12', border: '1px solid #18181f', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#fbbf24', marginBottom: '0.5rem', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                      <Lightbulb size={13} />
+                      <span>Actionable Improvements</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      {prReview.issues.map((iss, idx) => (
+                        <div key={idx} style={{ fontSize: '0.84rem', color: '#a1a1aa', lineHeight: 1.45 }}>
+                          <span style={{ color: '#ffffff', fontWeight: 600 }}>[{iss.type}] {iss.description}: </span>
+                          {iss.suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Revised Clean Code Snippet */}
+              {prReview.revised_code_suggestion && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                      Recommended Code Revision
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(prReview.revised_code_suggestion, 'revised_code')}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid #202028',
+                        color: '#d4d4d8',
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '3px',
+                        fontSize: '0.74rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}
+                    >
+                      {copiedKey === 'revised_code' ? <Check size={12} color="#34d399" /> : <Copy size={12} />}
+                      <span>Copy Revision</span>
+                    </button>
+                  </div>
+
+                  <pre
+                    style={{
+                      padding: '1rem',
+                      backgroundColor: '#0c0c0f',
+                      border: '1px solid #1a1a22',
+                      borderRadius: '4px',
+                      color: '#a7f3d0',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.5,
+                      overflowX: 'auto',
+                      margin: 0
+                    }}
+                  >
+                    {prReview.revised_code_suggestion}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB 5: SAVED BOOKMARKS & RECENT HISTORY                  */}
+      {/* ======================================================== */}
+      {activeTab === 'saved' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          {/* Section 1: Bookmarks */}
+          <div>
+            <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #18181d', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                BOOKMARKED ISSUES ({bookmarkedItems.length})
+              </span>
+            </div>
+
+            {bookmarkedItems.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {bookmarkedItems.map((item) => (
+                  <div
+                    key={item._id}
+                    style={{
+                      padding: '1.5rem 0',
+                      borderBottom: '1px solid #18181d',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '1.5rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.84rem', fontFamily: 'var(--font-mono)', color: '#3b82f6', fontWeight: 600 }}>
+                          {item.repoName}
+                        </span>
+                        {item.issueNumber && (
+                          <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
+                            #{item.issueNumber}
+                          </span>
+                        )}
+                        {item.data?.match_score && renderFitBadge(item.data.match_score)}
+                      </div>
+
+                      <a
+                        href={item.issueUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 600,
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#3b82f6')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#ffffff')}
+                      >
+                        <span>{item.issueTitle}</span>
+                        <ArrowUpRight size={12} color="#71717a" />
+                      </a>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRequestGuide({
+                            repo_name: item.repoName,
+                            issue_number: item.issueNumber,
+                            issue_title: item.issueTitle,
+                            issue_url: item.issueUrl
+                          })
+                        }
+                        style={{
+                          backgroundColor: '#ffffff',
+                          color: '#0B0B0D',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '0.4rem 0.85rem',
+                          fontSize: '0.76rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Open Guide
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBookmark({ issue_url: item.issueUrl, repo_name: item.repoName })}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid #24242e',
+                          color: '#71717a',
+                          borderRadius: '4px',
+                          padding: '0.4rem 0.65rem',
+                          fontSize: '0.76rem',
+                          cursor: 'pointer'
+                        }}
+                        title="Remove bookmark"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '2rem 0', color: '#71717a', fontSize: '0.88rem' }}>
+                No saved issues yet. Click "Save" on any opportunity to monitor it here.
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Recent Activity */}
+          <div>
+            <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #18181d', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                RECENT SESSIONS ({historyItems.length})
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {historyItems.slice(0, 8).map((hist) => (
+                <div
+                  key={hist._id}
+                  style={{
+                    padding: '0.85rem 1.25rem',
+                    backgroundColor: '#101014',
+                    border: '1px solid #18181f',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontFamily: 'var(--font-mono)',
+                        textTransform: 'uppercase',
+                        color: hist.actionType === 'guide' ? '#34d399' : hist.actionType === 'review' ? '#c084fc' : '#3b82f6',
+                        backgroundColor: '#14141a',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '3px'
+                      }}
+                    >
+                      {hist.actionType}
+                    </span>
+                    <span style={{ fontSize: '0.84rem', color: '#ffffff', fontWeight: 500 }}>
+                      {hist.repoName || hist.issueTitle || `${hist.preferredLanguage || 'Open Source'} search`}
+                    </span>
+                  </div>
+
+                  <span style={{ fontSize: '0.72rem', color: '#52525b', fontFamily: 'var(--font-mono)' }}>
+                    {new Date(hist.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

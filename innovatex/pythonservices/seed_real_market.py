@@ -97,7 +97,18 @@ ANCHOR_BASELINES = {
     "DeepSeek": {"pct": 3.9, "trend": 1.60},
     "LoRA": {"pct": 3.5, "trend": 1.10},
     "QLoRA": {"pct": 2.8, "trend": 1.15},
-    "AutoGen": {"pct": 3.1, "trend": 1.25}
+    "AutoGen": {"pct": 3.1, "trend": 1.25},
+
+    # Legacy, Specialized & Declining Anchors (Calibration Benchmarks)
+    "COBOL": {"pct": 1.45, "trend": -0.015},
+    "AngularJS": {"pct": 0.85, "trend": -0.08},
+    "jQuery": {"pct": 11.2, "trend": -0.22},
+    "PHP": {"pct": 17.5, "trend": -0.10},
+    "Perl": {"pct": 1.15, "trend": -0.045},
+    "Objective-C": {"pct": 1.75, "trend": -0.12},
+    "Fortran": {"pct": 0.65, "trend": -0.005},
+    "Visual Basic": {"pct": 0.95, "trend": -0.06},
+    "ActionScript": {"pct": 0.20, "trend": -0.03}
 }
 
 CO_OCCURRENCES = {
@@ -167,20 +178,23 @@ def seed_market_data():
             base_pct = ANCHOR_BASELINES[skill]["pct"]
             slope = ANCHOR_BASELINES[skill]["trend"]
         else:
-            # Deterministic, repeatable pseudo-random baseline from skill name
+            # Deterministic, repeatable baseline from skill name
             seed_val = abs(hash(skill)) % 1000
             if seed_val > 900:
-                base_pct = 8.0 + (seed_val % 70) / 10.0      # 8.0 - 15.0%
-                slope = 0.08
+                base_pct = 7.0 + (seed_val % 50) / 10.0      # 7.0 - 12.0%
+                slope = 0.04
             elif seed_val > 700:
-                base_pct = 4.0 + (seed_val % 40) / 10.0      # 4.0 - 8.0%
-                slope = 0.05
-            elif seed_val > 400:
-                base_pct = 1.5 + (seed_val % 25) / 10.0      # 1.5 - 4.0%
-                slope = 0.02
+                base_pct = 3.5 + (seed_val % 35) / 10.0      # 3.5 - 7.0%
+                slope = 0.015
+            elif seed_val > 500:
+                base_pct = 1.8 + (seed_val % 20) / 10.0      # 1.8 - 3.8%
+                slope = 0.00  # Stable niche
+            elif seed_val > 300:
+                base_pct = 1.0 + (seed_val % 15) / 10.0      # 1.0 - 2.5%
+                slope = -0.015 # Softening
             else:
-                base_pct = 0.4 + (seed_val % 12) / 10.0      # 0.4 - 1.6%
-                slope = 0.01
+                base_pct = 0.3 + (seed_val % 10) / 10.0      # 0.3 - 1.3%
+                slope = -0.02 # Declining/legacy niche
 
         # Generate data for each week
         skill_hash = abs(hash(skill))

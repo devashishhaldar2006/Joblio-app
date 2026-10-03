@@ -88,11 +88,21 @@ async def gap_node(state: MarketState) -> Dict[str, Any]:
         }
         co_occurring = domain_pairings.get(normalized.lower(), ["Docker", "Git", "REST API", "SQL", "Linux"])
 
+    ts = state.get("timeseries", {})
+    fc = state.get("forecast", {})
+    cl = state.get("classification", {})
+
     final_output = {
         "skill": normalized,
-        "timeseries": state.get("timeseries"),
-        "forecast": state.get("forecast"),
-        "classification": state.get("classification"),
+        "timeseries": ts,
+        "forecast": fc,
+        "classification": cl,
+        "observed": ts.get("observed", {}),
+        "data_quality": ts.get("data_quality", {}),
+        "scenarios": fc.get("scenarios", {}),
+        "backtest": fc.get("backtest", {}),
+        "diagnostics": fc.get("diagnostics", {}),
+        "regime": cl.get("regime", {}),
         "gap_report": gap_data,
         "co_occurring_skills": co_occurring
     }

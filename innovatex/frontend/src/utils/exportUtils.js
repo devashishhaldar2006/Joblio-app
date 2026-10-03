@@ -78,12 +78,12 @@ export const printReportDocument = (htmlContent) => {
 
 /**
  * Institutional Dossier HTML Layout Builder
- * Produces crisp, publication-grade black-on-white documents styled for A4 laser printing and archival PDF export.
+ * Produces crisp, publication-grade dark-themed documents styled for archival PDF export and printing.
  */
 export const buildInstitutionalDossierHtml = ({
   title,
   subtitle,
-  badge = 'CONFIDENTIAL // INSTITUTIONAL LEVEL-1',
+  badge = 'CONFIDENTIAL · LEVEL 1',
   reportId,
   engine = 'InnovateX Multi-Agent Autonomous Engine v2.4',
   date = new Date().toUTCString(),
@@ -93,7 +93,6 @@ export const buildInstitutionalDossierHtml = ({
   hash = null
 }) => {
   const generatedId = reportId || `IX-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Date.now().toString(36).substring(3, 7).toUpperCase()}`;
-  const docHash = hash || `SHA256:${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}...${Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -103,263 +102,299 @@ export const buildInstitutionalDossierHtml = ({
   <style>
     @page {
       size: A4 portrait;
-      margin: 14mm 12mm 14mm 12mm;
+      margin: 0 !important;
     }
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    body {
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 11pt;
-      line-height: 1.45;
+    html, body {
+      background-color: #0B0B0D !important;
+      background: #0B0B0D !important;
+      color: #F4F4F6 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.5;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      min-height: 100% !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
     .page-container {
-      width: 100%;
-      max-width: 190mm;
-      margin: 0 auto;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100vh;
+      margin: 0 !important;
+      padding: 14mm 16mm 14mm 16mm !important;
+      box-sizing: border-box !important;
+      background-color: #0B0B0D !important;
+      background: #0B0B0D !important;
     }
-    /* Institutional Header */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0 !important;
+      }
+      html, body {
+        background-color: #0B0B0D !important;
+        background: #0B0B0D !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      .page-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100vh;
+        margin: 0 !important;
+        padding: 14mm 16mm 14mm 16mm !important;
+        box-sizing: border-box !important;
+        background-color: #0B0B0D !important;
+        background: #0B0B0D !important;
+      }
+    }
+    /* Minimal Top Accent */
     .top-accent-stripe {
-      height: 4px;
-      background: linear-gradient(90deg, #0284c7 0%, #10b981 50%, #6366f1 100%);
-      margin-bottom: 14px;
+      height: 2px;
+      background: #3B82F6;
+      margin-bottom: 16px;
     }
     .header-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 1.5px solid #0f172a;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
+      border-bottom: 1px solid #1E1E26;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
     }
     .brand-mark {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 8pt;
-      font-weight: 800;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 7.5pt;
+      font-weight: 700;
       letter-spacing: 0.12em;
-      color: #0284c7;
+      color: #3B82F6;
       text-transform: uppercase;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
     .doc-title {
-      font-size: 16pt;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.02em;
+      font-size: 15pt;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.025em;
       line-height: 1.2;
     }
     .doc-subtitle {
-      font-size: 9.5pt;
-      color: #475569;
-      margin-top: 3px;
+      font-size: 8.5pt;
+      color: #8E8E99;
+      margin-top: 4px;
     }
     .header-meta {
       text-align: right;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 7.5pt;
-      color: #64748b;
-      line-height: 1.4;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 7pt;
+      color: #71717A;
+      line-height: 1.5;
     }
     .security-badge {
       display: inline-block;
       padding: 2px 7px;
-      font-size: 7pt;
-      font-weight: 700;
-      border: 1px solid #cbd5e1;
+      font-size: 6.5pt;
+      font-weight: 600;
+      border: 1px solid #272732;
       border-radius: 3px;
-      background: #f8fafc;
-      color: #334155;
+      background: #141418;
+      color: #A1A1AA;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
+      letter-spacing: 0.06em;
+      margin-bottom: 5px;
     }
-    /* Executive Scorecard KPI Grid */
+    /* Scorecard KPI Grid */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(${Math.min(kpiTiles.length || 4, 4)}, 1fr);
       gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
     .kpi-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-left: 3px solid #0284c7;
+      background: #121216 !important;
+      border: 1px solid #1F1F27 !important;
+      border-left: 2px solid #3B82F6 !important;
       border-radius: 4px;
-      padding: 8px 10px;
+      padding: 10px 12px;
       break-inside: avoid;
     }
     .kpi-label {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 7pt;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 3px;
-    }
-    .kpi-value {
-      font-size: 14pt;
-      font-weight: 800;
-      color: #0f172a;
-      line-height: 1.1;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    }
-    .kpi-sub {
-      font-size: 7.5pt;
-      color: #475569;
-      margin-top: 3px;
-    }
-    /* Callout Box */
-    .callout-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-left: 4px solid #10b981;
-      border-radius: 4px;
-      padding: 10px 14px;
-      margin-bottom: 18px;
-      break-inside: avoid;
-    }
-    .callout-title {
-      font-size: 8pt;
-      font-weight: 700;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      color: #047857;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 6.8pt;
+      font-weight: 600;
+      color: #71717A;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 4px;
     }
+    .kpi-value {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #FFFFFF;
+      line-height: 1.15;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+    }
+    .kpi-sub {
+      font-size: 7pt;
+      color: #8E8E99;
+      margin-top: 4px;
+    }
+    /* Executive Callout Box */
+    .callout-box {
+      background: #111116 !important;
+      border: 1px solid #1E1E26 !important;
+      border-left: 3px solid #3B82F6 !important;
+      border-radius: 4px;
+      padding: 11px 14px;
+      margin-bottom: 20px;
+      break-inside: avoid;
+    }
+    .callout-title {
+      font-size: 7.5pt;
+      font-weight: 700;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      color: #3B82F6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
     .callout-body {
-      font-size: 9.5pt;
-      color: #14532d;
-      line-height: 1.5;
+      font-size: 8.5pt;
+      color: #D4D4D8;
+      line-height: 1.55;
     }
     /* Sections */
     .report-section {
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       break-inside: auto;
     }
     .section-header {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      border-bottom: 1.5px solid #0f172a;
-      padding-bottom: 4px;
-      margin-bottom: 10px;
+      align-items: baseline;
+      gap: 8px;
+      border-bottom: 1px solid #1E1E26;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
       break-after: avoid;
     }
     .section-idx {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 8pt;
-      font-weight: 800;
-      color: #0284c7;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #52525B;
     }
     .section-title {
-      font-size: 10pt;
-      font-weight: 800;
+      font-size: 9.5pt;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #0f172a;
+      letter-spacing: 0.06em;
+      color: #F4F4F6;
     }
     /* Tables */
     table.data-table {
       width: 100%;
       border-collapse: collapse;
       margin: 8px 0;
-      font-size: 8.5pt;
+      font-size: 8pt;
       break-inside: auto;
     }
     table.data-table tr {
       break-inside: avoid;
     }
     table.data-table th {
-      background-color: #f1f5f9;
-      color: #334155;
-      font-weight: 700;
+      background-color: #141418 !important;
+      color: #8E8E99;
+      font-weight: 600;
       text-transform: uppercase;
-      font-size: 7pt;
-      letter-spacing: 0.05em;
+      font-size: 6.8pt;
+      letter-spacing: 0.06em;
       text-align: left;
-      padding: 6px 8px;
-      border-bottom: 1.5px solid #cbd5e1;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      padding: 7px 10px;
+      border-bottom: 1px solid #20202A;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
     }
     table.data-table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid #e2e8f0;
-      color: #1e293b;
+      padding: 7px 10px;
+      border-bottom: 1px solid #17171E;
+      color: #D4D4D8;
     }
     table.data-table tr:nth-child(even) td {
-      background-color: #f8fafc;
+      background-color: #0E0E12 !important;
     }
     /* Badges & Tags */
     .tag {
       display: inline-block;
-      padding: 1px 5px;
-      font-size: 7pt;
-      font-weight: 700;
+      padding: 2px 6px;
+      font-size: 6.5pt;
+      font-weight: 600;
       border-radius: 3px;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
       text-transform: uppercase;
     }
-    .tag-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .tag-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-    .tag-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-    .tag-rose { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+    .tag-green { background: rgba(16, 185, 129, 0.12) !important; color: #34D399 !important; border: 1px solid rgba(16, 185, 129, 0.25); }
+    .tag-blue { background: rgba(59, 130, 246, 0.12) !important; color: #60A5FA !important; border: 1px solid rgba(59, 130, 246, 0.25); }
+    .tag-amber { background: rgba(245, 158, 11, 0.12) !important; color: #FBBF24 !important; border: 1px solid rgba(245, 158, 11, 0.25); }
+    .tag-rose { background: rgba(244, 63, 94, 0.12) !important; color: #FB7185 !important; border: 1px solid rgba(244, 63, 94, 0.25); }
     /* Item list cards */
     .list-card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #1C1C24 !important;
       border-radius: 4px;
-      padding: 8px 12px;
+      padding: 10px 12px;
       margin-bottom: 8px;
-      background: #ffffff;
+      background: #111115 !important;
       break-inside: avoid;
     }
     .list-card-title {
-      font-size: 9pt;
-      font-weight: 700;
-      color: #0f172a;
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: #FFFFFF;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
     .list-card-desc {
-      font-size: 8.5pt;
-      color: #475569;
-      line-height: 1.45;
+      font-size: 8pt;
+      color: #8E8E99;
+      line-height: 1.5;
     }
     /* Pre / Code Blocks */
     pre.code-block {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      background: #101014 !important;
+      border: 1px solid #1C1C24 !important;
       border-radius: 4px;
       padding: 8px 10px;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 7.5pt;
-      color: #0f172a;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 7.2pt;
+      color: #E4E4E7 !important;
       white-space: pre-wrap;
       word-break: break-all;
-      line-height: 1.4;
+      line-height: 1.45;
       margin: 6px 0;
       break-inside: avoid;
     }
     /* Footer */
     .report-footer {
-      border-top: 1px solid #cbd5e1;
-      padding-top: 10px;
+      border-top: 1px solid #1C1C24;
+      padding-top: 12px;
       margin-top: 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 7pt;
-      color: #64748b;
+      font-family: "SFMono-Regular", Consolas, "JetBrains Mono", Menlo, Courier, monospace;
+      font-size: 6.8pt;
+      color: #52525B;
       break-inside: avoid;
     }
     .print-only-break {
@@ -374,7 +409,7 @@ export const buildInstitutionalDossierHtml = ({
     
     <header class="header-bar">
       <div>
-        <div class="brand-mark">INNOVATEX // QUANTITATIVE INTELLIGENCE</div>
+        <div class="brand-mark">INNOVATEX · DEVELOPER INTELLIGENCE</div>
         <h1 class="doc-title">${title}</h1>
         <div class="doc-subtitle">${subtitle}</div>
       </div>
@@ -389,7 +424,7 @@ export const buildInstitutionalDossierHtml = ({
     ${kpiTiles.length > 0 ? `
     <div class="kpi-grid">
       ${kpiTiles.map(tile => `
-        <div class="kpi-card" ${tile.borderColor ? `style="border-left-color: ${tile.borderColor};"` : ''}>
+        <div class="kpi-card" ${tile.borderColor ? `style="border-left-color: ${tile.borderColor} !important;"` : ''}>
           <div class="kpi-label">${tile.label}</div>
           <div class="kpi-value">${tile.value}</div>
           ${tile.sub ? `<div class="kpi-sub">${tile.sub}</div>` : ''}
@@ -409,7 +444,7 @@ export const buildInstitutionalDossierHtml = ({
       ${sections.map((sec, idx) => `
         <section class="report-section" id="${sec.id || `sec-${idx}`}">
           <div class="section-header">
-            <span class="section-idx">${String(idx + 1).padStart(2, '0')} //</span>
+            <span class="section-idx">${String(idx + 1).padStart(2, '0')}</span>
             <h2 class="section-title">${sec.title}</h2>
           </div>
           <div class="section-content">
@@ -420,8 +455,8 @@ export const buildInstitutionalDossierHtml = ({
     </main>
 
     <footer class="report-footer">
-      <div>VERIFICATION SIGNATURE: <strong>${docHash}</strong></div>
-      <div>INNOVATEX DOSSIER • CONFIDENTIAL & AUTHORIZED USE ONLY</div>
+      <div>INNOVATEX DEVELOPER INTELLIGENCE · REPORT ${generatedId}</div>
+      <div>CONFIDENTIAL · AUTHORIZED RECIPIENT ONLY</div>
     </footer>
   </div>
 </body>
@@ -619,36 +654,36 @@ export const exportGithubAuditPdf = (report) => {
   const topRepos = report.repo_analysis?.top_repos || [];
 
   const kpiTiles = [
-    { label: 'Overall Score', value: `${overallScore}/100`, sub: `Tier: ${tier}`, borderColor: overallScore >= 80 ? '#10b981' : overallScore >= 60 ? '#f59e0b' : '#ef4444' },
+    { label: 'Overall Score', value: `${overallScore} / 100`, sub: `Tier: ${tier}`, borderColor: overallScore >= 80 ? '#10b981' : overallScore >= 60 ? '#f59e0b' : '#ef4444' },
     { label: 'Total Stars', value: `★ ${totalStars.toLocaleString()}`, sub: 'Across Repositories' },
     { label: 'Public Repos', value: `${publicRepos}`, sub: `Primary: ${primaryLang}` },
     { label: 'Total Forks', value: `${totalForks.toLocaleString()}`, sub: 'Community Derivative Works' }
   ];
 
   const catRows = [
-    { label: 'Profile Completeness', score: cats.completeness_score ?? 0, max: 25, benchmark: '21/25' },
-    { label: 'Repository Architecture & Quality', score: cats.quality_score ?? 0, max: 35, benchmark: '28/35' },
-    { label: 'Commit Activity & Cadence', score: cats.activity_score ?? 0, max: 25, benchmark: '19/25' },
-    { label: 'Open Source Community Impact', score: cats.community_score ?? 0, max: 15, benchmark: '11/15' }
+    { label: 'Profile Completeness', score: cats.completeness_score ?? 0, max: 25, benchmark: '21 / 25' },
+    { label: 'Repository Architecture & Quality', score: cats.quality_score ?? 0, max: 35, benchmark: '28 / 35' },
+    { label: 'Commit Activity & Cadence', score: cats.activity_score ?? 0, max: 25, benchmark: '19 / 25' },
+    { label: 'Open Source Community Impact', score: cats.community_score ?? 0, max: 15, benchmark: '11 / 15' }
   ].map(c => {
     const pct = Math.round((c.score / c.max) * 100);
     const tagClass = pct >= 80 ? 'tag-green' : pct >= 60 ? 'tag-amber' : 'tag-rose';
     const tagText = pct >= 80 ? 'STRONG' : pct >= 60 ? 'MODERATE' : 'ATTENTION';
     return `<tr>
-      <td style="font-weight: 600;">${c.label}</td>
-      <td style="font-family: monospace; font-weight: 700;">${c.score} / ${c.max}</td>
-      <td style="font-family: monospace; color: #64748b;">${c.benchmark}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${c.label}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${c.score} / ${c.max}</td>
+      <td style="font-family: monospace; color: #8E8E99;">${c.benchmark}</td>
       <td><span class="tag ${tagClass}">${tagText} (${pct}%)</span></td>
     </tr>`;
   }).join('');
 
   const repoRows = topRepos.slice(0, 6).map(r => `
     <tr>
-      <td style="font-weight: 600;">${r.name}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${r.name}</td>
       <td><span class="tag tag-blue">${r.language || 'N/A'}</span></td>
-      <td style="font-family: monospace;">★ ${r.stargazers_count ?? r.stars ?? 0}</td>
-      <td style="font-family: monospace;">${r.forks_count ?? r.forks ?? 0}</td>
-      <td style="color: #64748b; font-size: 8pt;">${(r.description || 'No description provided').substring(0, 65)}...</td>
+      <td style="font-family: monospace; color: #FFFFFF;">★ ${r.stargazers_count ?? r.stars ?? 0}</td>
+      <td style="font-family: monospace; color: #8E8E99;">${r.forks_count ?? r.forks ?? 0}</td>
+      <td style="color: #8E8E99; font-size: 8pt;">${(r.description || 'No description provided').substring(0, 65)}...</td>
     </tr>
   `).join('');
 
@@ -661,8 +696,8 @@ export const exportGithubAuditPdf = (report) => {
           <span>${idx + 1}. [${item.category || 'General'}] ${item.action || 'Recommended Action'}</span>
           <span class="tag ${tagClass}">${(item.priority || 'MEDIUM').toUpperCase()} PRIORITY</span>
         </div>
-        <div class="list-card-desc" style="margin-bottom: 4px;"><strong>Issue Detected:</strong> ${item.issue || 'Opportunity for optimization'}</div>
-        <div class="list-card-desc" style="color: #0369a1;"><strong>Recruiter & Hiring Impact:</strong> ${item.impact || 'Enhances developer discoverability'}</div>
+        <div class="list-card-desc" style="margin-bottom: 4px;"><strong style="color: #D4D4D8;">Issue Detected:</strong> ${item.issue || 'Opportunity for optimization'}</div>
+        <div class="list-card-desc" style="color: #60a5fa;"><strong style="color: #60a5fa;">Recruiter & Hiring Impact:</strong> ${item.impact || 'Enhances developer discoverability'}</div>
       </div>
     `;
   }).join('');
@@ -716,11 +751,11 @@ export const exportGithubAuditPdf = (report) => {
   const html = buildInstitutionalDossierHtml({
     title: 'DEVELOPER PROFILE TELEMETRY AUDIT',
     subtitle: `Automated GitHub Intelligence Dossier for @${username}`,
-    badge: `AUDIT LEVEL: ${tier.toUpperCase()}`,
+    badge: `TIER: ${tier.toUpperCase()}`,
     engine: 'LangGraph Autonomous Profiler v2.4 (Groq Llama 3.3)',
     kpiTiles,
     sections,
-    analystNote: `Telemetry evaluation indicates developer @${username} ranks in the <strong>${tier} tier</strong> with an aggregate score of <strong>${overallScore}/100</strong>. Primary repository assets demonstrate concentrated proficiency in <strong>${primaryLang}</strong>. Review actionable optimization recommendations to increase technical recruiter conversion rates.`
+    analystNote: `Telemetry evaluation indicates developer @${username} ranks in the <strong>${tier} tier</strong> with an aggregate score of <strong>${overallScore} / 100</strong>. Primary repository assets demonstrate concentrated proficiency in <strong>${primaryLang}</strong>. Review actionable optimization recommendations to increase technical recruiter conversion rates.`
   });
 
   printReportDocument(html);
@@ -746,23 +781,23 @@ export const exportGithubComparisonPdf = (userA, userB, reportA, reportB) => {
   const delta = Math.abs(sA - sB);
 
   const kpiTiles = [
-    { label: `@${userA} Score`, value: `${sA}/100`, sub: `Tier: ${tA}`, borderColor: '#0284c7' },
-    { label: `@${userB} Score`, value: `${sB}/100`, sub: `Tier: ${tB}`, borderColor: '#10b981' },
+    { label: `@${userA} Score`, value: `${sA} / 100`, sub: `Tier: ${tA}`, borderColor: '#3b82f6' },
+    { label: `@${userB} Score`, value: `${sB} / 100`, sub: `Tier: ${tB}`, borderColor: '#10b981' },
     { label: 'Advantage Leader', value: winner, sub: delta === 0 ? 'Parity' : `+${delta} pts lead` },
-    { label: 'Comparative Stacks', value: `${langA} / ${langB}`, sub: 'Primary Ecosystems' }
+    { label: 'Comparative Stacks', value: `${langA} & ${langB}`, sub: 'Primary Ecosystems' }
   ];
 
   const compareRows = [
-    { metric: 'Overall Developer Score', valA: `${sA}/100`, valB: `${sB}/100`, edge: sA > sB ? `@${userA}` : sB > sA ? `@${userB}` : 'Tie' },
+    { metric: 'Overall Developer Score', valA: `${sA} / 100`, valB: `${sB} / 100`, edge: sA > sB ? `@${userA}` : sB > sA ? `@${userB}` : 'Tie' },
     { metric: 'Talent Tier', valA: tA, valB: tB, edge: '-' },
     { metric: 'Public Repositories', valA: rA, valB: rB, edge: rA > rB ? `@${userA}` : rB > rA ? `@${userB}` : 'Tie' },
     { metric: 'Total Stars Earned', valA: `★ ${starsA.toLocaleString()}`, valB: `★ ${starsB.toLocaleString()}`, edge: starsA > starsB ? `@${userA}` : starsB > starsA ? `@${userB}` : 'Tie' },
     { metric: 'Primary Engineering Stack', valA: langA, valB: langB, edge: '-' }
   ].map(r => `
     <tr>
-      <td style="font-weight: 600;">${r.metric}</td>
-      <td style="font-family: monospace; font-weight: 700;">${r.valA}</td>
-      <td style="font-family: monospace; font-weight: 700;">${r.valB}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${r.metric}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${r.valA}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${r.valB}</td>
       <td><span class="tag tag-blue">${r.edge}</span></td>
     </tr>
   `).join('');
@@ -789,7 +824,7 @@ export const exportGithubComparisonPdf = (userA, userB, reportA, reportB) => {
   const html = buildInstitutionalDossierHtml({
     title: 'HEAD-TO-HEAD DEVELOPER BENCHMARK',
     subtitle: `Comparative Forensic Analysis: @${userA} vs @${userB}`,
-    badge: 'BENCHMARK // PEER COMPARISON',
+    badge: 'PEER BENCHMARK',
     kpiTiles,
     sections,
     analystNote: `Automated comparative audit reveals <strong>${winner}</strong> holds the operational performance edge with a <strong>${delta} point</strong> differential. Evaluation evaluates public commit velocity, architectural maturity, and open source impact footprint.`
@@ -817,7 +852,7 @@ export const exportMarketForecastPdf = (forecastResult) => {
   const series = fc.forecast_series || [];
 
   const kpiTiles = [
-    { label: 'Current Market Share', value: `${currentPct.toFixed(1)}%`, sub: 'Of Global Postings', borderColor: '#0284c7' },
+    { label: 'Current Market Share', value: `${currentPct.toFixed(1)}%`, sub: 'Of Global Postings', borderColor: '#3b82f6' },
     { label: '26-Week Projected', value: `${fc6m.toFixed(1)}%`, sub: `${changePct >= 0 ? `+${changePct.toFixed(1)}%` : `${changePct.toFixed(1)}%`} Horizon Delta`, borderColor: '#10b981' },
     { label: 'Global Rank', value: `#${rank}`, sub: `Regime: ${trend}` },
     { label: 'Model Confidence', value: `${confidence}%`, sub: `Algorithm: ${modelUsed.toUpperCase()}` }
@@ -826,25 +861,25 @@ export const exportMarketForecastPdf = (forecastResult) => {
   // Forecast time-series table rows
   const seriesRows = series.slice(0, 14).map(pt => `
     <tr>
-      <td style="font-family: monospace; font-weight: 700;">${pt.week}</td>
-      <td style="font-family: monospace; color: #64748b;">${pt.date}</td>
-      <td style="font-family: monospace; font-weight: 700; color: #0284c7;">${pt.predicted}%</td>
-      <td style="font-family: monospace; color: #64748b;">[${pt.lower}% — ${pt.upper}%]</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${pt.week}</td>
+      <td style="font-family: monospace; color: #8E8E99;">${pt.date}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #3b82f6;">${pt.predicted}%</td>
+      <td style="font-family: monospace; color: #8E8E99;">[${pt.lower}% — ${pt.upper}%]</td>
     </tr>
   `).join('');
 
   // Co-occurring technology table
   const coPairsHtml = coOccurring.length > 0 ? `
     <div style="display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px 0;">
-      ${coOccurring.map(s => `<span class="tag tag-blue" style="font-size: 8.5pt; padding: 3px 8px;">${s}</span>`).join('')}
+      ${coOccurring.map(s => `<span class="tag tag-blue" style="font-size: 8pt; padding: 3px 8px;">${s}</span>`).join('')}
     </div>
-  ` : '<p style="font-size: 9pt; color: #64748b;">No direct co-occurring dependencies identified.</p>';
+  ` : '<p style="font-size: 8.5pt; color: #8E8E99;">No direct co-occurring dependencies identified.</p>';
 
   const sections = [
     {
       title: 'Ecosystem Co-Occurrence & Stack Affinity',
       contentHtml: `
-        <p style="font-size: 8.5pt; color: #475569; margin-bottom: 6px;">
+        <p style="font-size: 8.5pt; color: #A1A1AA; margin-bottom: 6px;">
           Job postings mandating <strong>${skill}</strong> exhibit statistically elevated co-selection frequencies with the following companion technologies:
         </p>
         ${coPairsHtml}
@@ -874,7 +909,7 @@ export const exportMarketForecastPdf = (forecastResult) => {
   const html = buildInstitutionalDossierHtml({
     title: 'MARKET DEMAND & 26-WEEK FORECAST',
     subtitle: `Macro Quantitative Demand Modeling for ${skill}`,
-    badge: 'CLASSIFICATION: MACRO-INTEL',
+    badge: 'MACRO INTELLIGENCE',
     engine: `Facebook Prophet + ARIMA Pipeline (Confidence: ${confidence}%)`,
     kpiTiles,
     sections,
@@ -900,26 +935,26 @@ export const exportResearchPaperPdf = (paper) => {
   const audience = exp.who_should_read_this || exp.practical_takeaways || 'Software Engineers, ML Researchers, and System Architects';
 
   const kpiTiles = [
-    { label: 'Paper Identifier', value: paperId, sub: `Published: ${year}`, borderColor: '#0284c7' },
+    { label: 'Paper Identifier', value: paperId, sub: `Published: ${year}`, borderColor: '#3b82f6' },
     { label: 'Authorship', value: `${authors.substring(0, 18)}...`, sub: 'Primary Investigators' },
-    { label: 'Domain Area', value: 'AI / Machine Learning', sub: 'ArXiv Computer Science' },
+    { label: 'Domain Area', value: 'AI & Machine Learning', sub: 'ArXiv Computer Science' },
     { label: 'Synthesis Model', value: 'Llama 3.3 70B', sub: 'Groq TPU Acceleration', borderColor: '#10b981' }
   ];
 
   const innovationsHtml = contributions.length > 0 ? `
-    <ul style="margin-left: 18px; margin-top: 6px; font-size: 9pt; line-height: 1.6; color: #1e293b;">
+    <ul style="margin-left: 18px; margin-top: 6px; font-size: 8.5pt; line-height: 1.6; color: #D4D4D8;">
       ${contributions.map(c => `<li>${c}</li>`).join('')}
     </ul>
-  ` : '<p style="font-size: 8.5pt; color: #64748b;">No distinct innovation bullet points extracted.</p>';
+  ` : '<p style="font-size: 8.5pt; color: #8E8E99;">No distinct innovation bullet points extracted.</p>';
 
   const sections = [
     {
       title: 'Problem Formulation & Scientific Gap',
-      contentHtml: `<div style="font-size: 9pt; color: #334155; line-height: 1.55;">${problem}</div>`
+      contentHtml: `<div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.55;">${problem}</div>`
     },
     {
       title: 'System Methodology & Algorithmic Mechanics',
-      contentHtml: `<div style="font-size: 9pt; color: #334155; line-height: 1.55;">${howItWorks}</div>`
+      contentHtml: `<div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.55;">${howItWorks}</div>`
     },
     {
       title: 'Core Architectural Innovations & Findings',
@@ -927,14 +962,14 @@ export const exportResearchPaperPdf = (paper) => {
     },
     {
       title: 'Production Engineering Implications & Target Audience',
-      contentHtml: `<div style="font-size: 9pt; color: #334155; line-height: 1.55;">${audience}</div>`
+      contentHtml: `<div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.55;">${audience}</div>`
     }
   ];
 
   const html = buildInstitutionalDossierHtml({
     title: 'RESEARCH PAPER SYNTHESIS & ARCHITECTURE DOSSIER',
     subtitle: title,
-    badge: 'RESEARCH // LITERATURE DOSSIER',
+    badge: 'RESEARCH DOSSIER',
     engine: 'InnovateX ArXiv Research Agent (Groq Llama 3.3 70B)',
     kpiTiles,
     sections,
@@ -956,7 +991,7 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
   const tech = selectedIssue.language || 'Codebase';
 
   const kpiTiles = [
-    { label: 'Repository', value: repo.split('/')[1] || repo, sub: repo, borderColor: '#0284c7' },
+    { label: 'Repository', value: repo.split('/')[1] || repo, sub: repo, borderColor: '#3b82f6' },
     { label: 'Issue Number', value: `#${issueNum}`, sub: `Difficulty: ${complexity}` },
     { label: 'Primary Language', value: tech, sub: 'Target Stack' },
     { label: 'Contribution Plan', value: prGuide ? 'Generated' : 'Ready', sub: 'InnovateX Multi-Agent', borderColor: '#10b981' }
@@ -969,7 +1004,7 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
       sections.push({
         title: 'Local Environment Setup & Reproduction',
         contentHtml: `
-          <ol style="margin-left: 18px; font-size: 9pt; line-height: 1.6; color: #1e293b;">
+          <ol style="margin-left: 18px; font-size: 8.5pt; line-height: 1.6; color: #D4D4D8;">
             ${prGuide.setup_steps.map(step => `<li>${step}</li>`).join('')}
           </ol>
         `
@@ -977,12 +1012,20 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
     }
 
     if (prGuide.files_to_edit && prGuide.files_to_edit.length > 0) {
-      const fileRows = prGuide.files_to_edit.map(f => `
-        <tr>
-          <td style="font-family: monospace; font-weight: 700; color: #0284c7;">${typeof f === 'string' ? f : f.file}</td>
-          <td style="font-size: 8.5pt;">${typeof f === 'string' ? 'Target modifications' : (f.reason || 'Implement resolution logic')}</td>
-        </tr>
-      `).join('');
+      const fileRows = prGuide.files_to_edit.map(f => {
+        const filePath = typeof f === 'string' ? f : (f.file_path || f.file || f.path || f.name || 'Target File');
+        const reason = typeof f === 'string' ? 'Target modifications' : (f.reason || 'Implement resolution logic');
+        const whatToChange = typeof f === 'object' && f.what_to_change ? `<div style="font-size: 7.5pt; color: #8E8E99; margin-top: 3px;"><strong>Change:</strong> ${f.what_to_change}</div>` : '';
+        return `
+          <tr>
+            <td style="font-family: monospace; font-weight: 700; color: #3b82f6;">${filePath}</td>
+            <td style="font-size: 8pt; color: #D4D4D8;">
+              ${reason}
+              ${whatToChange}
+            </td>
+          </tr>
+        `;
+      }).join('');
       sections.push({
         title: 'Target Files & Architectural Scope',
         contentHtml: `
@@ -1003,7 +1046,7 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
       sections.push({
         title: 'Implementation Blueprint & Technical Hints',
         contentHtml: `
-          <ul style="margin-left: 18px; font-size: 9pt; line-height: 1.6; color: #1e293b;">
+          <ul style="margin-left: 18px; font-size: 8.5pt; line-height: 1.6; color: #D4D4D8;">
             ${prGuide.implementation_hints.map(h => `<li>${h}</li>`).join('')}
           </ul>
         `
@@ -1022,7 +1065,7 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
     sections.push({
       title: 'Issue Specification',
       contentHtml: `
-        <div style="font-size: 9pt; color: #334155; line-height: 1.55;">
+        <div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.55;">
           ${selectedIssue.body || 'No detailed issue body provided.'}
         </div>
       `
@@ -1032,7 +1075,7 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
   const html = buildInstitutionalDossierHtml({
     title: 'OPEN SOURCE CONTRIBUTION BLUEPRINT',
     subtitle: `Actionable Implementation Guide for ${repo} #${issueNum}`,
-    badge: 'OSS // PULL REQUEST BLUEPRINT',
+    badge: 'CONTRIBUTION BLUEPRINT',
     kpiTiles,
     sections,
     analystNote: `Autonomous contribution guide generated for <strong>${repo} #${issueNum}</strong> ("${title}"). Follow reproduction commands and target file blueprints to submit a high-acceptance pull request.`
@@ -1051,7 +1094,7 @@ export const exportJobMatchPdf = (jobs = [], resumeName = 'Candidate') => {
   const highestMatch = Math.max(...topJobs.map(j => j.match_score || 0));
 
   const kpiTiles = [
-    { label: 'Roles Evaluated', value: `${jobs.length}`, sub: 'Active Engineering Openings', borderColor: '#0284c7' },
+    { label: 'Roles Evaluated', value: `${jobs.length}`, sub: 'Active Engineering Openings', borderColor: '#3b82f6' },
     { label: 'Average ATS Fit', value: `${avgMatch}%`, sub: 'Across Top Postings' },
     { label: 'Highest Alignment', value: `${highestMatch}%`, sub: 'Target Fit Score', borderColor: '#10b981' },
     { label: 'Target Candidate', value: resumeName.substring(0, 16), sub: 'Parsed Resume Dossier' }
@@ -1062,11 +1105,11 @@ export const exportJobMatchPdf = (jobs = [], resumeName = 'Candidate') => {
     const tagClass = s >= 80 ? 'tag-green' : s >= 60 ? 'tag-amber' : 'tag-rose';
     return `
       <tr>
-        <td style="font-weight: 700; color: #0f172a;">${j.title || 'Software Engineer'}</td>
-        <td style="font-weight: 600; color: #475569;">${j.company || 'Tech Company'}</td>
+        <td style="font-weight: 700; color: #FFFFFF;">${j.title || 'Software Engineer'}</td>
+        <td style="font-weight: 500; color: #A1A1AA;">${j.company || 'Tech Company'}</td>
         <td><span class="tag ${tagClass}">${s}% FIT</span></td>
-        <td style="color: #64748b; font-size: 8pt;">${j.location || 'Remote'}</td>
-        <td style="font-size: 8pt; color: #334155;">${(j.match_reason || 'Strong keyword and tech stack alignment.').substring(0, 90)}...</td>
+        <td style="color: #8E8E99; font-size: 7.8pt;">${j.location || 'Remote'}</td>
+        <td style="font-size: 7.8pt; color: #D4D4D8;">${(j.match_reason || 'Strong keyword and tech stack alignment.').substring(0, 90)}...</td>
       </tr>
     `;
   }).join('');
@@ -1094,7 +1137,7 @@ export const exportJobMatchPdf = (jobs = [], resumeName = 'Candidate') => {
   const html = buildInstitutionalDossierHtml({
     title: 'CANDIDATE INTELLIGENCE & ROLE MATCH DOSSIER',
     subtitle: `Semantic Job Fit & Application Pipeline for ${resumeName}`,
-    badge: 'CAREER // ATS RECRUITMENT AUDIT',
+    badge: 'ROLE MATCH AUDIT',
     kpiTiles,
     sections,
     analystNote: `Multi-agent semantic matching parsed candidate profile <strong>${resumeName}</strong> against <strong>${jobs.length} live job listings</strong>. Optimal role alignment peaked at <strong>${highestMatch}%</strong> compatibility.`
@@ -1111,7 +1154,7 @@ export const exportDashboardDigestPdf = (user, stats) => {
   const email = user?.email || 'N/A';
 
   const kpiTiles = [
-    { label: 'GitHub Audits', value: `${stats?.analysesCount || 0}`, sub: 'Profiles Analyzed', borderColor: '#0284c7' },
+    { label: 'GitHub Audits', value: `${stats?.analysesCount || 0}`, sub: 'Profiles Analyzed', borderColor: '#3b82f6' },
     { label: 'ArXiv Papers', value: `${stats?.papersCount || 0}`, sub: 'Synthesized Literatures', borderColor: '#10b981' },
     { label: 'Open Source Issues', value: `${stats?.ossBookmarksCount || 0}`, sub: 'Contribution Bookmarks' },
     { label: 'Job Opportunities', value: `${stats?.jobsCount || 0}`, sub: 'Evaluated Postings' }
@@ -1124,8 +1167,8 @@ export const exportDashboardDigestPdf = (user, stats) => {
     { engine: 'Autonomous JSearch Career Crawler', role: 'Live Engineering Job Telemetry', status: 'CONNECTED' }
   ].map(e => `
     <tr>
-      <td style="font-weight: 700; color: #0f172a;">${e.engine}</td>
-      <td style="color: #475569;">${e.role}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${e.engine}</td>
+      <td style="color: #A1A1AA;">${e.role}</td>
       <td><span class="tag tag-green">${e.status}</span></td>
     </tr>
   `).join('');
@@ -1151,7 +1194,7 @@ export const exportDashboardDigestPdf = (user, stats) => {
   const html = buildInstitutionalDossierHtml({
     title: 'DEVELOPER INTELLIGENCE PLATFORM DIGEST',
     subtitle: `Portfolio Telemetry & Autonomous Agent Status for ${name} (${email})`,
-    badge: 'PLATFORM // EXECUTIVE DIGEST',
+    badge: 'EXECUTIVE DIGEST',
     kpiTiles,
     sections,
     analystNote: `This automated executive digest compiles developer telemetry across all active InnovateX multi-agent pipelines for <strong>${name}</strong>.`
@@ -1357,29 +1400,29 @@ export const exportGithubReportByType = (report, reportType = 'full_audit', form
 
   // 4. PDF Export
   const kpiTiles = [
-    { label: 'Profile Health', value: `${totalScore}/100`, sub: `Methodology ${methodologyVersion}`, borderColor: totalScore >= 75 ? '#10b981' : totalScore >= 50 ? '#f59e0b' : '#ef4444' },
-    { label: 'Modelled Target', value: `${report.projection?.projectedScore ?? totalScore}/100`, sub: 'Modelled Projection' },
+    { label: 'Profile Health', value: `${totalScore} / 100`, sub: `Methodology ${methodologyVersion}`, borderColor: totalScore >= 75 ? '#10b981' : totalScore >= 50 ? '#f59e0b' : '#ef4444' },
+    { label: 'Modelled Target', value: `${report.projection?.projectedScore ?? totalScore} / 100`, sub: 'Modelled Projection' },
     { label: 'Source Repos', value: `${repositories.length}`, sub: `Primary: ${report.top_languages?.[0] || 'N/A'}` },
     { label: 'Confidence', value: report.confidenceLabel || 'High', sub: `Synced: ${new Date(dataTimestamp).toLocaleDateString()}` }
   ];
 
   const dimRows = dimensions.map((d) => `
     <tr>
-      <td style="font-weight: 700;">${d.dimension}</td>
-      <td style="font-family: monospace; font-weight: 700;">${d.score} / ${d.maxScore} (${d.percentage}%)</td>
-      <td style="font-size: 8pt; color: #334155;">${d.observation || d.primaryIssue}</td>
-      <td style="font-family: monospace; font-size: 7.5pt; color: #64748b;">${d.confidenceLabel}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${d.dimension}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${d.score} / ${d.maxScore} (${d.percentage}%)</td>
+      <td style="font-size: 8pt; color: #D4D4D8;">${d.observation || d.primaryIssue}</td>
+      <td style="font-family: monospace; font-size: 7.2pt; color: #8E8E99;">${d.confidenceLabel}</td>
     </tr>
   `).join('');
 
   const repoRows = repositories.slice(0, 12).map((r) => `
     <tr>
-      <td style="font-weight: 700;">${r.name}</td>
+      <td style="font-weight: 600; color: #FFFFFF;">${r.name}</td>
       <td><span class="tag tag-blue">${r.language || 'Code'}</span></td>
-      <td style="font-family: monospace; font-weight: 700;">${r.health_score}/100</td>
-      <td>${r.lifecycle_state}</td>
-      <td>${r.depth_classification}</td>
-      <td style="font-size: 8pt; color: #475569;">${(r.gaps || []).slice(0, 2).join(', ') || 'Well-configured'}</td>
+      <td style="font-family: monospace; font-weight: 700; color: #FFFFFF;">${r.health_score} / 100</td>
+      <td style="color: #D4D4D8;">${r.lifecycle_state}</td>
+      <td style="color: #D4D4D8;">${r.depth_classification}</td>
+      <td style="font-size: 7.8pt; color: #8E8E99;">${(r.gaps || []).slice(0, 2).join(', ') || 'Well configured'}</td>
     </tr>
   `).join('');
 
@@ -1389,9 +1432,9 @@ export const exportGithubReportByType = (report, reportType = 'full_audit', form
         <span>${idx + 1}. [${rec.category}] ${rec.title}</span>
         <span class="tag ${rec.severity === 'Critical' || rec.severity === 'High' ? 'tag-rose' : rec.severity === 'Medium' ? 'tag-amber' : 'tag-green'}">${rec.severity} • ${rec.estimatedBenefit}</span>
       </div>
-      <div class="list-card-desc"><strong>Observation:</strong> ${rec.observation}</div>
-      <div class="list-card-desc"><strong>Why it matters:</strong> ${rec.interpretation}</div>
-      <div class="list-card-desc" style="margin-top: 3px; color: #0369a1;"><strong>Verification:</strong> ${rec.verificationCriteria}</div>
+      <div class="list-card-desc"><strong style="color: #D4D4D8;">Observation:</strong> ${rec.observation}</div>
+      <div class="list-card-desc"><strong style="color: #D4D4D8;">Why it matters:</strong> ${rec.interpretation}</div>
+      <div class="list-card-desc" style="margin-top: 3px; color: #60a5fa;"><strong style="color: #60a5fa;">Verification:</strong> ${rec.verificationCriteria}</div>
     </div>
   `).join('');
 
@@ -1405,24 +1448,24 @@ export const exportGithubReportByType = (report, reportType = 'full_audit', form
   if (reportType !== 'optimization_plan') {
     sections.push({
       title: 'Repository Quality & Depth Matrix',
-      contentHtml: `<table class="data-table"><thead><tr><th>Repository</th><th>Language</th><th>Health</th><th>State</th><th>Depth</th><th>Key Gaps / Status</th></tr></thead><tbody>${repoRows}</tbody></table>`
+      contentHtml: `<table class="data-table"><thead><tr><th>Repository</th><th>Language</th><th>Health</th><th>State</th><th>Depth</th><th>Key Gaps & Status</th></tr></thead><tbody>${repoRows}</tbody></table>`
     });
   }
   if (reportType !== 'repository_report') {
     sections.push({
       title: 'Prioritized Evidence-Backed Recommendations',
-      contentHtml: recCards || '<p>No critical gaps detected.</p>'
+      contentHtml: recCards || '<p style="color: #8E8E99; font-size: 8.5pt;">No critical gaps detected.</p>'
     });
   }
 
   const html = buildInstitutionalDossierHtml({
     title: `GITHUB ${reportType.replace(/_/g, ' ').toUpperCase()}`,
-    subtitle: `Developer Intelligence Report for @${username} • Data Snapshot: ${new Date(dataTimestamp).toUTCString()}`,
+    subtitle: `Developer Intelligence Report for @${username} • Snapshot: ${new Date(dataTimestamp).toUTCString()}`,
     badge: `METHODOLOGY ${methodologyVersion}`,
     date: new Date(generatedAt).toUTCString(),
     kpiTiles,
     sections,
-    analystNote: `Evidence-backed GitHub Profile Intelligence report for <strong>@${username}</strong>. Overall Profile Health is <strong>${totalScore}/100</strong> (${report.confidenceLabel || 'High confidence'}). Modelled projection estimates <strong>${report.projection?.projectedScore ?? totalScore}/100</strong> upon completing recommended documentation and discoverability actions.`
+    analystNote: `Evidence-backed GitHub Profile Intelligence report for <strong>@${username}</strong>. Overall Profile Health is <strong>${totalScore} / 100</strong> (${report.confidenceLabel || 'High confidence'}). Modelled projection estimates <strong>${report.projection?.projectedScore ?? totalScore} / 100</strong> upon completing recommended documentation and discoverability actions.`
   });
 
   printReportDocument(html);

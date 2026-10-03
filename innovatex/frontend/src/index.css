@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Linear / Vercel Precision Dark System */
-  --bg-app: #09090b;
-  --bg-subtle: #0f0f12;
+  /* InnovateX Minimal Editorial Dark System */
+  --bg-app: #0B0B0D;
+  --bg-subtle: #101014;
   --bg-card: #131317;
   --bg-card-hover: #18181e;
-  --bg-card-active: #1e1e26;
-  --bg-input: #0f0f13;
-  --bg-muted: #1c1c22;
+  --bg-card-active: #1d1d24;
+  --bg-input: #0e0e11;
+  --bg-muted: #17171c;
   
-  --border-subtle: #202026;
-  --border-medium: #2c2c36;
-  --border-strong: #3f3f4e;
-  --border-focus: #525266;
+  --border-subtle: #1a1a20;
+  --border-medium: #24242c;
+  --border-strong: #363642;
+  --border-focus: #4b4b5c;
 
   --text-main: #f4f4f6;
   --text-secondary: #a1a1aa;
@@ -31,13 +31,13 @@
   --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
 
-  --card-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  --card-highlight: none;
 }
 
 * {
@@ -370,11 +370,21 @@ input::placeholder, textarea::placeholder {
   animation: fadeIn 0.15s ease-out;
 }
 
-/* Print Stylesheet */
+/* Print Stylesheet: Dark Themed Precision Layout */
 @media print {
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
+  @page {
+    size: A4 portrait;
+    margin: 0 !important;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #0B0B0D !important;
+    background-color: #0B0B0D !important;
+    color: #F4F4F6 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
   .desktop-sidebar-container,
   .mobile-drawer-overlay,
@@ -387,15 +397,16 @@ input::placeholder, textarea::placeholder {
   .page-container {
     max-width: 100% !important;
     padding: 0 !important;
+    background: #0B0B0D !important;
   }
   .glass-panel,
   .panel,
   .glass-card,
   .card {
-    background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
+    background: #131317 !important;
+    border: 1px solid #1E1E26 !important;
     box-shadow: none !important;
-    color: #000000 !important;
+    color: #F4F4F6 !important;
     page-break-inside: avoid;
     margin-bottom: 1.5rem !important;
   }
