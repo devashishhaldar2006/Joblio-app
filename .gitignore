@@ -92,3 +92,7 @@ scratch/
 scratch_*
 *.tmp
 *.temp
+*.pdf
+*.docx
+screen.png
+window_dump.xml

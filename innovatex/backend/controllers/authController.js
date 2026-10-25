@@ -1,43 +1,56 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getSafeUserData, sanitizeString } = require('../utils/safeUser');
 
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
+    const rawName = req.body?.name;
+    const rawEmail = req.body?.email;
+    const rawPassword = req.body?.password;
+
+    if (!rawName || !rawEmail || !rawPassword) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = sanitizeString(rawEmail).toLowerCase();
+    const cleanName = sanitizeString(rawName);
+
+    if (rawPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'An account with this email already exists.' });
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
     const newUser = new User({
-      name,
-      email: email.toLowerCase(),
+      name: cleanName,
+      email: cleanEmail,
       password: hashedPassword
     });
 
     await newUser.save();
 
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[Security Warning] JWT_SECRET is not configured.');
+      return res.status(500).json({ error: 'Server authentication configuration error.' });
+    }
+
     const token = jwt.sign(
-      { _id: newUser._id, name: newUser.name, email: newUser.email },
-      process.env.JWT_SECRET || 'innovatex_super_secret_jwt_key_987654321',
+      { _id: newUser._id.toString(), name: newUser.name, email: newUser.email },
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
     return res.status(201).json({
       token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email
-      }
+      user: getSafeUserData(newUser)
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -155,17 +168,7 @@ const login = async (req, res) => {
 
     return res.status(200).json({
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        githubUsername: user.githubUsername,
-        bio: user.bio,
-        targetRole: user.targetRole,
-        skills: user.skills,
-        location: user.location,
-        preferences: user.preferences,
-      },
+      user: getSafeUserData(user)
     });
   } catch (err) {
     console.error("Login error:", err);
