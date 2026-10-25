@@ -73,10 +73,10 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
         style={{
           width: '100%',
           maxWidth: '600px',
-          background: '#0b0b0f',
-          border: '1px solid #242434',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: '6px',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.92)',
+          boxShadow: 'var(--shadow-lg)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column'
@@ -87,8 +87,8 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
         <div
           style={{
             padding: '1rem 1.35rem',
-            borderBottom: '1px solid #1a1a24',
-            background: '#09090c',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
@@ -98,7 +98,7 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
             <span style={{ fontSize: '0.625rem', fontFamily: 'var(--font-mono)', color: '#38bdf8', fontWeight: 700 }}>
               REPORT GENERATION // @{report.username}
             </span>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f4f4f6', margin: '2px 0 0 0' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '2px 0 0 0' }}>
               Export Developer Intelligence Report
             </h3>
           </div>
@@ -106,11 +106,11 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
             type="button"
             onClick={onClose}
             style={{
-              background: '#14141c',
-              border: '1px solid #232332',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
               padding: '0.35rem',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -122,7 +122,7 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
         <div style={{ padding: '1.25rem 1.35rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Report Type Selection */}
           <div>
-            <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#71717a', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
               1. SELECT REPORT SCOPE
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -153,7 +153,7 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: '0.73rem', color: '#71717a' }}>{rt.desc}</span>
+                    <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>{rt.desc}</span>
                   </div>
                 );
               })}
@@ -162,7 +162,7 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
 
           {/* Format Selection */}
           <div>
-            <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#71717a', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
               2. SELECT FORMAT
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
@@ -186,8 +186,8 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
                   >
                     <Icon size={15} style={{ color: active ? '#38bdf8' : '#71717a', flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#f4f4f6' }}>{fmt.label}</div>
-                      <div style={{ fontSize: '0.68rem', color: '#71717a' }}>{fmt.desc}</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt.label}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{fmt.desc}</div>
                     </div>
                   </div>
                 );
@@ -200,14 +200,14 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
             style={{
               padding: '0.65rem 0.85rem',
               borderRadius: '4px',
-              background: '#09090c',
-              border: '1px solid #181822',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               fontSize: '0.7rem',
               fontFamily: 'var(--font-mono)',
-              color: '#71717a'
+              color: 'var(--text-muted)'
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -222,8 +222,8 @@ const ExportDialog = ({ isOpen, onClose, report }) => {
         <div
           style={{
             padding: '0.85rem 1.35rem',
-            borderTop: '1px solid #181822',
-            background: '#09090c',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: '0.5rem'

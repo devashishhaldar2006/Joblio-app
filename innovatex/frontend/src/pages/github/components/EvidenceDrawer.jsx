@@ -76,9 +76,9 @@ const EvidenceDrawer = ({
           width: '100%',
           maxWidth: '540px',
           height: '100%',
-          background: '#0b0b0f',
-          borderLeft: '1px solid #20202c',
-          boxShadow: '-12px 0 40px rgba(0, 0, 0, 0.85)',
+          background: 'var(--bg-card)',
+          borderLeft: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex',
           flexDirection: 'column',
           overflowY: 'auto'
@@ -89,14 +89,14 @@ const EvidenceDrawer = ({
         <div
           style={{
             padding: '1.15rem 1.35rem',
-            borderBottom: '1px solid #1a1a24',
+            borderBottom: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: '1rem',
             position: 'sticky',
             top: 0,
-            background: '#0b0b0f',
+            background: 'var(--bg-card)',
             zIndex: 10
           }}
         >
@@ -110,8 +110,8 @@ const EvidenceDrawer = ({
                   letterSpacing: '0.08em',
                   padding: '2px 6px',
                   borderRadius: '2px',
-                  background: '#13131c',
-                  border: '1px solid #252536',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   color: '#38bdf8',
                   textTransform: 'uppercase'
                 }}
@@ -133,7 +133,7 @@ const EvidenceDrawer = ({
               </span>
             </div>
 
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f4f4f6', margin: 0 }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               {title}
             </h3>
           </div>
@@ -143,11 +143,11 @@ const EvidenceDrawer = ({
             onClick={onClose}
             aria-label="Close Evidence Drawer"
             style={{
-              background: '#14141c',
-              border: '1px solid #232332',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
               padding: '0.35rem',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex'
             }}
@@ -164,27 +164,27 @@ const EvidenceDrawer = ({
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: '0.65rem',
-              background: '#0f0f15',
-              border: '1px solid #1c1c26',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
               padding: '0.75rem'
             }}
           >
             <div>
-              <div style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                 SOURCE
               </div>
-              <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: '#e4e4e7', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
                 <Database size={12} color="#38bdf8" />
                 <span>GitHub Public API v3</span>
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                 METHODOLOGY
               </div>
-              <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: '#e4e4e7', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
                 <ShieldCheck size={12} color="#10b981" />
                 <span>Engine {methodologyVersion}</span>
               </div>
@@ -205,16 +205,16 @@ const EvidenceDrawer = ({
               }}
             >
               <div>
-                <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                   COMPUTED SCORE
                 </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#f4f4f6' }}>
-                  {score} <span style={{ fontSize: '0.85rem', color: '#71717a' }}>/ {maxScore}</span>
+                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                  {score} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/ {maxScore}</span>
                 </div>
               </div>
               {percentage !== null && (
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                     DIMENSION RATIO
                   </div>
                   <div
@@ -235,12 +235,12 @@ const EvidenceDrawer = ({
           {/* Observed Data Table */}
           {evidence && evidence.length > 0 && (
             <div>
-              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#71717a', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
                 OBSERVED DATA
               </div>
               <div
                 style={{
-                  border: '1px solid #1c1c26',
+                  border: '1px solid var(--border)',
                   borderRadius: '4px',
                   overflow: 'hidden',
                   background: '#0e0e13'
@@ -254,13 +254,13 @@ const EvidenceDrawer = ({
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '0.55rem 0.85rem',
-                      borderBottom: idx < evidence.length - 1 ? '1px solid #181822' : 'none',
+                      borderBottom: idx < evidence.length - 1 ? '1px solid var(--border)' : 'none',
                       fontSize: '0.78rem',
                       gap: '1rem'
                     }}
                   >
-                    <span style={{ color: '#a1a1aa' }}>{item.label}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: '#f4f4f6', fontWeight: 600, textAlign: 'right' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600, textAlign: 'right' }}>
                       {item.value}
                     </span>
                   </div>
@@ -272,13 +272,13 @@ const EvidenceDrawer = ({
           {/* Analytical Principles: Observation -> Interpretation -> Signals */}
           {(observation || interpretation || (reasons && reasons.length > 0)) && (
             <div>
-              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#71717a', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
                 ANALYSIS & INTERPRETATION
               </div>
               <div
                 style={{
-                  background: '#0f0f15',
-                  border: '1px solid #1c1c26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: '4px',
                   padding: '0.9rem',
                   display: 'flex',
@@ -293,7 +293,7 @@ const EvidenceDrawer = ({
                     <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#38bdf8', display: 'block', marginBottom: '2px' }}>
                       OBSERVATION
                     </span>
-                    <span style={{ color: '#e4e4e7' }}>{observation}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{observation}</span>
                   </div>
                 )}
 
@@ -302,7 +302,7 @@ const EvidenceDrawer = ({
                     <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#f59e0b', display: 'block', marginBottom: '2px' }}>
                       WHY IT MATTERS
                     </span>
-                    <span style={{ color: '#a1a1aa' }}>{interpretation}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{interpretation}</span>
                   </div>
                 )}
 
@@ -311,7 +311,7 @@ const EvidenceDrawer = ({
                     <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#10b981', display: 'block', marginBottom: '4px' }}>
                       SUPPORTING SIGNALS
                     </span>
-                    <ul style={{ paddingLeft: '1.1rem', color: '#d4d4d8', display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: 0 }}>
+                    <ul style={{ paddingLeft: '1.1rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: 0 }}>
                       {reasons.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
@@ -325,7 +325,7 @@ const EvidenceDrawer = ({
           {/* Associated Repositories */}
           {repositories && repositories.length > 0 && (
             <div>
-              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#71717a', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+              <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
                 OBSERVED IN REPOSITORIES ({repositories.length})
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -367,7 +367,7 @@ const EvidenceDrawer = ({
                   <div style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: '#c084fc', fontWeight: 700, marginBottom: '2px' }}>
                     RECOMMENDED ACTION
                   </div>
-                  <div style={{ fontSize: '0.81rem', color: '#e4e4e7', lineHeight: 1.45 }}>
+                  <div style={{ fontSize: '0.81rem', color: 'var(--text-primary)', lineHeight: 1.45 }}>
                     {recommendedAction}
                   </div>
                 </div>
@@ -408,14 +408,14 @@ const EvidenceDrawer = ({
         <div
           style={{
             padding: '0.75rem 1.35rem',
-            borderTop: '1px solid #181822',
-            background: '#09090c',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             fontSize: '0.68rem',
             fontFamily: 'var(--font-mono)',
-            color: '#71717a'
+            color: 'var(--text-muted)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>

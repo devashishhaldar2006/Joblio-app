@@ -1,862 +1,924 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  GitFork,
+  Briefcase,
+  Trophy,
+  CheckCircle2,
+  Info,
+  Check,
+  FileText,
+  Bookmark,
+  BookOpen,
+  Bell,
+  ArrowRight,
+  ExternalLink,
+  Plus,
+  Github,
+  Calendar,
+  Sparkles
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
 import api from '../services/api';
-import { RefreshCw, ArrowUpRight, Search } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
-const DashboardPage = () => {
+export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedActionModal, setSelectedActionModal] = useState(false);
+  const [greeting, setGreeting] = useState('Good afternoon');
+  const [userName, setUserName] = useState('');
 
-  const [telemetry, setTelemetry] = useState({
-    analysesCount: 1,
-    papersCount: 5,
-    jobsCount: 14,
-    upcomingContestsCount: 4,
-    ossOpportunitiesCount: 3,
-    profileScore: 77,
-    scoreDelta: '+8',
-    lastScore: 69,
-    topSkill: 'TypeScript',
-    topSkillChange: '+12.4%',
-    githubUsername: ''
+  // Live telemetry counts
+  const [stats, setStats] = useState({
+    reposAnalysed: 0,
+    reposWithReadme: 0,
+    applicationsTracked: 0,
+    applicationsClosing: 0,
+    contestsThisWeek: 0,
+    nextContest: null,
+    readinessScore: 0,
+    hasAudit: false
   });
 
-  const fetchDashboardData = async () => {
-    try {
-      const [ghRes, paperRes, jobRes, contestRes, ossRes, marketRes] = await Promise.allSettled([
-        api.get('/github/history'),
-        api.get('/research/history'),
-        api.get('/jobs/history'),
-        api.get('/contests?days=1'),
-        api.get('/opensource/history'),
-        api.get('/market/trending')
-      ]);
-
-      const ghHistory = ghRes.status === 'fulfilled' && Array.isArray(ghRes.value.data) ? ghRes.value.data : [];
-      const paperHistory = paperRes.status === 'fulfilled' && Array.isArray(paperRes.value.data) ? paperRes.value.data : [];
-      const jobHistory = jobRes.status === 'fulfilled' && Array.isArray(jobRes.value.data) ? jobRes.value.data : [];
-      const todayContests = contestRes.status === 'fulfilled' && Array.isArray(contestRes.value.data) ? contestRes.value.data : [];
-      const ossHistory = ossRes.status === 'fulfilled' && Array.isArray(ossRes.value.data) ? ossRes.value.data : [];
-      const marketData = marketRes.status === 'fulfilled' ? marketRes.value.data : null;
-
-      const latestGh = ghHistory[0];
-      const currentScore = latestGh?.report?.overall_score || latestGh?.overall_score || 77;
-      const prevScore = ghHistory[1]?.report?.overall_score || ghHistory[1]?.overall_score || 69;
-      const scoreDiff = currentScore - prevScore;
-
-      const topRising = marketData?.top_10_rising?.[0];
-
-      setTelemetry({
-        analysesCount: Math.max(ghHistory.length, 1),
-        papersCount: Math.max(paperHistory.length, 5),
-        jobsCount: Math.max(jobHistory.length, 14),
-        upcomingContestsCount: Math.max(todayContests.length, 4),
-        ossOpportunitiesCount: Math.max(ossHistory.length, 3),
-        profileScore: currentScore,
-        lastScore: prevScore,
-        scoreDelta: scoreDiff >= 0 ? `+${scoreDiff}` : `${scoreDiff}`,
-        topSkill: topRising?.skill || 'TypeScript',
-        topSkillChange: topRising?.wow_change ? `+${topRising.wow_change}%` : '+12.4%',
-        githubUsername: latestGh?.username || user?.githubUsername || ''
-      });
-    } catch (err) {
-      console.warn('Using baseline intelligence telemetry:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const [tasks, setTasks] = useState([]);
+  const [upcomingContests, setUpcomingContests] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    // Determine greeting
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
 
-  const handleSync = async () => {
-    setRefreshing(true);
-    await fetchDashboardData();
-    toast.success('Intelligence telemetry updated');
+    setUserName(user?.name ? user.name.split(' ')[0] : 'Developer');
+
+    // Fetch real live backend data
+    let isMounted = true;
+    Promise.allSettled([
+      api.get('/github/latest'),
+      api.get('/contests?days=14'),
+      api.get('/jobs/bookmarks'),
+      api.get('/reports')
+    ]).then(([ghRes, contestRes, jobsRes, reportsRes]) => {
+      if (!isMounted) return;
+
+      let reposCount = 0;
+      let reposReadme = 0;
+      let score = 0;
+      let hasAudit = false;
+      let dynamicTasks = [];
+
+      // 1. Process GitHub latest audit
+      if (ghRes.status === 'fulfilled' && ghRes.value.data) {
+        const audit = ghRes.value.data;
+        hasAudit = true;
+        const repos = audit.repositories || audit.repos || [];
+        reposCount = Array.isArray(repos) ? repos.length : 0;
+        reposReadme = Array.isArray(repos) ? repos.filter((r) => r.hasReadme || r.has_readme).length : 0;
+
+        // Safely extract numeric score
+        let rawScore = 0;
+        if (typeof audit.overall_score === 'number') {
+          rawScore = audit.overall_score;
+        } else if (typeof audit.totalScore === 'number') {
+          rawScore = audit.totalScore;
+        } else if (typeof audit.overallScore === 'number') {
+          rawScore = audit.overallScore;
+        } else if (audit.score && typeof audit.score === 'object') {
+          rawScore = typeof audit.score.overall_score === 'number'
+            ? audit.score.overall_score
+            : typeof audit.score.totalScore === 'number'
+            ? audit.score.totalScore
+            : 70;
+        } else if (typeof audit.score === 'number') {
+          rawScore = audit.score;
+        } else {
+          rawScore = reposCount > 0 ? 70 : 0;
+        }
+        score = typeof rawScore === 'number' && !isNaN(rawScore) ? rawScore : 0;
+
+        if (audit.recommendations && Array.isArray(audit.recommendations)) {
+          dynamicTasks = audit.recommendations.slice(0, 4).map((rec, i) => {
+            const taskTitle = typeof rec === 'string'
+              ? rec
+              : typeof rec?.title === 'string'
+              ? rec.title
+              : typeof rec?.action === 'string'
+              ? rec.action
+              : 'Improve repository documentation & quality';
+            const taskTime = typeof rec === 'object' && typeof rec?.severity === 'string'
+              ? `${rec.severity} Priority`
+              : 'High impact';
+
+            return {
+              id: `task-${i}`,
+              title: taskTitle,
+              time: taskTime,
+              completed: false,
+              actionText: 'View Audit',
+              actionRoute: '/github'
+            };
+          });
+        } else if (audit.suggestions && Array.isArray(audit.suggestions)) {
+          dynamicTasks = audit.suggestions.slice(0, 4).map((sug, i) => ({
+            id: `task-${i}`,
+            title: typeof sug === 'string' ? sug : 'Action item',
+            time: 'Action item',
+            completed: false,
+            actionText: 'View Audit',
+            actionRoute: '/github'
+          }));
+        }
+      }
+
+      if (dynamicTasks.length === 0) {
+        dynamicTasks = [
+          {
+            id: 'init-1',
+            title: 'Audit your GitHub profile & public repositories',
+            time: 'Takes 1 min',
+            completed: hasAudit,
+            actionText: hasAudit ? null : 'Audit GitHub',
+            actionRoute: '/github'
+          },
+          {
+            id: 'init-2',
+            title: 'Upload resume PDF to evaluate ATS match with open roles',
+            time: 'Takes 2 min',
+            completed: false,
+            actionText: 'Evaluate ATS',
+            actionRoute: '/jobs'
+          },
+          {
+            id: 'init-3',
+            title: 'Explore Good First Issues in your preferred language',
+            time: 'Open source',
+            completed: false,
+            actionText: 'Find Issues',
+            actionRoute: '/opensource'
+          },
+          {
+            id: 'init-4',
+            title: 'Inspect tech stack market demand forecasts & skill gaps',
+            time: 'Market trends',
+            completed: false,
+            actionText: 'View Market',
+            actionRoute: '/market'
+          }
+        ];
+      }
+
+      // 2. Process real live contests
+      let contestsCount = 0;
+      let nextContestObj = null;
+      let nextContestList = [];
+
+      if (contestRes.status === 'fulfilled') {
+        const raw = Array.isArray(contestRes.value.data) ? contestRes.value.data : contestRes.value.data?.contests || [];
+        const valid = raw.filter((c) => c.title && new Date(c.start_time) >= new Date());
+        valid.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        contestsCount = valid.length;
+        if (valid.length > 0) {
+          nextContestObj = valid[0];
+          nextContestList = valid.slice(0, 4);
+        }
+      }
+
+      // 3. Process jobs bookmarks
+      let appsCount = 0;
+      if (jobsRes.status === 'fulfilled' && Array.isArray(jobsRes.value.data)) {
+        appsCount = jobsRes.value.data.length;
+      }
+
+      // 4. Process recent activities / reports
+      let activityItems = [];
+      if (reportsRes.status === 'fulfilled') {
+        const rList = reportsRes.value.data?.reports || (Array.isArray(reportsRes.value.data) ? reportsRes.value.data : []);
+        activityItems = rList.slice(0, 4);
+      }
+
+      setStats({
+        reposAnalysed: reposCount,
+        reposWithReadme: reposReadme,
+        applicationsTracked: appsCount,
+        applicationsClosing: appsCount > 0 ? 1 : 0,
+        contestsThisWeek: contestsCount,
+        nextContest: nextContestObj ? `${nextContestObj.title} (${new Date(nextContestObj.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : 'None scheduled',
+        readinessScore: score,
+        hasAudit
+      });
+      setTasks(dynamicTasks);
+      setUpcomingContests(nextContestList);
+      setRecentActivities(activityItems);
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const toggleTask = (id) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+    );
   };
 
-  const displayName = user?.name || 'Brad Pitt';
-
-  const feedItems = [
-    {
-      index: '01',
-      title: 'GitHub profile improved',
-      metric: `${telemetry.lastScore} → ${telemetry.profileScore}`,
-      metricDelta: telemetry.scoreDelta,
-      description: 'Documentation and repository quality increased since the previous audit.',
-      domain: 'GitHub',
-      timestamp: '11:42',
-      route: '/github'
-    },
-    {
-      index: '02',
-      title: `${telemetry.topSkill} demand accelerated`,
-      metric: telemetry.topSkillChange,
-      metricDelta: 'Accelerating',
-      description: 'Increased demand across tracked engineering roles.',
-      domain: 'Market',
-      timestamp: '10:18',
-      route: '/market'
-    },
-    {
-      index: '03',
-      title: 'New open-source opportunities',
-      metric: `${telemetry.ossOpportunitiesCount} opportunities`,
-      metricDelta: '3 new',
-      description: 'Relevant projects were detected based on your technical profile.',
-      domain: 'Open Source',
-      timestamp: '09:41',
-      route: '/opensource'
-    }
-  ];
-
-  const profileDimensions = [
-    { label: 'Documentation', value: 64, bar: 64 },
-    { label: 'Activity', value: 89, bar: 89 },
-    { label: 'Technical breadth', value: 82, bar: 82 },
-    { label: 'Community', value: 41, bar: 41 }
-  ];
-
-  const techFootprint = [
-    { name: 'Python', barWidth: 88, projects: '14 repos', activity: 'Today', market: 'High' },
-    { name: 'JavaScript', barWidth: 70, projects: '11 repos', activity: 'Yesterday', market: 'High' },
-    { name: 'TypeScript', barWidth: 58, projects: '8 repos', activity: '2d ago', market: 'Very high' },
-    { name: 'React', barWidth: 50, projects: '7 repos', activity: '4d ago', market: 'High' },
-    { name: 'Node.js', barWidth: 42, projects: '6 repos', activity: '1w ago', market: 'Stable' },
-    { name: 'LangGraph', barWidth: 32, projects: '3 repos', activity: '2w ago', market: 'Emerging' }
-  ];
+  const doneCount = tasks.filter((t) => t.completed).length;
 
   return (
-    <div
-      style={{
-        backgroundColor: '#0B0B0D',
-        minHeight: '100vh',
-        color: '#f4f4f6',
-        padding: '3rem 3.5rem 5rem 3.5rem',
-        maxWidth: '1280px',
-        margin: '0 auto',
-        fontFamily: 'var(--font-sans)',
-        boxSizing: 'border-box'
-      }}
-    >
-      {/* Top Header Utilities: Discrete & Clean */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '2.5rem',
-          paddingBottom: '1rem',
-          borderBottom: '1px solid #18181d'
-        }}
-      >
-        <span
-          style={{
-            fontSize: '0.72rem',
-            fontFamily: 'var(--font-mono)',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: '#71717a'
-          }}
-        >
-          INNOVATEX · CONTINUOUS AUDIT PIPELINE
-        </span>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <div className="page-container fade-in">
+      {/* Top Header */}
+      <div className="overview-header">
+        <div>
+          <h1 className="overview-title">{`${greeting}, ${userName}`}</h1>
+          <p className="overview-subtitle">Here is where your developer profile, job matches, and live competitions stand today.</p>
+        </div>
+        <div className="overview-actions">
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#71717a',
-              fontSize: '0.74rem',
-              fontFamily: 'var(--font-mono)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#d4d4d8')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
-            title="Search / Command Palette"
+            className="btn-secondary"
+            onClick={() => navigate('/reports')}
           >
-            <Search size={12} />
-            <span>Search</span>
-            <span style={{ fontSize: '0.66rem', color: '#52525b', border: '1px solid #22222a', padding: '0 4px', borderRadius: '2px' }}>⌘K</span>
+            View reports
           </button>
-
           <button
             type="button"
-            onClick={handleSync}
-            disabled={refreshing}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: refreshing ? '#3b82f6' : '#71717a',
-              fontSize: '0.74rem',
-              fontFamily: 'var(--font-mono)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#d4d4d8')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = refreshing ? '#3b82f6' : '#71717a')}
-            title="Re-synchronize telemetry"
+            className="btn-primary"
+            onClick={() => navigate('/github')}
           >
-            <RefreshCw size={11} className={refreshing ? 'spin' : ''} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
-            <span>{refreshing ? 'Synchronizing' : 'Sync'}</span>
+            Audit profile
           </button>
         </div>
       </div>
 
-      {/* DEVELOPER INTELLIGENCE HEADER */}
-      <section style={{ marginBottom: '3.5rem' }}>
-        <div
-          style={{
-            fontSize: '0.76rem',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 500,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: '#71717a',
-            marginBottom: '0.75rem'
-          }}
-        >
-          DEVELOPER INTELLIGENCE
+      {/* Top Stat Cards (3 Columns) */}
+      <div className="overview-metrics-grid">
+        <div className="metric-box" onClick={() => navigate('/github')}>
+          <div className="metric-icon-wrap">
+            <GitFork size={18} />
+          </div>
+          <div className="metric-content">
+            <div className="metric-label">Repositories analysed</div>
+            <div className="metric-value">{stats.reposAnalysed}</div>
+            <div className="metric-sub">{stats.hasAudit ? `${stats.reposWithReadme} with README` : 'Run your first audit'}</div>
+          </div>
         </div>
 
-        <h1
-          style={{
-            fontSize: '2.5rem',
-            fontWeight: 600,
-            letterSpacing: '-0.035em',
-            color: '#ffffff',
-            margin: '0 0 0.5rem 0',
-            lineHeight: 1.15
-          }}
-        >
-          {displayName}
-        </h1>
-
-        <p
-          style={{
-            fontSize: '1rem',
-            color: '#8e8e99',
-            fontWeight: 400,
-            margin: 0,
-            lineHeight: 1.5,
-            maxWidth: '560px'
-          }}
-        >
-          Your technical profile, activity and opportunities, continuously analyzed.
-        </p>
-
-        {/* TYPOGRAPHIC STATISTICS (NOT CARDS) */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '4.5rem',
-            marginTop: '2.75rem',
-            paddingTop: '2rem',
-            borderTop: '1px solid #18181d'
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: '2.25rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                lineHeight: 1,
-                letterSpacing: '-0.03em',
-                marginBottom: '0.4rem'
-              }}
-            >
-              7
-            </div>
-            <div
-              style={{
-                fontSize: '0.84rem',
-                color: '#71717a',
-                lineHeight: 1.3
-              }}
-            >
-              meaningful signals
-            </div>
+        <div className="metric-box" onClick={() => navigate('/jobs')}>
+          <div className="metric-icon-wrap">
+            <Briefcase size={18} />
           </div>
-
-          <div>
-            <div
-              style={{
-                fontSize: '2.25rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                lineHeight: 1,
-                letterSpacing: '-0.03em',
-                marginBottom: '0.4rem'
-              }}
-            >
-              3
-            </div>
-            <div
-              style={{
-                fontSize: '0.84rem',
-                color: '#71717a',
-                lineHeight: 1.3
-              }}
-            >
-              require attention
-            </div>
+          <div className="metric-content">
+            <div className="metric-label">Applications tracked</div>
+            <div className="metric-value">{stats.applicationsTracked}</div>
+            <div className="metric-sub">{stats.applicationsTracked > 0 ? 'Active in pipeline' : 'Upload resume to match'}</div>
           </div>
+        </div>
 
-          <div>
-            <div
-              style={{
-                fontSize: '2.25rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                lineHeight: 1,
-                letterSpacing: '-0.03em',
-                marginBottom: '0.4rem'
-              }}
-            >
-              2
-            </div>
-            <div
-              style={{
-                fontSize: '0.84rem',
-                color: '#71717a',
-                lineHeight: 1.3
-              }}
-            >
-              new opportunities
+        <div className="metric-box" onClick={() => navigate('/contests')}>
+          <div className="metric-icon-wrap">
+            <Trophy size={18} />
+          </div>
+          <div className="metric-content">
+            <div className="metric-label">Live & upcoming contests</div>
+            <div className="metric-value">{stats.contestsThisWeek}</div>
+            <div className="metric-sub" style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+              {stats.nextContest ? `Next: ${stats.nextContest}` : 'Syncing contests...'}
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* MAIN TWO-COLUMN EDITORIAL COMPOSITION */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.8fr) minmax(280px, 1fr)',
-          gap: '4.5rem',
-          alignItems: 'start'
-        }}
-      >
-        {/* LEFT COLUMN: PRIMARY EDITORIAL CONTENT */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3.75rem' }}>
-          {/* SECTION: WHAT MATTERS RIGHT NOW */}
-          <section>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid #202026',
-                marginBottom: '0.5rem'
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '0.8rem',
-                  fontFamily: 'var(--font-mono)',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: '#71717a',
-                  fontWeight: 500,
-                  margin: 0
-                }}
+      {/* Main 2-Column Grid */}
+      <div className="overview-main-grid">
+        {/* Left Column */}
+        <div className="overview-left-col">
+          {/* Card 1: Profile readiness */}
+          <div className="ui-card">
+            <div className="card-top-row">
+              <div>
+                <h2 className="card-heading">Profile readiness</h2>
+                <div className="card-sub-muted">
+                  {stats.hasAudit ? 'Calculated from live GitHub repositories & commits' : 'Perform an audit to compute readiness score'}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="card-text-link"
+                onClick={() => navigate('/github')}
               >
-                WHAT MATTERS RIGHT NOW
-              </h2>
+                {stats.hasAudit ? 'Full breakdown' : 'Run Audit'}
+              </button>
             </div>
 
-            {/* EDITORIAL LIST - SEPARATED ONLY BY THIN LINES, NO CARDS */}
-            <div>
-              {feedItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => navigate(item.route)}
-                  style={{
-                    padding: '1.75rem 0.5rem 1.75rem 0.25rem',
-                    borderBottom: '1px solid #18181d',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.65rem',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.015)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.25rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.85rem',
-                          fontFamily: 'var(--font-mono)',
-                          color: '#52525b',
-                          fontWeight: 500
-                        }}
-                      >
-                        {item.index}
-                      </span>
-                      <h3
-                        style={{
-                          fontSize: '1.18rem',
-                          fontWeight: 500,
-                          color: '#ffffff',
-                          letterSpacing: '-0.02em',
-                          margin: 0
-                        }}
-                      >
-                        {item.title}
-                      </h3>
+            {/* Score & Progress */}
+            <div className="readiness-score-row">
+              <span className="big-score">
+                {typeof stats.readinessScore === 'number' ? stats.readinessScore : (stats.hasAudit ? 70 : 0)}
+              </span>
+              <span className="score-denom">/ 100</span>
+              <span className="score-desc">
+                {(typeof stats.readinessScore === 'number' ? stats.readinessScore : 0) >= 80
+                  ? 'Strong portfolio! Profile is optimized for recruiter discovery.'
+                  : stats.hasAudit
+                  ? 'Good foundation. Complete the action items below to boost readiness.'
+                  : 'Start by linking your GitHub profile to calculate your readiness.'}
+              </span>
+            </div>
+
+            <div className="score-progress-track">
+              <div
+                className="score-progress-fill"
+                style={{
+                  width: `${Math.min(100, Math.max(0, typeof stats.readinessScore === 'number' ? stats.readinessScore : (stats.hasAudit ? 70 : 10)))}%`
+                }}
+              />
+            </div>
+
+            {/* Bullet Points */}
+            <div className="readiness-points">
+              {stats.hasAudit ? (
+                <>
+                  <div className="readiness-point-row">
+                    <div className="icon-circle success">
+                      <Check size={14} />
                     </div>
-
-                    <span
-                      style={{
-                        fontSize: '0.95rem',
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 600,
-                        color: item.metric.includes('+') ? '#10b981' : '#ffffff',
-                        letterSpacing: '-0.01em'
-                      }}
-                    >
-                      {item.metric}
-                    </span>
+                    <div className="point-text">
+                      {stats.reposAnalysed} public repositories scanned and analyzed.
+                    </div>
                   </div>
 
-                  <p
-                    style={{
-                      fontSize: '0.92rem',
-                      color: '#8e8e99',
-                      lineHeight: 1.5,
-                      margin: '0 0 0 2.5rem',
-                      maxWidth: '560px'
-                    }}
-                  >
-                    {item.description}
-                  </p>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.65rem',
-                      marginLeft: '2.5rem',
-                      marginTop: '0.2rem',
-                      fontSize: '0.72rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: '#52525b'
-                    }}
-                  >
-                    <span style={{ color: '#71717a' }}>{item.domain}</span>
-                    <span>·</span>
-                    <span>{item.timestamp}</span>
+                  <div className="readiness-point-row">
+                    <div className="icon-circle info">
+                      <Info size={14} />
+                    </div>
+                    <div className="point-text">
+                      {stats.reposWithReadme} of {stats.reposAnalysed} repositories have documentation READMEs.
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="readiness-point-row">
+                  <div className="icon-circle info">
+                    <Github size={14} />
+                  </div>
+                  <div className="point-text">
+                    Audit your GitHub username to automatically analyze repositories, code quality, and documentation.
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </section>
+          </div>
 
-          {/* SECTION: PROFILE HEALTH */}
-          <section>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid #202026',
-                marginBottom: '1.75rem'
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '0.8rem',
-                  fontFamily: 'var(--font-mono)',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: '#71717a',
-                  fontWeight: 500,
-                  margin: 0
-                }}
-              >
-                PROFILE HEALTH
-              </h2>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', marginBottom: '0.4rem' }}>
-              <div
-                style={{
-                  fontSize: '2.5rem',
-                  fontWeight: 600,
-                  color: '#ffffff',
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1
-                }}
-              >
-                {telemetry.profileScore} <span style={{ fontSize: '1.3rem', color: '#52525b', fontWeight: 400 }}>/ 100</span>
+          {/* Card 2: Next actions */}
+          <div className="ui-card">
+            <div className="card-top-row">
+              <div>
+                <h2 className="card-heading">Next actions</h2>
+                <div className="card-sub-muted">
+                  {doneCount} of {tasks.length} done · prioritized for biggest career impact
+                </div>
               </div>
             </div>
 
-            <div
-              style={{
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-mono)',
-                color: '#10b981',
-                marginBottom: '2rem'
-              }}
-            >
-              {telemetry.scoreDelta} since previous analysis
-            </div>
-
-            {/* CLEAN HORIZONTAL BARS */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {profileDimensions.map((dim, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '170px 1fr 45px',
-                    alignItems: 'center',
-                    gap: '1.5rem'
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '0.86rem',
-                      color: '#a1a1aa',
-                      fontWeight: 400
-                    }}
-                  >
-                    {dim.label}
-                  </span>
-
-                  <div
-                    style={{
-                      height: '4px',
-                      backgroundColor: '#18181f',
-                      borderRadius: '2px',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${dim.bar}%`,
-                        backgroundColor: '#d4d4d8',
-                        borderRadius: '2px',
-                        transition: 'width 0.4s ease'
-                      }}
-                    />
+            <div className="tasks-checklist">
+              {tasks.map((task) => (
+                <div key={task.id} className="task-row">
+                  <div className="task-left">
+                    <button
+                      type="button"
+                      className={`task-checkbox ${task.completed ? 'checked' : ''}`}
+                      onClick={() => toggleTask(task.id)}
+                      aria-label="Toggle task"
+                    >
+                      {task.completed && <Check size={12} strokeWidth={3} />}
+                    </button>
+                    <div>
+                      <div className={`task-title ${task.completed ? 'completed' : ''}`}>
+                        {task.title}
+                      </div>
+                      <div className="task-time">{task.time}</div>
+                    </div>
                   </div>
 
-                  <span
-                    style={{
-                      fontSize: '0.82rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: '#ffffff',
-                      textAlign: 'right'
-                    }}
-                  >
-                    {dim.value}
-                  </span>
+                  <div className="task-right">
+                    {task.completed ? (
+                      <span className="badge badge-success">Done</span>
+                    ) : task.actionText ? (
+                      <button
+                        type="button"
+                        className="task-action-btn"
+                        onClick={() => task.actionRoute && navigate(task.actionRoute)}
+                      >
+                        {task.actionText}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
-          </section>
-
-          {/* SECTION: YOUR TECHNICAL FOOTPRINT */}
-          <section>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid #202026',
-                marginBottom: '1.75rem'
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '0.8rem',
-                  fontFamily: 'var(--font-mono)',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: '#71717a',
-                  fontWeight: 500,
-                  margin: 0
-                }}
-              >
-                YOUR TECHNICAL FOOTPRINT
-              </h2>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              {techFootprint.map((tech, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '120px 1.4fr 90px 90px 80px',
-                    alignItems: 'center',
-                    gap: '1.25rem',
-                    padding: '0.35rem 0'
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '0.88rem',
-                      color: '#ffffff',
-                      fontWeight: 500
-                    }}
-                  >
-                    {tech.name}
-                  </span>
-
-                  <div
-                    style={{
-                      height: '4px',
-                      backgroundColor: '#18181f',
-                      borderRadius: '2px',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${tech.barWidth}%`,
-                        backgroundColor: idx === 0 ? '#3b82f6' : '#a1a1aa',
-                        borderRadius: '2px'
-                      }}
-                    />
-                  </div>
-
-                  <span
-                    style={{
-                      fontSize: '0.76rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: '#71717a'
-                    }}
-                  >
-                    {tech.projects}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: '0.76rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: '#71717a'
-                    }}
-                  >
-                    {tech.activity}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: '0.76rem',
-                      fontFamily: 'var(--font-mono)',
-                      color: tech.market === 'Very high' ? '#3b82f6' : '#a1a1aa',
-                      textAlign: 'right'
-                    }}
-                  >
-                    {tech.market}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
+          </div>
         </div>
 
-        {/* RIGHT COLUMN: EDITORIAL SIDEBAR / CONTEXT */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '3.75rem' }}>
-          {/* THIS WEEK STATS */}
-          <section>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#71717a',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid #202026',
-                marginBottom: '1.75rem',
-                fontWeight: 500
-              }}
-            >
-              THIS WEEK
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+        {/* Right Column */}
+        <div className="overview-right-col">
+          {/* Card 1: Up next deadlines / Live contests */}
+          <div className="ui-card">
+            <div className="card-top-row">
               <div>
-                <div
-                  style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#10b981',
-                    lineHeight: 1,
-                    marginBottom: '0.3rem'
-                  }}
-                >
-                  {telemetry.scoreDelta}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#71717a' }}>profile score</div>
+                <h2 className="card-heading">Upcoming Contests</h2>
+                <div className="card-sub-muted">Real-time competitive schedule</div>
               </div>
-
-              <div>
-                <div
-                  style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#3b82f6',
-                    lineHeight: 1,
-                    marginBottom: '0.3rem'
-                  }}
-                >
-                  {telemetry.topSkillChange}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#71717a' }}>{telemetry.topSkill} demand</div>
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#ffffff',
-                    lineHeight: 1,
-                    marginBottom: '0.3rem'
-                  }}
-                >
-                  {telemetry.ossOpportunitiesCount}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#71717a' }}>OSS opportunities</div>
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#ffffff',
-                    lineHeight: 1,
-                    marginBottom: '0.3rem'
-                  }}
-                >
-                  {telemetry.papersCount}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#71717a' }}>research papers</div>
-              </div>
-            </div>
-          </section>
-
-          {/* NEXT ACTION - THE ONLY STRONGLY EMPHASIZED ACTION */}
-          <section>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#71717a',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid #202026',
-                marginBottom: '1.5rem',
-                fontWeight: 500
-              }}
-            >
-              NEXT ACTION
-            </div>
-
-            <h3
-              style={{
-                fontSize: '1.12rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.35,
-                margin: '0 0 1.25rem 0'
-              }}
-            >
-              Improve your GitHub profile README
-            </h3>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div
-                style={{
-                  fontSize: '0.74rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: '#71717a',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: '0.35rem'
-                }}
+              <button
+                type="button"
+                className="card-text-link"
+                onClick={() => navigate('/contests')}
               >
-                Why:
-              </div>
-              <p
-                style={{
-                  fontSize: '0.88rem',
-                  color: '#8e8e99',
-                  lineHeight: 1.55,
-                  margin: 0
-                }}
-              >
-                Your repositories are technically strong, but profile discoverability remains below your project quality.
-              </p>
+                View all ({stats.contestsThisWeek})
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate('/github?tab=recommendations')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: '#ffffff',
-                color: '#0B0B0D',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '0.65rem 1.15rem',
-                fontSize: '0.84rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e4e4e7')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
-            >
-              <span>View recommendation</span>
-              <ArrowUpRight size={14} />
-            </button>
-          </section>
-        </aside>
+            {upcomingContests.length > 0 ? (
+              <div className="deadlines-list">
+                {upcomingContests.map((c, i) => {
+                  const d = new Date(c.start_time);
+                  const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                  const day = d.getDate();
+                  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                  return (
+                    <div key={i} className="deadline-item">
+                      <div className="date-block">
+                        <span className="month">{month}</span>
+                        <span className="day">{day}</span>
+                      </div>
+                      <div className="deadline-content">
+                        <div className="deadline-title">{c.title}</div>
+                        <div className="deadline-sub">{c.platform} • Starts at {time}</div>
+                      </div>
+                      {c.url && (
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary"
+                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', textDecoration: 'none' }}
+                        >
+                          Join
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                No contests scheduled in the next 14 days. Click "Contests" to refresh.
+              </div>
+            )}
+          </div>
+
+          {/* Card 2: Recent activity */}
+          <div className="ui-card">
+            <div className="card-top-row">
+              <h2 className="card-heading">Recent activity</h2>
+              <button
+                type="button"
+                className="card-text-link"
+                onClick={() => navigate('/reports')}
+              >
+                View reports
+              </button>
+            </div>
+
+            <div className="activity-list">
+              {recentActivities.length > 0 ? (
+                recentActivities.map((act, i) => (
+                  <div key={i} className="activity-item">
+                    <div className="activity-icon-wrap">
+                      <FileText size={15} />
+                    </div>
+                    <div className="activity-details">
+                      <div className="activity-title">{act.title}</div>
+                      <div className="activity-time">{act.createdAt || 'Recent'}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+                  No reports generated yet. Run a GitHub audit, resume fit check, or paper synthesis to see activity here.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        .overview-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 1rem;
+          margin-bottom: 1.75rem;
+        }
+
+        .overview-title {
+          font-size: 1.625rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          letter-spacing: -0.025em;
+          margin-bottom: 0.35rem;
+        }
+
+        .overview-subtitle {
+          font-size: 0.875rem;
+          color: var(--text-muted);
+        }
+
+        .overview-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .overview-metrics-grid {
+          display: grid;
+          grid-templateColumns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 1.25rem;
+          margin-bottom: 1.75rem;
+        }
+
+        .metric-box {
+          background-color: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 1.25rem 1.5rem;
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-shadow: var(--shadow-card);
+        }
+
+        .metric-box:hover {
+          border-color: var(--border-hover);
+          transform: translateY(-1px);
+        }
+
+        .metric-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-md);
+          background-color: var(--bg-subtle);
+          color: var(--primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .metric-content {
+          flex: 1;
+        }
+
+        .metric-label {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+          font-size: 1.625rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1.1;
+          margin-bottom: 0.25rem;
+        }
+
+        .metric-sub {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+
+        .overview-main-grid {
+          display: grid;
+          grid-template-columns: 1.35fr 1fr;
+          gap: 1.5rem;
+        }
+
+        @media (max-width: 960px) {
+          .overview-main-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .overview-left-col,
+        .overview-right-col {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .ui-card {
+          background-color: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 1.5rem;
+          box-shadow: var(--shadow-card);
+        }
+
+        .card-top-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1.25rem;
+        }
+
+        .card-heading {
+          font-size: 1.0625rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 0.2rem;
+        }
+
+        .card-sub-muted {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+        }
+
+        .card-text-link {
+          background: none;
+          border: none;
+          color: var(--primary);
+          font-size: 0.8125rem;
+          font-weight: 500;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .readiness-score-row {
+          display: flex;
+          align-items: baseline;
+          gap: 0.35rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .big-score {
+          font-size: 2.25rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
+        }
+
+        .score-denom {
+          font-size: 1.125rem;
+          color: var(--text-muted);
+          font-weight: 500;
+          margin-right: 0.75rem;
+        }
+
+        .score-desc {
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+        }
+
+        .score-progress-track {
+          width: 100%;
+          height: 7px;
+          background-color: var(--bg-subtle);
+          border-radius: var(--radius-full);
+          overflow: hidden;
+          margin-bottom: 1.25rem;
+        }
+
+        .score-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, var(--primary) 0%, var(--accent-rose) 100%);
+          border-radius: var(--radius-full);
+          transition: width 0.4s ease;
+        }
+
+        .readiness-points {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .readiness-point-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+        }
+
+        .icon-circle {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin-top: 0.1rem;
+        }
+
+        .icon-circle.success {
+          background-color: var(--success-light);
+          color: var(--success-text);
+        }
+
+        .icon-circle.info {
+          background-color: var(--primary-light);
+          color: var(--primary);
+        }
+
+        .point-text {
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          line-height: 1.45;
+        }
+
+        .tasks-checklist {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .task-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.75rem 0.875rem;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background-color: var(--bg-card);
+          gap: 0.75rem;
+        }
+
+        .task-left {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .task-checkbox {
+          width: 18px;
+          height: 18px;
+          border: 1.5px solid var(--border-hover);
+          border-radius: 4px;
+          background: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          padding: 0;
+          flex-shrink: 0;
+        }
+
+        .task-checkbox.checked {
+          background-color: var(--primary);
+          border-color: var(--primary);
+        }
+
+        .task-title {
+          font-size: 0.84rem;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        .task-title.completed {
+          text-decoration: line-through;
+          color: var(--text-muted);
+        }
+
+        .task-time {
+          font-size: 0.72rem;
+          color: var(--text-muted);
+          margin-top: 0.1rem;
+        }
+
+        .task-action-btn {
+          background-color: var(--bg-subtle);
+          border: 1px solid var(--border);
+          color: var(--text-primary);
+          padding: 0.3rem 0.65rem;
+          border-radius: var(--radius-sm);
+          font-size: 0.75rem;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .task-action-btn:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+
+        .deadlines-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .deadline-item {
+          display: flex;
+          align-items: center;
+          gap: 0.875rem;
+          padding: 0.625rem 0.75rem;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+        }
+
+        .date-block {
+          width: 40px;
+          height: 42px;
+          border-radius: var(--radius-sm);
+          background-color: var(--bg-subtle);
+          border: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .date-block .month {
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: var(--primary);
+          line-height: 1;
+        }
+
+        .date-block .day {
+          font-size: 0.875rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1.1;
+        }
+
+        .deadline-content {
+          flex: 1;
+        }
+
+        .deadline-title {
+          font-size: 0.84rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .deadline-sub {
+          font-size: 0.72rem;
+          color: var(--text-muted);
+        }
+
+        .activity-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.875rem;
+        }
+
+        .activity-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+        }
+
+        .activity-icon-wrap {
+          width: 30px;
+          height: 30px;
+          border-radius: var(--radius-sm);
+          background-color: var(--bg-subtle);
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .activity-details {
+          flex: 1;
+        }
+
+        .activity-title {
+          font-size: 0.8125rem;
+          color: var(--text-primary);
+          font-weight: 500;
+        }
+
+        .activity-time {
+          font-size: 0.72rem;
+          color: var(--text-muted);
+        }
+      `}</style>
     </div>
   );
-};
-
-export default DashboardPage;
+}

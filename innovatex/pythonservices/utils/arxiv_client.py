@@ -18,27 +18,37 @@ class ArxivClient:
         return None
 
     async def get_by_id(self, arxiv_id: str) -> Optional[Dict[str, Any]]:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                self.base_url,
-                params={"id_list": arxiv_id},
-                timeout=20.0
-            )
-            if resp.status_code == 200:
-                return self._parse_feed(resp.text)
-            return None
+        headers = {"User-Agent": "InnovateX-Research-Agent/1.0 (academic; mailto:research@innovatex.io)"}
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    self.base_url,
+                    params={"id_list": arxiv_id},
+                    headers=headers,
+                    timeout=25.0
+                )
+                if resp.status_code == 200:
+                    return self._parse_feed(resp.text)
+        except Exception as e:
+            print(f"[ArxivClient] Error fetching arxiv_id {arxiv_id}: {e}")
+        return None
 
     async def search_by_title(self, title: str) -> Optional[Dict[str, Any]]:
         clean_title = re.sub(r'[\'"]', '', title.strip())
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                self.base_url,
-                params={"search_query": f"ti:{clean_title}", "max_results": 1},
-                timeout=20.0
-            )
-            if resp.status_code == 200:
-                return self._parse_feed(resp.text)
-            return None
+        headers = {"User-Agent": "InnovateX-Research-Agent/1.0 (academic; mailto:research@innovatex.io)"}
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    self.base_url,
+                    params={"search_query": f"ti:{clean_title}", "max_results": 1},
+                    headers=headers,
+                    timeout=25.0
+                )
+                if resp.status_code == 200:
+                    return self._parse_feed(resp.text)
+        except Exception as e:
+            print(f"[ArxivClient] Error searching title '{clean_title}': {e}")
+        return None
 
     def _parse_feed(self, xml_text: str) -> Optional[Dict[str, Any]]:
         try:

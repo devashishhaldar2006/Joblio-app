@@ -81,18 +81,17 @@ def analyze_skill_gap(user_skills: List[str]) -> Dict[str, Any]:
 
         total_percentage_demand += curr_pct
 
-        if trend in ("RISING", "STABLE", "EMERGING"):
+        is_declining = trend in ("DECLINING", "DYING", "LEGACY")
+        if not is_declining:
             rising_or_stable_count += 1
 
-        if trend in ("DECLINING", "DYING"):
+        if is_declining:
             risk_skills.append(skill_name)
-            action = "Consider Pivoting" if trend == "DYING" else "Watch"
-        elif trend == "RISING":
-            action = "Deepen"
-        elif trend == "EMERGING":
-            action = "Double Down"
-        else:
-            action = "Keep"
+            action = "Consider Pivoting" if trend in ("DYING", "LEGACY") else "Watch"
+        elif trend in ("EMERGING", "GROWING", "ACCELERATING", "RISING"):
+            action = "Double Down" if trend == "EMERGING" else "Deepen"
+        else: # ESTABLISHED, MATURE, SPECIALIZED, STABLE
+            action = "Maintain"
 
         your_skills_forecast.append({
             "skill": skill_name,
@@ -111,7 +110,7 @@ def analyze_skill_gap(user_skills: List[str]) -> Dict[str, Any]:
     # Market Alignment %
     market_alignment = round((rising_or_stable_count / float(len(normalized_user_skills))) * 100.0, 1)
 
-    # Find Top 5 Opportunity Skills that user doesn't have
+    # Find Top Opportunity Skills that user doesn't have
     candidates: List[Dict[str, Any]] = []
     for skill_candidate in top_market_skills:
         if skill_candidate.lower() in user_skills_lower:
@@ -122,21 +121,28 @@ def analyze_skill_gap(user_skills: List[str]) -> Dict[str, Any]:
         c_class = classify_trend(c_fc, c_ts)
 
         c_trend = c_class.get("trend", "STABLE")
-        if c_trend in ("RISING", "EMERGING"):
-            chg = c_class.get("change_6m_pct", 15.0)
-            conf = c_class.get("confidence", 0.8)
+        chg = float(c_class.get("change_6m_pct", 5.0))
+        conf = float(c_class.get("confidence", 0.8))
+        curr_share = float(c_fc.get("current_percentage", 25.0))
+
+        if c_trend not in ("DECLINING", "DYING", "LEGACY") or chg > 0:
+            priority = max(1.0, chg * conf + (curr_share * 0.25))
             why_text = OPPORTUNITY_RATIONALE.get(
                 skill_candidate,
-                f"Accelerating market demand (+{chg}% projected) with strong industry adoption."
+                f"High market demand ({curr_share:.1f}% share, {chg:+.1f}% 6M trajectory) across active engineering roles."
             )
             candidates.append({
                 "skill": skill_candidate,
                 "trend": c_trend,
-                "change_6m_pct": chg,
-                "confidence": conf,
-                "priority_score": chg * conf,
+                "change_6m_pct": round(chg, 1),
+                "current_percentage": round(curr_share, 1),
+                "confidence": round(conf, 2),
+                "priority_score": round(priority, 2),
                 "why": why_text
             })
+
+            if len(candidates) >= 8:
+                break
 
     # Sort opportunities by priority_score descending
     candidates.sort(key=lambda x: x["priority_score"], reverse=True)
@@ -158,11 +164,23 @@ def analyze_skill_gap(user_skills: List[str]) -> Dict[str, Any]:
             f"To accelerate compensation and senior role velocity, proactively integrate {opp_str} into your production projects."
         )
 
+    high_roi_gaps = [
+        {
+            "skill": o["skill"],
+            "jobs": f"{int(o.get('current_percentage', 30) * 850):,} roles",
+            "delta": f"+{o['change_6m_pct']}%" if o['change_6m_pct'] > 0 else f"{o['change_6m_pct']}%",
+            "why": o.get("why", "")
+        }
+        for o in opportunity_skills
+    ]
+
     return {
         "portfolio_score": portfolio_score,
         "market_alignment": market_alignment,
         "your_skills_forecast": your_skills_forecast,
         "risk_skills": risk_skills,
         "opportunity_skills": opportunity_skills,
+        "high_roi_gaps": high_roi_gaps,
+        "summary": recommendation,
         "recommendation": recommendation
     }

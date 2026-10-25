@@ -40,7 +40,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <ShieldCheck size={16} color="#06b6d4" />
-          <span style={{ fontSize: '0.78rem', color: '#e4e4e7', fontWeight: 500 }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 500 }}>
             <strong>Recruiter Presentation Mode</strong> — Factual summary synthesized strictly from observable public GitHub repositories, languages, and commit telemetry.
           </span>
         </div>
@@ -59,8 +59,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
       <div
         style={{
           padding: '20px 22px',
-          background: '#0d0d12',
-          border: '1px solid #1f1f26',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 10,
           display: 'flex',
           justifyContent: 'space-between',
@@ -78,26 +78,26 @@ export default function RecruiterView({ report, onSelectRepo }) {
                 width: 64,
                 height: 64,
                 borderRadius: 10,
-                border: '1px solid #27272a',
+                border: '1px solid var(--border)',
               }}
             />
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fafafa' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 {report.name || profile.name || username}
               </h2>
               <span
                 style={{
                   fontSize: '0.82rem',
-                  color: '#a1a1aa',
+                  color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
                 @{username}
               </span>
             </div>
-            <p style={{ margin: '6px 0 10px', fontSize: '0.83rem', color: '#d4d4d8', maxWidth: 680 }}>
+            <p style={{ margin: '6px 0 10px', fontSize: '0.83rem', color: 'var(--text-secondary)', maxWidth: 680 }}>
               {report.bio || profile.bio || 'No public bio listed on GitHub profile.'}
             </p>
             <div
@@ -106,7 +106,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                 flexWrap: 'wrap',
                 gap: 14,
                 fontSize: '0.75rem',
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
               }}
             >
               {(report.location || profile.location) && (
@@ -147,7 +147,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 4,
-                  color: '#a1a1aa',
+                  color: 'var(--text-secondary)',
                   textDecoration: 'none',
                   fontFamily: 'var(--font-mono)',
                 }}
@@ -179,20 +179,20 @@ export default function RecruiterView({ report, onSelectRepo }) {
               key={stat.label}
               style={{
                 padding: '10px 14px',
-                background: '#121218',
-                border: '1px solid #1f1f26',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 minWidth: 115,
               }}
             >
-              <div style={{ fontSize: '0.68rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 {stat.label}
               </div>
               <div
                 style={{
                   fontSize: '1.15rem',
                   fontWeight: 800,
-                  color: '#fafafa',
+                  color: 'var(--text-primary)',
                   marginTop: 3,
                   fontFamily: 'var(--font-mono)',
                 }}
@@ -215,8 +215,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
@@ -226,7 +226,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
               marginBottom: 12,
             }}
@@ -241,7 +241,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                 return (
                   <div key={domainName}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fafafa' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                         {domainName}
                       </span>
                       <span
@@ -254,7 +254,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                         Signal strength: {strengthVal}/100
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#a1a1aa' }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                       Evidence: {(dom.evidence || []).slice(0, 2).join(' • ')}
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
               })}
             </div>
           ) : (
-            <div style={{ fontSize: '0.8rem', color: '#71717a' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               Insufficient public repository evidence to classify primary technical focus areas.
             </div>
           )}
@@ -271,8 +271,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
@@ -282,7 +282,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
               marginBottom: 12,
             }}
@@ -298,15 +298,15 @@ export default function RecruiterView({ report, onSelectRepo }) {
                     key={tech.name}
                     style={{
                       padding: '6px 10px',
-                      background: '#121218',
-                      border: '1px solid #27272a',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border)',
                       borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
                     }}
                   >
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fafafa' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {tech.name}
                     </span>
                     <span
@@ -323,7 +323,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
               })}
             </div>
           ) : (
-            <div style={{ fontSize: '0.8rem', color: '#71717a' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
               No specific framework or language signatures detected.
             </div>
           )}
@@ -334,8 +334,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
       <div
         style={{
           padding: '18px 20px',
-          background: '#0d0d12',
-          border: '1px solid #1f1f26',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 10,
         }}
       >
@@ -345,7 +345,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.07em',
-            color: '#71717a',
+            color: 'var(--text-muted)',
             fontFamily: 'var(--font-mono)',
             marginBottom: 14,
           }}
@@ -366,8 +366,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
                 key={proj.name}
                 style={{
                   padding: 16,
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   display: 'flex',
                   flexDirection: 'column',
@@ -408,8 +408,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
                         fontSize: '0.72rem',
                         padding: '2px 7px',
                         borderRadius: 4,
-                        background: '#181820',
-                        color: '#e4e4e7',
+                        background: 'var(--bg-subtle)',
+                        color: 'var(--text-primary)',
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
@@ -417,7 +417,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                     </span>
                   </div>
 
-                  <p style={{ margin: '6px 0 10px', fontSize: '0.78rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '6px 0 10px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                     {proj.description || 'No description provided.'}
                   </p>
 
@@ -431,7 +431,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                             alignItems: 'center',
                             gap: 6,
                             fontSize: '0.74rem',
-                            color: '#d4d4d8',
+                            color: 'var(--text-secondary)',
                           }}
                         >
                           <CheckCircle2 size={12} color="#10b981" /> {reason}
@@ -446,10 +446,10 @@ export default function RecruiterView({ report, onSelectRepo }) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    borderTop: '1px solid #1f1f26',
+                    borderTop: '1px solid var(--border)',
                     paddingTop: 10,
                     fontSize: '0.73rem',
-                    color: '#71717a',
+                    color: 'var(--text-muted)',
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
@@ -460,7 +460,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
                       target="_blank"
                       rel="noreferrer"
                       style={{
-                        color: '#a1a1aa',
+                        color: 'var(--text-secondary)',
                         textDecoration: 'none',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -488,8 +488,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
         <div
           style={{
             padding: '16px 18px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
@@ -499,14 +499,14 @@ export default function RecruiterView({ report, onSelectRepo }) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
               marginBottom: 10,
             }}
           >
             Recent Public Activity Summary
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.79rem', color: '#d4d4d8' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.79rem', color: 'var(--text-secondary)' }}>
             <div>
               • Active repositories in last 90 days:{' '}
               <strong>{repoAnalysis.repos_pushed_90d ?? (activity.active_repositories || []).length ?? 0}</strong>
@@ -517,7 +517,7 @@ export default function RecruiterView({ report, onSelectRepo }) {
               <strong>{activity.event_breakdown?.total_public_events ?? 0}</strong>
             </div>
             {(activity.insights || []).map((ins, i) => (
-              <div key={i} style={{ color: '#a1a1aa' }}>• {ins}</div>
+              <div key={i} style={{ color: 'var(--text-secondary)' }}>• {ins}</div>
             ))}
           </div>
         </div>
@@ -525,8 +525,8 @@ export default function RecruiterView({ report, onSelectRepo }) {
         <div
           style={{
             padding: '16px 18px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
@@ -536,20 +536,20 @@ export default function RecruiterView({ report, onSelectRepo }) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.07em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
               marginBottom: 10,
             }}
           >
             Public Community Signals
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 10, fontSize: '0.79rem', color: '#e4e4e7', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 10, fontSize: '0.79rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
             <span>Followers: {comm.followers ?? report.followers ?? 0}</span>
             <span>Stars received: {comm.stars_received ?? report.total_stars ?? 0}</span>
             <span>Forks: {comm.forks_received ?? report.total_forks ?? 0}</span>
             <span>PR events: {comm.pr_participation ?? 0}</span>
           </div>
-          <div style={{ fontSize: '0.77rem', color: '#a1a1aa', lineHeight: 1.45 }}>
+          <div style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
             {comm.interpretation || 'Public community metrics reflect observable repository interactions.'}
           </div>
         </div>

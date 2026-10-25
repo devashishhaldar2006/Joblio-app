@@ -216,7 +216,7 @@ def seed_market_data():
                 "count": count,
                 "percentage_of_total": pct,
                 "total_jobs_that_week": total_jobs,
-                "collected_at": datetime.datetime.utcnow()
+                "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             })
 
             weekly_skill_stats[w_str][skill] = {
@@ -281,7 +281,7 @@ def seed_market_data():
             "top_skills": top_20,
             "emerging_skills": emerging_5,
             "co_occurrences": CO_OCCURRENCES,
-            "collected_at": datetime.datetime.utcnow()
+            "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         }
 
         db["marketsnapshots"].update_one(

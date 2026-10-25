@@ -4,7 +4,7 @@ from agents.opensource.repo_finder import repo_finder_node
 from agents.opensource.issue_explainer import issue_explainer_node
 from agents.opensource.skill_gap_mapper import skill_gap_mapper_node
 
-class OpenSourceGraphState(TypedDict):
+class OpenSourceGraphState(TypedDict, total=False):
     skills: List[str]
     experience_level: str
     preferred_language: str

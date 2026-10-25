@@ -984,35 +984,56 @@ export const exportResearchPaperPdf = (paper) => {
  */
 export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
   if (!selectedIssue) return;
-  const repo = selectedIssue.repo_name || 'Repository';
-  const issueNum = selectedIssue.issue_number || 0;
-  const title = selectedIssue.issue_title || 'Open Source Issue';
-  const complexity = selectedIssue.complexity || 'Intermediate';
-  const tech = selectedIssue.language || 'Codebase';
+  const repo = selectedIssue.repo_name || selectedIssue.repoName || 'Repository';
+  const issueNum = selectedIssue.issue_number || selectedIssue.issueNumber || 0;
+  const title = selectedIssue.issue_title || selectedIssue.issueTitle || 'Open Source Contribution';
+  const complexity = selectedIssue.complexity || selectedIssue.experienceLevel || 'Intermediate';
+  const tech = selectedIssue.language || selectedIssue.preferredLanguage || 'Codebase';
+  const guide = prGuide || selectedIssue.data?.guide || selectedIssue.guide || selectedIssue.data?.review || selectedIssue.review || selectedIssue.data;
+  const isReview = selectedIssue.actionType === 'review' || !!(guide?.feedback && guide?.score !== undefined);
 
   const kpiTiles = [
     { label: 'Repository', value: repo.split('/')[1] || repo, sub: repo, borderColor: '#3b82f6' },
-    { label: 'Issue Number', value: `#${issueNum}`, sub: `Difficulty: ${complexity}` },
+    { label: 'Issue Number', value: issueNum ? `#${issueNum}` : 'PR Review', sub: `Difficulty: ${complexity}` },
     { label: 'Primary Language', value: tech, sub: 'Target Stack' },
-    { label: 'Contribution Plan', value: prGuide ? 'Generated' : 'Ready', sub: 'InnovateX Multi-Agent', borderColor: '#10b981' }
+    { label: isReview ? 'Code Quality' : 'Contribution Plan', value: isReview ? `${guide?.score || 85} / 100` : (guide ? 'Generated' : 'Ready'), sub: isReview ? 'Pre-PR Audit' : 'InnovateX Multi-Agent', borderColor: '#10b981' }
   ];
 
   const sections = [];
 
-  if (prGuide) {
-    if (prGuide.setup_steps && prGuide.setup_steps.length > 0) {
+  if (isReview && guide) {
+    if (guide.feedback) {
+      sections.push({
+        title: 'Architectural Code Review & Senior Critique',
+        contentHtml: `<div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.6;">${guide.feedback}</div>`
+      });
+    }
+    if (guide.security_notes) {
+      sections.push({
+        title: 'Security, Concurrency & Defensive Engineering',
+        contentHtml: `<div style="font-size: 8.5pt; color: #fca5a5; line-height: 1.6;">${guide.security_notes}</div>`
+      });
+    }
+    if (guide.suggested_diff) {
+      sections.push({
+        title: 'Recommended Code Patch & Optimizations (Diff)',
+        contentHtml: `<pre class="code-block" style="font-size: 7.5pt; color: #34d399;">${guide.suggested_diff}</pre>`
+      });
+    }
+  } else if (guide) {
+    if (guide.setup_steps && guide.setup_steps.length > 0) {
       sections.push({
         title: 'Local Environment Setup & Reproduction',
         contentHtml: `
           <ol style="margin-left: 18px; font-size: 8.5pt; line-height: 1.6; color: #D4D4D8;">
-            ${prGuide.setup_steps.map(step => `<li>${step}</li>`).join('')}
+            ${guide.setup_steps.map(step => `<li>${step}</li>`).join('')}
           </ol>
         `
       });
     }
 
-    if (prGuide.files_to_edit && prGuide.files_to_edit.length > 0) {
-      const fileRows = prGuide.files_to_edit.map(f => {
+    if (guide.files_to_edit && guide.files_to_edit.length > 0) {
+      const fileRows = guide.files_to_edit.map(f => {
         const filePath = typeof f === 'string' ? f : (f.file_path || f.file || f.path || f.name || 'Target File');
         const reason = typeof f === 'string' ? 'Target modifications' : (f.reason || 'Implement resolution logic');
         const whatToChange = typeof f === 'object' && f.what_to_change ? `<div style="font-size: 7.5pt; color: #8E8E99; margin-top: 3px;"><strong>Change:</strong> ${f.what_to_change}</div>` : '';
@@ -1042,22 +1063,22 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
       });
     }
 
-    if (prGuide.implementation_hints && prGuide.implementation_hints.length > 0) {
+    if (guide.implementation_hints && guide.implementation_hints.length > 0) {
       sections.push({
         title: 'Implementation Blueprint & Technical Hints',
         contentHtml: `
           <ul style="margin-left: 18px; font-size: 8.5pt; line-height: 1.6; color: #D4D4D8;">
-            ${prGuide.implementation_hints.map(h => `<li>${h}</li>`).join('')}
+            ${guide.implementation_hints.map(h => `<li>${h}</li>`).join('')}
           </ul>
         `
       });
     }
 
-    if (prGuide.pr_template) {
+    if (guide.pr_template) {
       sections.push({
         title: 'Standard Pull Request Submission Template',
         contentHtml: `
-          <pre class="code-block">${prGuide.pr_template}</pre>
+          <pre class="code-block">${guide.pr_template}</pre>
         `
       });
     }
@@ -1073,12 +1094,15 @@ export const exportOpenSourceGuidePdf = (selectedIssue, prGuide) => {
   }
 
   const html = buildInstitutionalDossierHtml({
-    title: 'OPEN SOURCE CONTRIBUTION BLUEPRINT',
-    subtitle: `Actionable Implementation Guide for ${repo} #${issueNum}`,
-    badge: 'CONTRIBUTION BLUEPRINT',
+    title: isReview ? 'OPEN SOURCE PRE-PR CODE REVIEW' : 'OPEN SOURCE CONTRIBUTION BLUEPRINT',
+    subtitle: `${isReview ? 'Automated Code Review' : 'Actionable Implementation Guide'} for ${repo} ${issueNum ? `#${issueNum}` : ''}`,
+    badge: isReview ? 'PRE-PR CODE REVIEW' : 'CONTRIBUTION BLUEPRINT',
+    engine: 'InnovateX Multi-Agent Autonomous Engine v2.4 (Groq Llama 3.3)',
     kpiTiles,
     sections,
-    analystNote: `Autonomous contribution guide generated for <strong>${repo} #${issueNum}</strong> ("${title}"). Follow reproduction commands and target file blueprints to submit a high-acceptance pull request.`
+    analystNote: isReview
+      ? `Senior automated code review completed for <strong>${repo}</strong>. Review architectural critique and security considerations before submitting your community pull request.`
+      : `Autonomous contribution guide generated for <strong>${repo} ${issueNum ? `#${issueNum}` : ''}</strong> ("${title}"). Follow reproduction commands and target file blueprints to submit a high-acceptance pull request.`
   });
 
   printReportDocument(html);
@@ -1198,6 +1222,108 @@ export const exportDashboardDigestPdf = (user, stats) => {
     kpiTiles,
     sections,
     analystNote: `This automated executive digest compiles developer telemetry across all active InnovateX multi-agent pipelines for <strong>${name}</strong>.`
+  });
+
+  printReportDocument(html);
+};
+
+/**
+ * Universal Report PDF Exporter
+ * Dynamically identifies report domain (GitHub, Job Match/ATS, ArXiv Research, Open Source, or Market)
+ * and dispatches to the correct institutional PDF generator. Never outputs plain text.
+ */
+export const exportUniversalReportPdf = (report) => {
+  if (!report) return;
+  const type = (report.type || '').toLowerCase();
+  const rawData = report.rawData || report.data || {};
+
+  // 1. GitHub Profile Intelligence Audit
+  if (type === 'github' || type.includes('git')) {
+    exportGithubAuditPdf(rawData.report || rawData);
+    return;
+  }
+
+  // 2. ATS Resume Job Match Fit
+  if (type === 'jobs' || type.includes('job') || type.includes('resume')) {
+    const jobs = rawData.results || rawData.jobs || (Array.isArray(rawData) ? rawData : []);
+    const candidateName = rawData.parsedProfile?.name || rawData.name || 'Candidate';
+    if (jobs && jobs.length > 0) {
+      exportJobMatchPdf(jobs, candidateName);
+      return;
+    }
+  }
+
+  // 3. ArXiv Research Synthesis
+  if (type === 'research' || type.includes('research') || type.includes('paper')) {
+    exportResearchPaperPdf(rawData);
+    return;
+  }
+
+  // 4. Open Source Contribution Blueprint & Code Review
+  if (type === 'opensource' || type.includes('open') || type.includes('issue') || type.includes('oss')) {
+    const selectedIssue = {
+      repo_name: rawData.repoName || report.title || 'Open Source Project',
+      issue_number: rawData.issueNumber || 0,
+      issue_title: rawData.issueTitle || report.title,
+      complexity: rawData.experienceLevel || 'Intermediate',
+      language: rawData.preferredLanguage || 'Open Source',
+      body: report.summary
+    };
+    const prGuide = rawData.data?.guide || rawData.data?.review || rawData.guide || rawData.review || rawData.data || rawData;
+    exportOpenSourceGuidePdf(selectedIssue, prGuide);
+    return;
+  }
+
+  // 5. Market Demand & 26-Week Skill Forecast
+  if (type === 'market' || type.includes('market') || type.includes('forecast')) {
+    exportMarketForecastPdf(rawData);
+    return;
+  }
+
+  // 6. Universal Institutional Dossier Fallback (Guarantees A4 PDF for any custom report)
+  const kpiTiles = Array.isArray(report.metrics) && report.metrics.length > 0
+    ? report.metrics.map(m => ({ label: m.label, value: String(m.value) }))
+    : [
+        { label: 'Category', value: report.categoryLabel || report.type || 'Intelligence' },
+        { label: 'Generated Date', value: new Date(report.createdAt || Date.now()).toLocaleDateString() },
+        ...(report.score !== null && report.score !== undefined ? [{ label: 'Score Evaluation', value: `${report.score} ${report.scoreLabel || ''}` }] : [])
+      ];
+
+  const sections = [];
+  if (report.summary) {
+    sections.push({
+      title: 'Executive Summary & Intelligence Briefing',
+      contentHtml: `<div style="font-size: 8.5pt; color: #D4D4D8; line-height: 1.6;">${report.summary}</div>`
+    });
+  }
+
+  if (Array.isArray(report.tags) && report.tags.length > 0) {
+    sections.push({
+      title: 'Classified Technology Tags & Dimensions',
+      contentHtml: `
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0;">
+          ${report.tags.map(t => `<span class="tag tag-blue" style="font-size: 8pt; padding: 3px 8px;">${t}</span>`).join('')}
+        </div>
+      `
+    });
+  }
+
+  if (rawData && typeof rawData === 'object' && Object.keys(rawData).length > 0) {
+    sections.push({
+      title: 'Analytical Data Payload',
+      contentHtml: `<pre class="code-block" style="font-size: 7.5pt; max-height: 380px; overflow: hidden;">${JSON.stringify(rawData, null, 2)}</pre>`
+    });
+  }
+
+  const html = buildInstitutionalDossierHtml({
+    title: report.title?.toUpperCase() || 'INTELLIGENCE REPORT DOSSIER',
+    subtitle: report.subtitle || `InnovateX Automated Synthesis · ${report.categoryLabel || report.type}`,
+    badge: (report.categoryLabel || report.type || 'DOSSIER').toUpperCase(),
+    engine: 'InnovateX Multi-Agent Autonomous Engine v2.4',
+    date: new Date(report.createdAt || Date.now()).toUTCString(),
+    kpiTiles,
+    sections,
+    analystNote: report.summary || `Forensic telemetry dossier compiled for ${report.title}.`
   });
 
   printReportDocument(html);

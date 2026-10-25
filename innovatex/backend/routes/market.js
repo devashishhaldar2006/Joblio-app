@@ -18,8 +18,8 @@ router.get('/history/:skill', getSkillHistory);
 // Forecast supports both authenticated users and guests
 router.post('/forecast', optionalAuthMiddleware, forecastSkill);
 
-// Gap report requires authentication
-router.post('/gap-report', authMiddleware, getGapReport);
+// Gap report supports both authenticated users (using saved skills) and guests (custom skills)
+router.post('/gap-report', optionalAuthMiddleware, getGapReport);
 
 module.exports = router;
 

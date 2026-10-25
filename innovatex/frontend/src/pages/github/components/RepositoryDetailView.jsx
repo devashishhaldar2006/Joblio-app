@@ -10,14 +10,14 @@ const STATUS_BADGE = {
   'Recently created': { bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.35)', color: '#06b6d4' },
   Stable: { bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.35)', color: '#60a5fa' },
   Dormant: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.35)', color: '#f59e0b' },
-  Archived: { bg: 'rgba(113, 113, 122, 0.15)', border: 'rgba(113, 113, 122, 0.35)', color: '#a1a1aa' },
+  Archived: { bg: 'rgba(113, 113, 122, 0.15)', border: 'rgba(113, 113, 122, 0.35)', color: 'var(--text-secondary)' },
 };
 
 const DEPTH_BADGE = {
   Flagship: { bg: 'rgba(168, 85, 247, 0.14)', border: 'rgba(168, 85, 247, 0.4)', color: '#c084fc' },
   Supporting: { bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.35)', color: '#22d3ee' },
   Experimental: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.35)', color: '#fbbf24' },
-  Dormant: { bg: 'rgba(113, 113, 122, 0.12)', border: 'rgba(113, 113, 122, 0.3)', color: '#a1a1aa' },
+  Dormant: { bg: 'rgba(113, 113, 122, 0.12)', border: 'rgba(113, 113, 122, 0.3)', color: 'var(--text-secondary)' },
 };
 
 function scoreColor(val) {
@@ -120,8 +120,8 @@ export default function RepositoryDetailView({
           flexWrap: 'wrap',
           gap: 12,
           padding: '14px 18px',
-          background: '#0d0d12',
-          border: '1px solid #1f1f26',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 10,
         }}
       >
@@ -134,9 +134,9 @@ export default function RepositoryDetailView({
               gap: 6,
               padding: '6px 11px',
               borderRadius: 6,
-              background: '#14141b',
-              border: '1px solid #27272a',
-              color: '#e4e4e7',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
               fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
@@ -152,7 +152,7 @@ export default function RepositoryDetailView({
                   margin: 0,
                   fontSize: '1.15rem',
                   fontWeight: 700,
-                  color: '#fafafa',
+                  color: 'var(--text-primary)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
@@ -195,7 +195,7 @@ export default function RepositoryDetailView({
                 gap: 14,
                 marginTop: 5,
                 fontSize: '0.75rem',
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-mono)',
               }}
             >
@@ -220,8 +220,8 @@ export default function RepositoryDetailView({
               gap: 5,
               padding: '7px 12px',
               borderRadius: 6,
-              background: '#14141b',
-              border: '1px solid #27272a',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
               color: '#22d3ee',
               fontSize: '0.76rem',
               fontWeight: 600,
@@ -261,9 +261,9 @@ export default function RepositoryDetailView({
                 gap: 6,
                 padding: '7px 12px',
                 borderRadius: 6,
-                background: '#18181b',
-                border: '1px solid #27272a',
-                color: '#fafafa',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
                 fontSize: '0.76rem',
                 fontWeight: 600,
                 textDecoration: 'none',
@@ -286,8 +286,8 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
             display: 'flex',
             flexDirection: 'column',
@@ -300,7 +300,7 @@ export default function RepositoryDetailView({
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -318,11 +318,11 @@ export default function RepositoryDetailView({
             >
               {repo.health_score ?? 0}
             </span>
-            <span style={{ fontSize: '0.9rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
               / 100
             </span>
           </div>
-          <div style={{ fontSize: '0.76rem', color: '#a1a1aa', lineHeight: 1.4 }}>
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
             {repo.description || 'No repository description provided.'}
           </div>
         </div>
@@ -332,8 +332,8 @@ export default function RepositoryDetailView({
           style={{
             gridColumn: 'span 2',
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
             display: 'flex',
             flexDirection: 'column',
@@ -346,7 +346,7 @@ export default function RepositoryDetailView({
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -370,8 +370,8 @@ export default function RepositoryDetailView({
                 key={item.label}
                 style={{
                   padding: '10px 12px',
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 7,
                 }}
               >
@@ -383,7 +383,7 @@ export default function RepositoryDetailView({
                     marginBottom: 6,
                   }}
                 >
-                  <span style={{ fontSize: '0.75rem', color: '#d4d4d8', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     {item.label}
                   </span>
                   <span
@@ -401,7 +401,7 @@ export default function RepositoryDetailView({
                   style={{
                     width: '100%',
                     height: 5,
-                    background: '#1f1f26',
+                    background: 'var(--border)',
                     borderRadius: 3,
                     overflow: 'hidden',
                   }}
@@ -425,7 +425,7 @@ export default function RepositoryDetailView({
         style={{
           display: 'flex',
           gap: 6,
-          borderBottom: '1px solid #1f1f26',
+          borderBottom: '1px solid var(--border)',
           paddingBottom: 8,
           overflowX: 'auto',
         }}
@@ -443,7 +443,7 @@ export default function RepositoryDetailView({
                 gap: 6,
                 padding: '7px 13px',
                 borderRadius: 6,
-                background: active ? '#181820' : 'transparent',
+                background: active ? 'var(--primary-light)' : 'transparent',
                 border: active ? '1px solid #2e2e38' : '1px solid transparent',
                 color: active ? '#fafafa' : '#a1a1aa',
                 fontSize: '0.78rem',
@@ -472,8 +472,8 @@ export default function RepositoryDetailView({
           <div
             style={{
               padding: '16px 18px',
-              background: '#0d0d12',
-              border: '1px solid #1f1f26',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: 10,
             }}
           >
@@ -493,7 +493,7 @@ export default function RepositoryDetailView({
             >
               <Sparkles size={13} /> AI Repository Optimization Actions
             </div>
-            <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: '#a1a1aa' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               Generate tailored repository artifacts grounded in your actual codebase structure and signals.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -527,8 +527,8 @@ export default function RepositoryDetailView({
           <div
             style={{
               padding: '16px 18px',
-              background: '#0d0d12',
-              border: '1px solid #1f1f26',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: 10,
             }}
           >
@@ -538,7 +538,7 @@ export default function RepositoryDetailView({
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.07em',
-                color: '#71717a',
+                color: 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)',
                 marginBottom: 10,
               }}
@@ -555,7 +555,7 @@ export default function RepositoryDetailView({
                       alignItems: 'center',
                       gap: 8,
                       fontSize: '0.79rem',
-                      color: '#e4e4e7',
+                      color: 'var(--text-primary)',
                     }}
                   >
                     <CheckCircle2 size={13} color="#10b981" /> {sig}
@@ -563,12 +563,12 @@ export default function RepositoryDetailView({
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: '0.78rem', color: '#71717a', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 12 }}>
                 Limited standout engineering signals detected in public metadata.
               </div>
             )}
 
-            <div style={{ fontSize: '0.72rem', color: '#71717a', marginBottom: 6 }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 6 }}>
               Repository Topics ({(repo.topics || []).length}):
             </div>
             {(repo.topics || []).length > 0 ? (
@@ -579,8 +579,8 @@ export default function RepositoryDetailView({
                     style={{
                       padding: '3px 8px',
                       borderRadius: 4,
-                      background: '#16161e',
-                      border: '1px solid #27272a',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border)',
                       color: '#22d3ee',
                       fontSize: '0.72rem',
                       fontFamily: 'var(--font-mono)',
@@ -603,8 +603,8 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
@@ -619,10 +619,10 @@ export default function RepositoryDetailView({
             }}
           >
             <div>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#fafafa' }}>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                 README Documentation Audit ({readme.score ?? breakdown.documentation ?? 0}/100)
               </h3>
-              <p style={{ margin: '4px 0 0', fontSize: '0.76rem', color: '#a1a1aa' }}>
+              <p style={{ margin: '4px 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                 {readme.exists
                   ? `README detected (${readme.word_count ?? 0} words, ${readme.length ?? 0} chars). Evaluated across 12 structural documentation signals.`
                   : 'No README file detected in repository root.'}
@@ -658,7 +658,7 @@ export default function RepositoryDetailView({
             <div
               style={{
                 padding: 14,
-                background: '#121218',
+                background: 'var(--bg-subtle)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
                 borderRadius: 8,
               }}
@@ -685,7 +685,7 @@ export default function RepositoryDetailView({
                         alignItems: 'center',
                         gap: 8,
                         fontSize: '0.78rem',
-                        color: '#e4e4e7',
+                        color: 'var(--text-primary)',
                       }}
                     >
                       <CheckCircle2 size={13} color="#10b981" /> {s}
@@ -693,7 +693,7 @@ export default function RepositoryDetailView({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: '0.76rem', color: '#71717a' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                   No verified README sections detected.
                 </div>
               )}
@@ -702,7 +702,7 @@ export default function RepositoryDetailView({
             <div
               style={{
                 padding: 14,
-                background: '#121218',
+                background: 'var(--bg-subtle)',
                 border: '1px solid rgba(245, 158, 11, 0.25)',
                 borderRadius: 8,
               }}
@@ -729,7 +729,7 @@ export default function RepositoryDetailView({
                         alignItems: 'center',
                         gap: 8,
                         fontSize: '0.78rem',
-                        color: '#d4d4d8',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       <XCircle size={13} color="#f59e0b" /> {m}
@@ -750,12 +750,12 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
-          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#fafafa' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
             Engineering & Architecture Signals ({eng.score ?? breakdown.engineering ?? 0}/100)
           </h3>
           <div
@@ -779,8 +779,8 @@ export default function RepositoryDetailView({
                 key={sig.label}
                 style={{
                   padding: '10px 12px',
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 7,
                   display: 'flex',
                   alignItems: 'center',
@@ -805,7 +805,7 @@ export default function RepositoryDetailView({
               flexWrap: 'wrap',
               gap: 16,
               fontSize: '0.76rem',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -822,12 +822,12 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
-          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#fafafa' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
             Maintenance & Lifecycle Telemetry ({breakdown.maintenance ?? 0}/100)
           </h3>
           <div
@@ -837,35 +837,35 @@ export default function RepositoryDetailView({
               gap: 12,
             }}
           >
-            <div style={{ padding: 12, background: '#121218', borderRadius: 8, border: '1px solid #1f1f26' }}>
-              <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 LIFECYCLE STATUS
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, color: statusStyle.color, marginTop: 4 }}>
                 {lifecycleState}
               </div>
             </div>
-            <div style={{ padding: 12, background: '#121218', borderRadius: 8, border: '1px solid #1f1f26' }}>
-              <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 DAYS SINCE LAST PUSH
               </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fafafa', marginTop: 4 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
                 {daysSincePush} days
               </div>
             </div>
-            <div style={{ padding: 12, background: '#121218', borderRadius: 8, border: '1px solid #1f1f26' }}>
-              <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 CREATED AT
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginTop: 4 }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>
                 {repo.created_at ? new Date(repo.created_at).toLocaleDateString() : 'Unknown'}
               </div>
             </div>
-            <div style={{ padding: 12, background: '#121218', borderRadius: 8, border: '1px solid #1f1f26' }}>
-              <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 LAST PUSHED AT
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginTop: 4 }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>
                 {repo.pushed_at ? new Date(repo.pushed_at).toLocaleDateString() : 'Unknown'}
               </div>
             </div>
@@ -877,12 +877,12 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
           }}
         >
-          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#fafafa' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
             Community & Collaboration Signals ({breakdown.community ?? 0}/100)
           </h3>
           <div
@@ -903,19 +903,19 @@ export default function RepositoryDetailView({
                 key={c.label}
                 style={{
                   padding: 12,
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                 }}
               >
-                <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   {c.label}
                 </div>
                 <div
                   style={{
                     fontSize: '1.1rem',
                     fontWeight: 700,
-                    color: '#fafafa',
+                    color: 'var(--text-primary)',
                     marginTop: 4,
                     fontFamily: 'var(--font-mono)',
                   }}
@@ -932,15 +932,15 @@ export default function RepositoryDetailView({
         <div
           style={{
             padding: '18px 20px',
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
             display: 'flex',
             flexDirection: 'column',
             gap: 10,
           }}
         >
-          <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#fafafa' }}>
+          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
             Repository-Specific Recommendations
           </h3>
           {repoRecs.length > 0 ? (
@@ -949,8 +949,8 @@ export default function RepositoryDetailView({
                 key={rec.id}
                 style={{
                   padding: 14,
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -960,10 +960,10 @@ export default function RepositoryDetailView({
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#fafafa' }}>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                     {rec.title}
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: '#a1a1aa', marginTop: 4 }}>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                     {rec.rationale || rec.observation}
                   </div>
                 </div>
@@ -987,7 +987,7 @@ export default function RepositoryDetailView({
               </div>
             ))
           ) : (
-            <div style={{ fontSize: '0.8rem', color: '#a1a1aa' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               No critical gaps flagged specifically for {repo.name}. You can still use the AI actions in the Overview tab to refine its README or topics.
             </div>
           )}

@@ -92,16 +92,17 @@ def calculateProfileScore(
     # 2. Repository Quality (Max 20)
     # ------------------------------------------------------------------
     max_rq = w["repository_quality"]
-    if total_repos == 0:
+    if total_repos == 0 or not repos:
         rq_score = 0.0
         rq_pct = 0
         rq_reasons = ["Insufficient public data to evaluate this dimension (0 public repositories)."]
     else:
-        avg_eng = sum(r["engineering"]["score"] for r in repos) / total_repos
-        avg_health = sum(r["health_score"] for r in repos) / total_repos
-        modular_count = sum(1 for r in repos if r["engineering"]["is_modular"])
-        manifest_count = sum(1 for r in repos if r["engineering"]["has_dependency_manifest"])
-        ci_or_test_count = sum(1 for r in repos if r["engineering"]["has_tests"] or r["engineering"]["has_ci"] or r["engineering"]["has_docker"])
+        divisor = len(repos) or 1
+        avg_eng = sum(r.get("engineering", {}).get("score", 0) for r in repos) / divisor
+        avg_health = sum(r.get("health_score", 0) for r in repos) / divisor
+        modular_count = sum(1 for r in repos if r.get("engineering", {}).get("is_modular"))
+        manifest_count = sum(1 for r in repos if r.get("engineering", {}).get("has_dependency_manifest"))
+        ci_or_test_count = sum(1 for r in repos if r.get("engineering", {}).get("has_tests") or r.get("engineering", {}).get("has_ci") or r.get("engineering", {}).get("has_docker"))
 
         rq_pct = min(100, round(avg_eng * 0.55 + avg_health * 0.45))
         rq_score = round((rq_pct / 100.0) * max_rq, 1)
@@ -187,14 +188,15 @@ def calculateProfileScore(
     max_pd = w["project_depth"]
     flagship_cnt = depth_intel.get("flagship_count", 0)
     supporting_cnt = depth_intel.get("supporting_count", 0)
-    fullstack_cnt = sum(1 for r in repos if r["engineering"]["is_fullstack"])
+    fullstack_cnt = sum(1 for r in repos if r.get("engineering", {}).get("is_fullstack"))
 
-    if total_repos == 0:
+    if total_repos == 0 or not repos:
         pd_pct = 0
         pd_score = 0.0
         pd_reasons = ["Insufficient public data to evaluate project depth."]
     else:
-        avg_depth = sum(r["depth_score"] for r in repos[:5]) / min(len(repos), 5)
+        divisor = min(len(repos), 5) or 1
+        avg_depth = sum(r.get("depth_score", 0) for r in repos[:5]) / divisor
         pd_pct = min(100, round(avg_depth * 0.7 + min(30, flagship_cnt * 15 + supporting_cnt * 5)))
         pd_score = round((pd_pct / 100.0) * max_pd, 1)
         pd_reasons = [

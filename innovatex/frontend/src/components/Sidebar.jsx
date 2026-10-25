@@ -1,9 +1,37 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { X, LogOut } from 'lucide-react';
+import {
+  X,
+  LogOut,
+  LayoutDashboard,
+  Compass,
+  GitPullRequest,
+  Target,
+  BarChart2,
+  Users,
+  Bookmark,
+  FileText,
+  Settings,
+  Search
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLayout } from '../context/LayoutContext';
+
+const NAV_PRIMARY = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/market', label: 'Discover', icon: Compass },
+  { to: '/opensource', label: 'Contribute', icon: GitPullRequest },
+  { to: '/contests', label: 'Track', icon: Target },
+  { to: '/github', label: 'Insights', icon: BarChart2 },
+  { to: '/research', label: 'Community', icon: Users },
+  { to: '/jobs', label: 'Saved', icon: Bookmark },
+];
+
+const NAV_SECONDARY = [
+  { to: '/reports', label: 'Reports', icon: FileText },
+  { to: '/profile?tab=settings', label: 'Settings', icon: Settings },
+];
 
 const Sidebar = () => {
   const { logout, user } = useAuth();
@@ -19,230 +47,302 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  const primaryNav = [
-    { to: '/dashboard', label: 'Overview' },
-    { to: '/github', label: 'GitHub' },
-    { to: '/research', label: 'Research' },
-    { to: '/market', label: 'Market' },
-    { to: '/jobs', label: 'Jobs' },
-    { to: '/opensource', label: 'Open Source' },
-    { to: '/contests', label: 'Competitions' },
-  ];
-
-  const secondaryNav = [
-    { to: '/profile', label: 'Developer', exact: true },
-    { to: '/github?export=1', label: 'Reports', isExport: true },
-    { to: '/profile?tab=settings', label: 'Settings' },
-  ];
+  const isLinkActive = (item) => {
+    if (item.to.includes('?')) {
+      const [path, query] = item.to.split('?');
+      return location.pathname === path && location.search.includes(query);
+    }
+    return location.pathname === item.to;
+  };
 
   const renderLink = (item) => {
-    let isActive = false;
-    if (item.isExport) {
-      isActive = location.pathname === '/github' && location.search.includes('export=1');
-    } else if (item.exact) {
-      isActive = location.pathname === item.to && !location.search.includes('settings');
-    } else if (item.to.includes('?')) {
-      const [path, query] = item.to.split('?');
-      isActive = location.pathname === path && location.search.includes(query);
-    } else {
-      isActive = location.pathname === item.to;
-    }
+    const active = isLinkActive(item);
+    const Icon = item.icon;
 
     return (
       <NavLink
         key={item.label}
         to={item.to}
-        onClick={(e) => {
-          if (item.isExport && location.pathname === '/github') {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent('open-github-export'));
-          }
-          if (mobileSidebarOpen) onClose();
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0.42rem 0.65rem',
-          fontSize: '0.84rem',
-          color: isActive ? '#ffffff' : '#888892',
-          fontWeight: isActive ? 500 : 400,
-          borderRadius: '4px',
-          textDecoration: 'none',
-          backgroundColor: isActive ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
-          transition: 'color 0.15s ease, background-color 0.15s ease'
-        }}
-        onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.color = '#d4d4d8';
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) e.currentTarget.style.color = '#888892';
-        }}
+        onClick={() => mobileSidebarOpen && onClose()}
+        className={`sidebar-link ${active ? 'sidebar-link--active' : ''}`}
       >
+        <Icon size={16} strokeWidth={active ? 2 : 1.5} />
         <span>{item.label}</span>
-        {isActive && (
-          <span
-            style={{
-              width: '4px',
-              height: '4px',
-              borderRadius: '50%',
-              backgroundColor: '#3b82f6'
-            }}
-          />
-        )}
       </NavLink>
     );
   };
 
   const sidebarContent = (
-    <aside
-      aria-label="Application Navigation"
-      style={{
-        width: '210px',
-        backgroundColor: '#0B0B0D',
-        borderRight: '1px solid #18181d',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '1.5rem 1rem 1.25rem 1.15rem',
-        position: 'sticky',
-        top: 0,
-        height: '100vh',
-        zIndex: 40,
-        userSelect: 'none'
-      }}
-    >
-      {/* Brand Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '2rem',
-          paddingLeft: '0.65rem'
-        }}
-      >
-        <span
-          onClick={() => navigate('/dashboard')}
-          style={{
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            color: '#ffffff',
-            cursor: 'pointer',
-            textTransform: 'uppercase'
-          }}
-        >
-          INNOVATEX
-        </span>
-
+    <aside className="sidebar" aria-label="Application Navigation">
+      {/* Brand */}
+      <div className="sidebar-brand" onClick={() => navigate('/dashboard')}>
+        <div className="sidebar-brand-icon">IX</div>
+        <span className="sidebar-brand-text">InnovateX</span>
         {mobileSidebarOpen && (
-          <button
-            onClick={onClose}
-            aria-label="Close navigation"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#71717a',
-              cursor: 'pointer',
-              padding: '2px'
-            }}
-          >
-            <X size={15} />
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="sidebar-close" aria-label="Close navigation">
+            <X size={16} />
           </button>
         )}
       </div>
 
+      {/* Quick search hint */}
+      <button
+        className="sidebar-search"
+        onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+      >
+        <Search size={14} />
+        <span>Search</span>
+        <kbd>⌘K</kbd>
+      </button>
+
       {/* Main Nav */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-          {primaryNav.map(renderLink)}
+      <nav className="sidebar-nav">
+        <div className="sidebar-section">
+          {NAV_PRIMARY.map(renderLink)}
         </div>
 
-        <div
-          style={{
-            height: '1px',
-            backgroundColor: '#18181d',
-            margin: '1.25rem 0.65rem'
-          }}
-        />
+        <div className="sidebar-divider" />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-          {secondaryNav.map(renderLink)}
+        <div className="sidebar-section">
+          {NAV_SECONDARY.map(renderLink)}
         </div>
       </nav>
 
-      {/* Footer Identity */}
-      <div
-        style={{
-          paddingTop: '1rem',
-          borderTop: '1px solid #18181d',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingLeft: '0.65rem',
-          paddingRight: '0.25rem'
-        }}
-      >
+      {/* Footer */}
+      <div className="sidebar-footer">
         <div
-          onClick={() => {
-            navigate('/profile');
-            if (mobileSidebarOpen) onClose();
-          }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            cursor: 'pointer'
-          }}
+          className="sidebar-user"
+          onClick={() => { navigate('/profile'); if (mobileSidebarOpen) onClose(); }}
           title="View profile"
         >
-          <span
-            style={{
-              fontSize: '0.8rem',
-              color: '#d4d4d8',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              overflow: 'hidden'
-            }}
-          >
-            {user?.name || 'Brad Pitt'}
-          </span>
-          <span
-            style={{
-              fontSize: '0.68rem',
-              fontFamily: 'var(--font-mono)',
-              color: '#52525b',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              overflow: 'hidden'
-            }}
-          >
-            {user?.githubUsername ? `@${user.githubUsername}` : 'Developer'}
-          </span>
+          <div className="sidebar-avatar">
+            {(user?.name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="sidebar-user-info">
+            <span className="sidebar-user-name">{user?.name || 'Developer'}</span>
+            <span className="sidebar-user-handle">
+              {user?.githubUsername ? `@${user.githubUsername}` : user?.email || ''}
+            </span>
+          </div>
         </div>
-
-        <button
-          onClick={handleLogout}
-          title="Sign out"
-          aria-label="Sign out"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#52525b',
-            cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#a1a1aa')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#52525b')}
-        >
-          <LogOut size={13} />
+        <button onClick={handleLogout} title="Sign out" aria-label="Sign out" className="sidebar-logout">
+          <LogOut size={14} />
         </button>
       </div>
+
+      <style>{`
+        .sidebar {
+          width: var(--sidebar-width);
+          background: var(--bg-root);
+          border-right: 1px solid var(--border-secondary);
+          display: flex;
+          flex-direction: column;
+          padding: 1rem 0.75rem;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          user-select: none;
+          overflow-y: auto;
+        }
+
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          padding: 0.25rem 0.5rem;
+          margin-bottom: 1rem;
+          cursor: pointer;
+        }
+
+        .sidebar-brand-icon {
+          width: 28px;
+          height: 28px;
+          border-radius: var(--radius-sm);
+          background: linear-gradient(135deg, #F97316 0%, #EC4899 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          color: #ffffff;
+          font-family: var(--font-mono);
+          letter-spacing: -0.02em;
+          flex-shrink: 0;
+          box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+        }
+
+        .sidebar-brand-text {
+          font-size: 0.9375rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
+        }
+
+        .sidebar-close {
+          margin-left: auto;
+          background: none;
+          border: none;
+          color: var(--text-tertiary);
+          padding: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+        }
+        .sidebar-close:hover { color: var(--text-primary); }
+
+        .sidebar-search {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem 0.625rem;
+          margin: 0 0.25rem 0.75rem;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-secondary);
+          border-radius: var(--radius-sm);
+          color: var(--text-quaternary);
+          font-size: 0.8125rem;
+          cursor: pointer;
+          transition: border-color var(--transition-fast);
+        }
+        .sidebar-search:hover {
+          border-color: var(--border-primary);
+          color: var(--text-tertiary);
+        }
+        .sidebar-search span {
+          flex: 1;
+          text-align: left;
+        }
+        .sidebar-search kbd {
+          font-family: var(--font-sans);
+          font-size: 0.6875rem;
+          padding: 0.1rem 0.35rem;
+          border-radius: 3px;
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-primary);
+          color: var(--text-quaternary);
+          line-height: 1;
+        }
+
+        .sidebar-nav {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .sidebar-section {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+
+        .sidebar-divider {
+          height: 1px;
+          background: var(--border-secondary);
+          margin: 0.625rem 0.5rem;
+        }
+
+        .sidebar-link {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          padding: 0.4375rem 0.625rem;
+          font-size: 0.8125rem;
+          font-weight: 400;
+          color: var(--text-tertiary);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: all var(--transition-fast);
+        }
+        .sidebar-link:hover {
+          color: var(--text-primary);
+          background: var(--bg-secondary);
+        }
+        .sidebar-link--active {
+          color: var(--primary-text);
+          background: var(--primary-light);
+          font-weight: 600;
+        }
+
+        .sidebar-footer {
+          padding-top: 0.75rem;
+          border-top: 1px solid var(--border-secondary);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .sidebar-user {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          transition: background var(--transition-fast);
+        }
+        .sidebar-user:hover {
+          background: var(--bg-secondary);
+        }
+
+        .sidebar-avatar {
+          width: 26px;
+          height: 26px;
+          border-radius: var(--radius-full);
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          flex-shrink: 0;
+        }
+
+        .sidebar-user-info {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          min-width: 0;
+        }
+
+        .sidebar-user-name {
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: var(--text-primary);
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+
+        .sidebar-user-handle {
+          font-size: 0.6875rem;
+          color: var(--text-quaternary);
+          font-family: var(--font-mono);
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+
+        .sidebar-logout {
+          background: none;
+          border: none;
+          color: var(--text-quaternary);
+          cursor: pointer;
+          padding: 6px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: color var(--transition-fast);
+        }
+        .sidebar-logout:hover {
+          color: var(--text-secondary);
+        }
+      `}</style>
     </aside>
   );
 
@@ -252,7 +352,7 @@ const Sidebar = () => {
 
       {mobileSidebarOpen && (
         <div className="mobile-drawer-overlay" onClick={onClose}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '210px', height: '100%' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 'var(--sidebar-width)', height: '100%' }}>
             {sidebarContent}
           </div>
         </div>

@@ -22,6 +22,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
+    localStorage.removeItem('innovatex_last_github_user');
+    sessionStorage.clear();
     const res = await api.post('/auth/login', { email, password });
     const { token, user } = res.data;
     localStorage.setItem('innovatex_token', token);
@@ -31,6 +33,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
+    localStorage.removeItem('innovatex_last_github_user');
+    sessionStorage.clear();
     const res = await api.post('/auth/register', { name, email, password });
     const { token, user } = res.data;
     localStorage.setItem('innovatex_token', token);
@@ -42,6 +46,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('innovatex_token');
     localStorage.removeItem('innovatex_user');
+    localStorage.removeItem('innovatex_last_github_user');
+    sessionStorage.clear();
     setUser(null);
   };
 

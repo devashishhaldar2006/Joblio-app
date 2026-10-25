@@ -6,7 +6,7 @@ const JobBookmark = require('../models/JobBookmark');
 const searchJobs = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'Please upload a PDF resume file.' });
+      return res.status(400).json({ error: 'Please upload a PDF, DOCX, or TXT resume file.' });
     }
 
     const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';

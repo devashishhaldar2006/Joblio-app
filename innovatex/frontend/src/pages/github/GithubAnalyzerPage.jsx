@@ -39,7 +39,7 @@ const SEVERITY_STYLE = {
   Critical: { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' },
   High: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' },
   Medium: { bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.35)', color: '#06b6d4' },
-  Low: { bg: 'rgba(113, 113, 122, 0.14)', border: 'rgba(113, 113, 122, 0.35)', color: '#a1a1aa' },
+  Low: { bg: 'rgba(113, 113, 122, 0.14)', border: 'rgba(113, 113, 122, 0.35)', color: 'var(--text-secondary)' },
 };
 
 const STATUS_STYLE = {
@@ -47,7 +47,7 @@ const STATUS_STYLE = {
   'Recently created': { bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.35)', color: '#06b6d4' },
   Stable: { bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.35)', color: '#60a5fa' },
   Dormant: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.35)', color: '#f59e0b' },
-  Archived: { bg: 'rgba(113, 113, 122, 0.15)', border: 'rgba(113, 113, 122, 0.35)', color: '#a1a1aa' },
+  Archived: { bg: 'rgba(113, 113, 122, 0.15)', border: 'rgba(113, 113, 122, 0.35)', color: 'var(--text-secondary)' },
 };
 
 function scoreColor(pct) {
@@ -159,7 +159,9 @@ export default function GithubAnalyzerPage() {
       const uname = data.username || data.profile?.login || data.profile?.username || '';
       if (uname) {
         setUsernameInput(uname);
-        localStorage.setItem('innovatex_last_github_user', uname);
+        if (user?._id) {
+          localStorage.setItem(`innovatex_last_github_user_${user._id}`, uname);
+        }
         fetchHistory(uname);
       }
       if (data.selectedGoal) setSelectedGoal(data.selectedGoal);
@@ -176,18 +178,24 @@ export default function GithubAnalyzerPage() {
         setVerifiedMap(vMap);
       }
     },
-    [fetchHistory]
+    [fetchHistory, user?._id]
   );
 
   // Load latest cached analysis on mount
   useEffect(() => {
     let active = true;
     async function loadLatest() {
+      const userStorageKey = user?._id ? `innovatex_last_github_user_${user._id}` : null;
+      const savedUser = user?.githubUsername || (userStorageKey ? localStorage.getItem(userStorageKey) : '') || '';
+      
+      if (!savedUser) {
+        setLoadingInitial(false);
+        return;
+      }
+
       setLoadingInitial(true);
-      const savedUser =
-        user?.githubUsername || localStorage.getItem('innovatex_last_github_user') || '';
       try {
-        const query = savedUser ? `?username=${encodeURIComponent(savedUser)}` : '';
+        const query = `?username=${encodeURIComponent(savedUser)}`;
         const res = await api.get(`/github/latest${query}`);
         if (active && res.data) {
           applyReportPayload(res.data);
@@ -207,7 +215,7 @@ export default function GithubAnalyzerPage() {
     return () => {
       active = false;
     };
-  }, [user?.githubUsername, applyReportPayload]);
+  }, [user?._id, user?.githubUsername, applyReportPayload]);
 
   // Run Sync / Analyze
   const handleSync = useCallback(
@@ -461,8 +469,8 @@ export default function GithubAnalyzerPage() {
         <div
           style={{
             padding: 24,
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10,
             display: 'flex',
             alignItems: 'center',
@@ -471,10 +479,10 @@ export default function GithubAnalyzerPage() {
         >
           <RefreshCw size={18} color="#06b6d4" className="spin" />
           <div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fafafa' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Loading GitHub Developer Intelligence Workspace...
             </div>
-            <div style={{ fontSize: '0.76rem', color: '#71717a', marginTop: 2 }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
               Checking normalized snapshot cache and methodology v2.1 telemetry
             </div>
           </div>
@@ -489,8 +497,8 @@ export default function GithubAnalyzerPage() {
       <div style={{ padding: '32px 24px', maxWidth: 780, margin: '0 auto' }}>
         <div
           style={{
-            background: '#0d0d12',
-            border: '1px solid #1f1f26',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             padding: '28px 30px',
           }}
@@ -514,10 +522,10 @@ export default function GithubAnalyzerPage() {
             <Github size={13} /> GITHUB DEVELOPER INTELLIGENCE • METHODOLOGY v2.1
           </div>
 
-          <h1 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800, color: '#fafafa' }}>
+          <h1 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
             Connect GitHub for Evidence-Backed Profile Intelligence
           </h1>
-          <p style={{ margin: '0 0 22px', fontSize: '0.86rem', color: '#a1a1aa', lineHeight: 1.55 }}>
+          <p style={{ margin: '0 0 22px', fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
             Analyze your public developer profile, repository quality, README documentation depth,
             activity consistency, technology footprint, and discoverability signals. Every score and
             recommendation is backed by observable GitHub API data.
@@ -544,21 +552,21 @@ export default function GithubAnalyzerPage() {
                   style={{
                     padding: '10px 12px',
                     borderRadius: 8,
-                    background: active ? '#14141d' : '#101016',
-                    border: active ? '1px solid #06b6d4' : '1px solid #1f1f26',
+                    background: active ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                    border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
                   }}
                 >
                   <div
                     style={{
                       fontSize: '0.75rem',
                       fontWeight: 700,
-                      color: active ? '#22d3ee' : '#e4e4e7',
+                      color: active ? 'var(--primary-text)' : 'var(--text-primary)',
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
                     {s.title}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: '#71717a', marginTop: 2 }}>{s.desc}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>{s.desc}</div>
                 </div>
               );
             })}
@@ -599,7 +607,7 @@ export default function GithubAnalyzerPage() {
                     display: 'block',
                     fontSize: '0.75rem',
                     fontWeight: 700,
-                    color: '#d4d4d8',
+                    color: 'var(--text-secondary)',
                     marginBottom: 6,
                     fontFamily: 'var(--font-mono)',
                   }}
@@ -621,9 +629,9 @@ export default function GithubAnalyzerPage() {
                       minWidth: 220,
                       padding: '10px 14px',
                       borderRadius: 7,
-                      background: '#121218',
-                      border: '1px solid #27272a',
-                      color: '#fafafa',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
                       fontSize: '0.88rem',
                       fontFamily: 'var(--font-mono)',
                     }}
@@ -634,9 +642,9 @@ export default function GithubAnalyzerPage() {
                     style={{
                       padding: '10px 20px',
                       borderRadius: 7,
-                      background: usernameInput.trim() ? '#06b6d4' : '#1f1f26',
+                      background: usernameInput.trim() ? 'var(--primary)' : 'var(--bg-subtle)',
                       border: 'none',
-                      color: usernameInput.trim() ? '#09090b' : '#71717a',
+                      color: usernameInput.trim() ? '#ffffff' : 'var(--text-muted)',
                       fontSize: '0.84rem',
                       fontWeight: 700,
                       cursor: usernameInput.trim() ? 'pointer' : 'not-allowed',
@@ -654,8 +662,8 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: 14,
-                  background: '#121218',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                 }}
               >
@@ -663,7 +671,7 @@ export default function GithubAnalyzerPage() {
                   style={{
                     fontSize: '0.72rem',
                     fontWeight: 700,
-                    color: '#a1a1aa',
+                    color: 'var(--text-secondary)',
                     marginBottom: 10,
                     fontFamily: 'var(--font-mono)',
                   }}
@@ -691,7 +699,7 @@ export default function GithubAnalyzerPage() {
                         alignItems: 'center',
                         gap: 8,
                         fontSize: '0.78rem',
-                        color: '#d4d4d8',
+                        color: 'var(--text-secondary)',
                         cursor: 'pointer',
                       }}
                     >
@@ -708,16 +716,16 @@ export default function GithubAnalyzerPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#a1a1aa' }}>Primary objective:</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Primary objective:</span>
                   <select
                     value={selectedGoal}
                     onChange={(e) => setSelectedGoal(e.target.value)}
                     style={{
                       padding: '6px 10px',
                       borderRadius: 6,
-                      background: '#181820',
-                      border: '1px solid #27272a',
-                      color: '#fafafa',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
                       fontSize: '0.78rem',
                     }}
                   >
@@ -734,8 +742,8 @@ export default function GithubAnalyzerPage() {
             <div
               style={{
                 padding: 18,
-                background: '#121218',
-                border: '1px solid #27272a',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
               }}
             >
@@ -765,7 +773,7 @@ export default function GithubAnalyzerPage() {
                         alignItems: 'center',
                         gap: 10,
                         fontSize: '0.8rem',
-                        color: done ? '#10b981' : current ? '#fafafa' : '#52525b',
+                        color: done ? '#10b981' : current ? 'var(--text-primary)' : 'var(--text-muted)',
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
@@ -832,14 +840,16 @@ export default function GithubAnalyzerPage() {
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
+        color: 'var(--text-primary)',
       }}
     >
       {/* TOP HEADER CONSOLE */}
       <div
         style={{
-          background: '#0d0d12',
-          border: '1px solid #1f1f26',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-subtle)',
           borderRadius: 10,
+          boxShadow: 'var(--card-highlight)',
           padding: '16px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -865,13 +875,13 @@ export default function GithubAnalyzerPage() {
                   width: 46,
                   height: 46,
                   borderRadius: 8,
-                  border: '1px solid #27272a',
+                  border: '1px solid var(--border)',
                 }}
               />
             )}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#fafafa' }}>
+                <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   GitHub Intelligence
                 </h1>
                 <a
@@ -881,7 +891,7 @@ export default function GithubAnalyzerPage() {
                   style={{
                     fontSize: '0.88rem',
                     fontWeight: 700,
-                    color: '#22d3ee',
+                    color: '#38bdf8',
                     fontFamily: 'var(--font-mono)',
                     textDecoration: 'none',
                     display: 'inline-flex',
@@ -896,9 +906,9 @@ export default function GithubAnalyzerPage() {
                     fontSize: '0.68rem',
                     padding: '2px 7px',
                     borderRadius: 4,
-                    background: '#16161e',
-                    border: '1px solid #27272a',
-                    color: '#a1a1aa',
+                    background: 'var(--bg-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-muted)',
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
@@ -915,7 +925,7 @@ export default function GithubAnalyzerPage() {
                   marginTop: 6,
                   flexWrap: 'wrap',
                   fontSize: '0.74rem',
-                  color: '#a1a1aa',
+                  color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
@@ -932,7 +942,7 @@ export default function GithubAnalyzerPage() {
                 </span>
 
                 {rateLimit.remaining !== undefined && (
-                  <span style={{ color: '#71717a' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>
                     API quota: {rateLimit.remaining}/{rateLimit.limit || 60}
                   </span>
                 )}
@@ -954,9 +964,9 @@ export default function GithubAnalyzerPage() {
                       width: 135,
                       padding: '3px 8px',
                       borderRadius: 5,
-                      background: '#14141b',
-                      border: '1px solid #27272a',
-                      color: '#e4e4e7',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-medium)',
+                      color: 'var(--text-main)',
                       fontSize: '0.72rem',
                       fontFamily: 'var(--font-mono)',
                     }}
@@ -989,8 +999,8 @@ export default function GithubAnalyzerPage() {
             <div
               style={{
                 display: 'inline-flex',
-                background: '#14141b',
-                border: '1px solid #27272a',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: 6,
                 padding: 2,
               }}
@@ -1001,8 +1011,9 @@ export default function GithubAnalyzerPage() {
                   padding: '5px 10px',
                   borderRadius: 4,
                   border: 'none',
-                  background: viewMode === 'developer' ? '#27272a' : 'transparent',
-                  color: viewMode === 'developer' ? '#fafafa' : '#a1a1aa',
+                  background: viewMode === 'developer' ? 'var(--bg-card)' : 'transparent',
+                  color: viewMode === 'developer' ? 'var(--text-main)' : 'var(--text-muted)',
+                  boxShadow: viewMode === 'developer' ? 'var(--card-highlight)' : 'none',
                   fontSize: '0.74rem',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -1017,7 +1028,7 @@ export default function GithubAnalyzerPage() {
                   borderRadius: 4,
                   border: 'none',
                   background: viewMode === 'recruiter' ? '#06b6d4' : 'transparent',
-                  color: viewMode === 'recruiter' ? '#09090b' : '#a1a1aa',
+                  color: viewMode === 'recruiter' ? '#ffffff' : 'var(--text-muted)',
                   fontSize: '0.74rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -1036,9 +1047,10 @@ export default function GithubAnalyzerPage() {
                 gap: 6,
                 padding: '7px 12px',
                 borderRadius: 6,
-                background: '#14141b',
-                border: '1px solid #27272a',
-                color: '#fafafa',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-medium)',
+                boxShadow: 'var(--card-highlight)',
+                color: 'var(--text-main)',
                 fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: syncing ? 'wait' : 'pointer',
@@ -1056,9 +1068,9 @@ export default function GithubAnalyzerPage() {
                 gap: 6,
                 padding: '7px 12px',
                 borderRadius: 6,
-                background: '#14141b',
-                border: '1px solid #27272a',
-                color: '#e4e4e7',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
                 fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1114,8 +1126,8 @@ export default function GithubAnalyzerPage() {
           <div
             style={{
               padding: '12px 14px',
-              background: '#121218',
-              border: '1px solid #27272a',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
@@ -1130,7 +1142,7 @@ export default function GithubAnalyzerPage() {
                 style={{
                   fontSize: '0.76rem',
                   fontWeight: 700,
-                  color: '#fafafa',
+                  color: 'var(--text-primary)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
@@ -1147,7 +1159,7 @@ export default function GithubAnalyzerPage() {
                     style={{
                       fontSize: '0.73rem',
                       fontFamily: 'var(--font-mono)',
-                      color: done ? '#10b981' : active ? '#22d3ee' : '#52525b',
+                      color: done ? '#10b981' : active ? '#22d3ee' : 'var(--text-muted)',
                     }}
                   >
                     {done ? '✓' : active ? '◌' : '·'} {st.label}
@@ -1179,7 +1191,7 @@ export default function GithubAnalyzerPage() {
                 alignItems: 'center',
                 gap: 10,
                 fontSize: '0.78rem',
-                color: '#e4e4e7',
+                color: 'var(--text-primary)',
               }}
             >
               <CheckCircle2 size={15} color="#10b981" />
@@ -1195,8 +1207,8 @@ export default function GithubAnalyzerPage() {
                 style={{
                   padding: '4px 10px',
                   borderRadius: 5,
-                  background: '#14141b',
-                  border: '1px solid #27272a',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border)',
                   color: '#22d3ee',
                   fontSize: '0.73rem',
                   fontWeight: 600,
@@ -1212,7 +1224,7 @@ export default function GithubAnalyzerPage() {
                   borderRadius: 5,
                   background: 'transparent',
                   border: 'none',
-                  color: '#71717a',
+                  color: 'var(--text-muted)',
                   fontSize: '0.73rem',
                   cursor: 'pointer',
                 }}
@@ -1248,9 +1260,9 @@ export default function GithubAnalyzerPage() {
               style={{
                 padding: '4px 10px',
                 borderRadius: 5,
-                background: '#18181b',
-                border: '1px solid #3f3f46',
-                color: '#fafafa',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
                 fontSize: '0.72rem',
                 cursor: 'pointer',
               }}
@@ -1269,7 +1281,7 @@ export default function GithubAnalyzerPage() {
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: 10,
-              borderTop: '1px solid #1f1f26',
+              borderTop: '1px solid var(--border)',
               paddingTop: 12,
             }}
           >
@@ -1287,16 +1299,16 @@ export default function GithubAnalyzerPage() {
                       gap: 6,
                       padding: '7px 12px',
                       borderRadius: 6,
-                      background: active ? '#181822' : 'transparent',
-                      border: active ? '1px solid #2e2e3a' : '1px solid transparent',
-                      color: active ? '#fafafa' : '#a1a1aa',
+                      background: active ? 'var(--primary-light)' : 'transparent',
+                      border: active ? '1px solid var(--primary-border)' : '1px solid transparent',
+                      color: active ? 'var(--primary-text)' : 'var(--text-muted)',
                       fontSize: '0.78rem',
                       fontWeight: active ? 700 : 500,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    <Icon size={13} color={active ? '#06b6d4' : '#71717a'} />
+                    <Icon size={13} color={active ? 'var(--primary)' : 'var(--text-muted)'} />
                     {t.label}
                   </button>
                 );
@@ -1309,7 +1321,7 @@ export default function GithubAnalyzerPage() {
               <span
                 style={{
                   fontSize: '0.72rem',
-                  color: '#a1a1aa',
+                  color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
@@ -1322,9 +1334,9 @@ export default function GithubAnalyzerPage() {
                 style={{
                   padding: '5px 9px',
                   borderRadius: 6,
-                  background: '#14141b',
-                  border: '1px solid #27272a',
-                  color: '#fafafa',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.75rem',
                   fontWeight: 600,
                 }}
@@ -1380,8 +1392,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                     display: 'flex',
                     flexDirection: 'column',
@@ -1402,7 +1414,7 @@ export default function GithubAnalyzerPage() {
                         fontWeight: 700,
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
-                        color: '#71717a',
+                        color: 'var(--text-muted)',
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
@@ -1439,7 +1451,7 @@ export default function GithubAnalyzerPage() {
                     <span
                       style={{
                         fontSize: '1.1rem',
-                        color: '#71717a',
+                        color: 'var(--text-muted)',
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
@@ -1470,7 +1482,7 @@ export default function GithubAnalyzerPage() {
                     )}
                   </div>
 
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#a1a1aa', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                     Public GitHub Profile Score synthesized across 8 evidence-backed dimensions (
                     {allRepositories.length} public source repositories,{' '}
                     {repoAnalysis.inspected_repos_count ?? allRepositories.length} deeply inspected).
@@ -1483,14 +1495,14 @@ export default function GithubAnalyzerPage() {
                       gridTemplateColumns: 'repeat(4, 1fr)',
                       gap: 8,
                       paddingTop: 8,
-                      borderTop: '1px solid #1f1f26',
+                      borderTop: '1px solid var(--border)',
                     }}
                   >
                     {dimensions.slice(0, 8).map((d) => (
                       <div key={d.id || d.dimension} style={{ fontSize: '0.7rem' }}>
                         <div
                           style={{
-                            color: '#71717a',
+                            color: 'var(--text-muted)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -1516,8 +1528,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                     display: 'flex',
                     flexDirection: 'column',
@@ -1561,23 +1573,23 @@ export default function GithubAnalyzerPage() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                     <div>
-                      <div style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                         CURRENT
                       </div>
                       <div
                         style={{
                           fontSize: '1.8rem',
                           fontWeight: 800,
-                          color: '#e4e4e7',
+                          color: 'var(--text-primary)',
                           fontFamily: 'var(--font-mono)',
                         }}
                       >
                         {projection?.currentScore ?? totalScore}{' '}
-                        <span style={{ fontSize: '0.85rem', color: '#71717a' }}>/ 100</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/ 100</span>
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '1.2rem', color: '#52525b' }}>→</div>
+                    <div style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>→</div>
 
                     <div>
                       <div style={{ fontSize: '0.7rem', color: '#10b981', fontFamily: 'var(--font-mono)' }}>
@@ -1592,13 +1604,13 @@ export default function GithubAnalyzerPage() {
                         }}
                       >
                         {projection?.projectedScore ?? Math.min(98, totalScore + 12)}{' '}
-                        <span style={{ fontSize: '0.85rem', color: '#71717a' }}>/ 100</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/ 100</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.74rem', color: '#a1a1aa', marginBottom: 6 }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: 6 }}>
                       Potential modelled score after completing:
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -1609,7 +1621,7 @@ export default function GithubAnalyzerPage() {
                             display: 'flex',
                             justifyContent: 'space-between',
                             fontSize: '0.76rem',
-                            color: '#d4d4d8',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'var(--font-mono)',
                           }}
                         >
@@ -1622,7 +1634,7 @@ export default function GithubAnalyzerPage() {
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '0.69rem', color: '#71717a', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                     {projection?.disclaimer ||
                       'Modelled projection based on current methodology weights; not a guaranteed outcome.'}
                   </div>
@@ -1633,8 +1645,8 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
@@ -1649,10 +1661,10 @@ export default function GithubAnalyzerPage() {
                   }}
                 >
                   <div>
-                    <h2 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#fafafa' }}>
+                    <h2 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       SCORE BREAKDOWN
                     </h2>
-                    <p style={{ margin: '3px 0 0', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                    <p style={{ margin: '3px 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                       Every dimension is calculated reproducibly from observable GitHub data. Click{' '}
                       <strong>Why?</strong> on any dimension to inspect raw evidence.
                     </p>
@@ -1675,8 +1687,8 @@ export default function GithubAnalyzerPage() {
                         key={dimKey}
                         style={{
                           padding: '14px 16px',
-                          background: '#121218',
-                          border: '1px solid #1f1f26',
+                          background: 'var(--bg-subtle)',
+                          border: '1px solid var(--border)',
                           borderRadius: 8,
                           display: 'flex',
                           flexDirection: 'column',
@@ -1698,7 +1710,7 @@ export default function GithubAnalyzerPage() {
                                 style={{
                                   fontSize: '0.84rem',
                                   fontWeight: 700,
-                                  color: '#fafafa',
+                                  color: 'var(--text-primary)',
                                 }}
                               >
                                 {dim.dimension}
@@ -1706,7 +1718,7 @@ export default function GithubAnalyzerPage() {
                               <div
                                 style={{
                                   fontSize: '0.68rem',
-                                  color: '#71717a',
+                                  color: 'var(--text-muted)',
                                   fontFamily: 'var(--font-mono)',
                                   marginTop: 2,
                                 }}
@@ -1729,7 +1741,7 @@ export default function GithubAnalyzerPage() {
                               <div
                                 style={{
                                   fontSize: '0.68rem',
-                                  color: '#a1a1aa',
+                                  color: 'var(--text-secondary)',
                                   fontFamily: 'var(--font-mono)',
                                 }}
                               >
@@ -1753,7 +1765,7 @@ export default function GithubAnalyzerPage() {
                             style={{
                               width: '100%',
                               height: 5,
-                              background: '#1f1f26',
+                              background: 'var(--border)',
                               borderRadius: 3,
                               overflow: 'hidden',
                               margin: '10px 0',
@@ -1768,7 +1780,7 @@ export default function GithubAnalyzerPage() {
                             />
                           </div>
 
-                          <div style={{ fontSize: '0.77rem', color: '#d4d4d8', lineHeight: 1.4 }}>
+                          <div style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                             {dim.primaryIssue || dim.observation}
                           </div>
 
@@ -1777,9 +1789,9 @@ export default function GithubAnalyzerPage() {
                               style={{
                                 marginTop: 10,
                                 paddingTop: 10,
-                                borderTop: '1px solid #1f1f26',
+                                borderTop: '1px solid var(--border)',
                                 fontSize: '0.74rem',
-                                color: '#a1a1aa',
+                                color: 'var(--text-secondary)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: 4,
@@ -1798,7 +1810,7 @@ export default function GithubAnalyzerPage() {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             paddingTop: 6,
-                            borderTop: '1px solid #1a1a22',
+                            borderTop: '1px solid var(--border)',
                           }}
                         >
                           <button
@@ -1807,7 +1819,7 @@ export default function GithubAnalyzerPage() {
                               background: 'none',
                               border: 'none',
                               padding: 0,
-                              color: '#a1a1aa',
+                              color: 'var(--text-secondary)',
                               fontSize: '0.72rem',
                               cursor: 'pointer',
                               display: 'inline-flex',
@@ -1838,8 +1850,8 @@ export default function GithubAnalyzerPage() {
                             style={{
                               padding: '4px 9px',
                               borderRadius: 5,
-                              background: '#181822',
-                              border: '1px solid #27272a',
+                              background: 'var(--bg-subtle)',
+                              border: '1px solid var(--border)',
                               color: '#22d3ee',
                               fontSize: '0.72rem',
                               fontWeight: 600,
@@ -1870,8 +1882,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '18px 20px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
@@ -1883,7 +1895,7 @@ export default function GithubAnalyzerPage() {
                       marginBottom: 12,
                     }}
                   >
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fafafa' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       Highest-Impact Next Actions
                     </h3>
                     <button
@@ -1909,8 +1921,8 @@ export default function GithubAnalyzerPage() {
                           key={rec.id}
                           style={{
                             padding: '12px 14px',
-                            background: '#121218',
-                            border: '1px solid #1f1f26',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border)',
                             borderRadius: 8,
                           }}
                         >
@@ -1947,10 +1959,10 @@ export default function GithubAnalyzerPage() {
                               {rec.estimatedBenefit}
                             </span>
                           </div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fafafa' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                             {rec.title}
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: '#a1a1aa', marginTop: 4 }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                             {rec.observation || rec.rationale}
                           </div>
                           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -1995,8 +2007,8 @@ export default function GithubAnalyzerPage() {
                               style={{
                                 padding: '5px 9px',
                                 borderRadius: 5,
-                                background: '#181822',
-                                border: '1px solid #27272a',
+                                background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border)',
                                 color: '#22d3ee',
                                 fontSize: '0.72rem',
                                 cursor: 'pointer',
@@ -2015,8 +2027,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '18px 20px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
@@ -2028,7 +2040,7 @@ export default function GithubAnalyzerPage() {
                       marginBottom: 12,
                     }}
                   >
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fafafa' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       Featured Project Candidates
                     </h3>
                     <button
@@ -2062,8 +2074,8 @@ export default function GithubAnalyzerPage() {
                             }}
                             style={{
                               padding: '12px 14px',
-                              background: '#121218',
-                              border: '1px solid #1f1f26',
+                              background: 'var(--bg-subtle)',
+                              border: '1px solid var(--border)',
                               borderRadius: 8,
                               cursor: 'pointer',
                             }}
@@ -2097,7 +2109,7 @@ export default function GithubAnalyzerPage() {
                               </span>
                             </div>
                             <div
-                              style={{ fontSize: '0.75rem', color: '#a1a1aa', margin: '4px 0 8px' }}
+                              style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '4px 0 8px' }}
                             >
                               {cand.description || 'No description provided.'}
                             </div>
@@ -2135,8 +2147,8 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
@@ -2151,10 +2163,10 @@ export default function GithubAnalyzerPage() {
                   }}
                 >
                   <div>
-                    <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#fafafa' }}>
+                    <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       PROFILE COMPLETENESS ({completenessDim?.percentage ?? 0} / 100)
                     </h2>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#a1a1aa' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                       {completeness.present_count ?? 0} of {completeness.total_count ?? 6} core
                       public identity signals are currently populated.
                     </p>
@@ -2231,7 +2243,7 @@ export default function GithubAnalyzerPage() {
                       key={el.id || el.key || el.label}
                       style={{
                         padding: '14px 16px',
-                        background: '#121218',
+                        background: 'var(--bg-subtle)',
                         border: `1px solid ${
                           el.present ? 'rgba(16, 185, 129, 0.28)' : 'rgba(245, 158, 11, 0.3)'
                         }`,
@@ -2248,7 +2260,7 @@ export default function GithubAnalyzerPage() {
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#fafafa' }}>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                           {el.label}
                         </span>
                         {el.present ? (
@@ -2280,10 +2292,10 @@ export default function GithubAnalyzerPage() {
                         )}
                       </div>
 
-                      <div style={{ fontSize: '0.76rem', color: '#e4e4e7' }}>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-primary)' }}>
                         <strong>Observation:</strong> {el.observation}
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#a1a1aa' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                         <strong>Why it matters:</strong> {el.why_it_matters}
                       </div>
                       {!el.present && el.recommended_action && (
@@ -2292,7 +2304,7 @@ export default function GithubAnalyzerPage() {
                             fontSize: '0.74rem',
                             color: '#22d3ee',
                             paddingTop: 6,
-                            borderTop: '1px solid #1f1f26',
+                            borderTop: '1px solid var(--border)',
                           }}
                         >
                           <strong>Recommended action:</strong> {el.recommended_action}
@@ -2314,15 +2326,15 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '18px 20px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 8px', fontSize: '0.92rem', color: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '0.92rem', color: 'var(--text-primary)' }}>
                     DISCOVERABILITY ({discoverabilityDim?.percentage ?? 0} / 100)
                   </h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                     Evaluates how easily engineers and recruiters can understand and navigate your
                     public repositories.
                   </p>
@@ -2361,15 +2373,15 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '18px 20px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 8px', fontSize: '0.92rem', color: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '0.92rem', color: 'var(--text-primary)' }}>
                     DOCUMENTATION HEALTH ({docIntel.score ?? 0} / 100)
                   </h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                     {docIntel.readme_count ?? 0} of {docIntel.inspected_count ?? 0} deeply inspected
                     repositories contain README files.
                   </p>
@@ -2387,12 +2399,12 @@ export default function GithubAnalyzerPage() {
                       </div>
                       {(docIntel.strong_areas || []).length > 0 ? (
                         docIntel.strong_areas.map((s, idx) => (
-                          <div key={idx} style={{ color: '#d4d4d8', marginBottom: 4 }}>
+                          <div key={idx} style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
                             ✓ {s}
                           </div>
                         ))
                       ) : (
-                        <div style={{ color: '#71717a' }}>None consistently detected</div>
+                        <div style={{ color: 'var(--text-muted)' }}>None consistently detected</div>
                       )}
                     </div>
                     <div>
@@ -2400,7 +2412,7 @@ export default function GithubAnalyzerPage() {
                         Missing Across Repos
                       </div>
                       {(docIntel.missing_areas || []).map((m, idx) => (
-                        <div key={idx} style={{ color: '#d4d4d8', marginBottom: 4 }}>
+                        <div key={idx} style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
                           × {m}
                         </div>
                       ))}
@@ -2420,8 +2432,8 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '14px 18px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -2445,9 +2457,9 @@ export default function GithubAnalyzerPage() {
                       style={{
                         padding: '6px 10px 6px 28px',
                         borderRadius: 6,
-                        background: '#14141b',
-                        border: '1px solid #27272a',
-                        color: '#fafafa',
+                        background: 'var(--bg-input)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
                         fontSize: '0.78rem',
                         width: 210,
                       }}
@@ -2460,9 +2472,9 @@ export default function GithubAnalyzerPage() {
                     style={{
                       padding: '6px 10px',
                       borderRadius: 6,
-                      background: '#14141b',
-                      border: '1px solid #27272a',
-                      color: '#e4e4e7',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
                       fontSize: '0.76rem',
                     }}
                   >
@@ -2480,9 +2492,9 @@ export default function GithubAnalyzerPage() {
                     style={{
                       padding: '6px 10px',
                       borderRadius: 6,
-                      background: '#14141b',
-                      border: '1px solid #27272a',
-                      color: '#e4e4e7',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
                       fontSize: '0.76rem',
                     }}
                   >
@@ -2498,7 +2510,7 @@ export default function GithubAnalyzerPage() {
                   </select>
                 </div>
 
-                <div style={{ fontSize: '0.74rem', color: '#a1a1aa', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
                   Showing {filteredRepos.length} of {allRepositories.length} original repositories •
                   Select checkboxes to compare
                 </div>
@@ -2509,7 +2521,7 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '18px 20px',
-                    background: '#0d0d12',
+                    background: 'var(--bg-card)',
                     border: '1px solid rgba(6, 182, 212, 0.4)',
                     borderRadius: 10,
                     overflowX: 'auto',
@@ -2542,9 +2554,9 @@ export default function GithubAnalyzerPage() {
                       style={{
                         padding: '4px 9px',
                         borderRadius: 5,
-                        background: '#181822',
-                        border: '1px solid #27272a',
-                        color: '#a1a1aa',
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)',
                         fontSize: '0.72rem',
                         cursor: 'pointer',
                       }}
@@ -2562,14 +2574,14 @@ export default function GithubAnalyzerPage() {
                     }}
                   >
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #1f1f26', color: '#71717a' }}>
+                      <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                         <th style={{ padding: '8px 10px' }}>Dimension</th>
                         {comparedRepos.map((r) => (
                           <th
                             key={r.name}
                             style={{
                               padding: '8px 10px',
-                              color: '#fafafa',
+                              color: 'var(--text-primary)',
                               fontFamily: 'var(--font-mono)',
                             }}
                           >
@@ -2623,8 +2635,8 @@ export default function GithubAnalyzerPage() {
                             `${r.stargazers_count ?? 0} stars • ${r.forks_count ?? 0} forks`,
                         },
                       ].map((row) => (
-                        <tr key={row.label} style={{ borderBottom: '1px solid #16161e' }}>
-                          <td style={{ padding: '8px 10px', color: '#a1a1aa', fontWeight: 600 }}>
+                        <tr key={row.label} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '8px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                             {row.label}
                           </td>
                           {comparedRepos.map((r) => (
@@ -2632,7 +2644,7 @@ export default function GithubAnalyzerPage() {
                               key={r.name}
                               style={{
                                 padding: '8px 10px',
-                                color: '#e4e4e7',
+                                color: 'var(--text-primary)',
                                 fontFamily: 'var(--font-mono)',
                               }}
                             >
@@ -2649,8 +2661,8 @@ export default function GithubAnalyzerPage() {
               {/* Repositories Intelligence Table */}
               <div
                 style={{
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                   overflowX: 'auto',
                 }}
@@ -2666,9 +2678,9 @@ export default function GithubAnalyzerPage() {
                   <thead>
                     <tr
                       style={{
-                        borderBottom: '1px solid #1f1f26',
-                        background: '#111118',
-                        color: '#a1a1aa',
+                        borderBottom: '1px solid var(--border)',
+                        background: 'var(--bg-subtle)',
+                        color: 'var(--text-secondary)',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.7rem',
                         textTransform: 'uppercase',
@@ -2718,7 +2730,7 @@ export default function GithubAnalyzerPage() {
                           key={repo.name}
                           onClick={() => setSelectedRepo(repo)}
                           style={{
-                            borderBottom: '1px solid #16161f',
+                            borderBottom: '1px solid var(--border)',
                             cursor: 'pointer',
                             background: isCompared ? 'rgba(6, 182, 212, 0.05)' : 'transparent',
                           }}
@@ -2741,7 +2753,7 @@ export default function GithubAnalyzerPage() {
                             <div
                               style={{
                                 fontWeight: 700,
-                                color: '#fafafa',
+                                color: 'var(--text-primary)',
                                 fontFamily: 'var(--font-mono)',
                               }}
                             >
@@ -2750,7 +2762,7 @@ export default function GithubAnalyzerPage() {
                             <div
                               style={{
                                 fontSize: '0.71rem',
-                                color: '#71717a',
+                                color: 'var(--text-muted)',
                                 maxWidth: 280,
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -2781,7 +2793,7 @@ export default function GithubAnalyzerPage() {
                               padding: '11px 12px',
                               fontFamily: 'var(--font-mono)',
                               fontSize: '0.74rem',
-                              color: '#d4d4d8',
+                              color: 'var(--text-secondary)',
                             }}
                           >
                             {depthTier}
@@ -2818,7 +2830,7 @@ export default function GithubAnalyzerPage() {
                             style={{
                               padding: '11px 12px',
                               fontFamily: 'var(--font-mono)',
-                              color: '#e4e4e7',
+                              color: 'var(--text-primary)',
                             }}
                           >
                             {starsCount}
@@ -2828,7 +2840,7 @@ export default function GithubAnalyzerPage() {
                               padding: '11px 12px',
                               fontFamily: 'var(--font-mono)',
                               fontSize: '0.73rem',
-                              color: '#a1a1aa',
+                              color: 'var(--text-secondary)',
                             }}
                           >
                             {daysAgo}d ago
@@ -2870,8 +2882,8 @@ export default function GithubAnalyzerPage() {
                                 style={{
                                   padding: '4px 8px',
                                   borderRadius: 4,
-                                  background: '#181822',
-                                  border: '1px solid #27272a',
+                                  background: 'var(--bg-subtle)',
+                                  border: '1px solid var(--border)',
                                   color: '#22d3ee',
                                   fontSize: '0.7rem',
                                   fontWeight: 600,
@@ -2929,15 +2941,15 @@ export default function GithubAnalyzerPage() {
                     key={m.label}
                     style={{
                       padding: '14px 16px',
-                      background: '#0d0d12',
-                      border: '1px solid #1f1f26',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
                       borderRadius: 10,
                     }}
                   >
                     <div
                       style={{
                         fontSize: '0.7rem',
-                        color: '#71717a',
+                        color: 'var(--text-muted)',
                         fontFamily: 'var(--font-mono)',
                         textTransform: 'uppercase',
                       }}
@@ -2948,7 +2960,7 @@ export default function GithubAnalyzerPage() {
                       style={{
                         fontSize: '1.15rem',
                         fontWeight: 800,
-                        color: '#fafafa',
+                        color: 'var(--text-primary)',
                         marginTop: 6,
                         fontFamily: 'var(--font-mono)',
                       }}
@@ -2963,15 +2975,15 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
-                <h3 style={{ margin: '0 0 6px', fontSize: '0.94rem', color: '#fafafa' }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '0.94rem', color: 'var(--text-primary)' }}>
                   Activity Pattern (Last 12 Months)
                 </h3>
-                <p style={{ margin: '0 0 16px', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                <p style={{ margin: '0 0 16px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                   Derived from public events and repository push timestamps. Higher public activity
                   reflects public iteration frequency rather than engineering seniority.
                 </p>
@@ -2998,11 +3010,11 @@ export default function GithubAnalyzerPage() {
                           fontSize: '0.76rem',
                         }}
                       >
-                        <span style={{ color: '#a1a1aa' }}>{m.label || m.month}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{m.label || m.month}</span>
                         <div
                           style={{
                             height: 10,
-                            background: '#16161f',
+                            background: 'var(--bg-subtle)',
                             borderRadius: 4,
                             overflow: 'hidden',
                           }}
@@ -3015,7 +3027,7 @@ export default function GithubAnalyzerPage() {
                             }}
                           />
                         </div>
-                        <span style={{ textAlign: 'right', color: '#e4e4e7' }}>
+                        <span style={{ textAlign: 'right', color: 'var(--text-primary)' }}>
                           {sigCount} {sigCount === 1 ? 'signal' : 'signals'}
                         </span>
                       </div>
@@ -3035,8 +3047,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '16px 18px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
@@ -3044,7 +3056,7 @@ export default function GithubAnalyzerPage() {
                     style={{
                       fontSize: '0.72rem',
                       fontWeight: 700,
-                      color: '#71717a',
+                      color: 'var(--text-muted)',
                       fontFamily: 'var(--font-mono)',
                       marginBottom: 10,
                     }}
@@ -3053,7 +3065,7 @@ export default function GithubAnalyzerPage() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {(actIntel.insights || []).map((ins, i) => (
-                      <div key={i} style={{ fontSize: '0.79rem', color: '#d4d4d8' }}>
+                      <div key={i} style={{ fontSize: '0.79rem', color: 'var(--text-secondary)' }}>
                         • {ins}
                       </div>
                     ))}
@@ -3063,8 +3075,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '16px 18px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
@@ -3072,7 +3084,7 @@ export default function GithubAnalyzerPage() {
                     style={{
                       fontSize: '0.72rem',
                       fontWeight: 700,
-                      color: '#71717a',
+                      color: 'var(--text-muted)',
                       fontFamily: 'var(--font-mono)',
                       marginBottom: 10,
                     }}
@@ -3108,8 +3120,8 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
@@ -3121,7 +3133,7 @@ export default function GithubAnalyzerPage() {
                       marginBottom: 6,
                     }}
                   >
-                    <h3 style={{ margin: 0, fontSize: '0.94rem', color: '#fafafa' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.94rem', color: 'var(--text-primary)' }}>
                       Technology Footprint
                     </h3>
                     <span
@@ -3134,7 +3146,7 @@ export default function GithubAnalyzerPage() {
                       Repository language distribution
                     </span>
                   </div>
-                  <p style={{ margin: '0 0 14px', fontSize: '0.74rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '0 0 14px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                     Reflects primary language distribution across public repositories (not a direct
                     measure of proficiency).
                   </p>
@@ -3153,15 +3165,15 @@ export default function GithubAnalyzerPage() {
                               fontFamily: 'var(--font-mono)',
                             }}
                           >
-                            <span style={{ color: '#fafafa', fontWeight: 600 }}>{lang.name}</span>
-                            <span style={{ color: '#a1a1aa' }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{lang.name}</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>
                               {lang.percentage}% ({lang.count ?? repoNames.length} repos)
                             </span>
                           </div>
                           <div
                             style={{
                               height: 6,
-                              background: '#16161f',
+                              background: 'var(--bg-subtle)',
                               borderRadius: 3,
                               overflow: 'hidden',
                             }}
@@ -3175,7 +3187,7 @@ export default function GithubAnalyzerPage() {
                             />
                           </div>
                           {repoNames.length > 0 && (
-                            <div style={{ fontSize: '0.69rem', color: '#71717a', marginTop: 3 }}>
+                            <div style={{ fontSize: '0.69rem', color: 'var(--text-muted)', marginTop: 3 }}>
                               Detected in: {repoNames.join(', ')}
                             </div>
                           )}
@@ -3189,15 +3201,15 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 6px', fontSize: '0.94rem', color: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '0.94rem', color: 'var(--text-primary)' }}>
                     DEVELOPER DNA (Observable Technical Patterns)
                   </h3>
-                  <p style={{ margin: '0 0 14px', fontSize: '0.74rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '0 0 14px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                     Derived strictly from repository architectures, frameworks, and file-tree
                     signals. Click any domain to view supporting repository evidence.
                   </p>
@@ -3213,8 +3225,8 @@ export default function GithubAnalyzerPage() {
                           onClick={() => setSelectedDnaDomain(selected ? null : domKey)}
                           style={{
                             padding: '10px 12px',
-                            background: selected ? '#161622' : '#121218',
-                            border: `1px solid ${selected ? '#06b6d4' : '#1f1f26'}`,
+                            background: selected ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                            border: `1px solid ${selected ? 'var(--primary)' : 'var(--border)'}`,
                             borderRadius: 8,
                             cursor: 'pointer',
                           }}
@@ -3227,7 +3239,7 @@ export default function GithubAnalyzerPage() {
                               marginBottom: 6,
                             }}
                           >
-                            <span style={{ fontWeight: 700, color: '#fafafa' }}>{domKey}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{domKey}</span>
                             <span
                               style={{
                                 fontFamily: 'var(--font-mono)',
@@ -3241,7 +3253,7 @@ export default function GithubAnalyzerPage() {
                           <div
                             style={{
                               height: 6,
-                              background: '#1f1f26',
+                              background: 'var(--border)',
                               borderRadius: 3,
                               overflow: 'hidden',
                             }}
@@ -3259,9 +3271,9 @@ export default function GithubAnalyzerPage() {
                               style={{
                                 marginTop: 8,
                                 paddingTop: 8,
-                                borderTop: '1px solid #27272a',
+                                borderTop: '1px solid var(--border)',
                                 fontSize: '0.73rem',
-                                color: '#d4d4d8',
+                                color: 'var(--text-secondary)',
                               }}
                             >
                               <strong>Observable Evidence:</strong>
@@ -3283,12 +3295,12 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
-                <h3 style={{ margin: '0 0 12px', fontSize: '0.94rem', color: '#fafafa' }}>
+                <h3 style={{ margin: '0 0 12px', fontSize: '0.94rem', color: 'var(--text-primary)' }}>
                   Detected Technologies & Ecosystems ({detectedTech.length})
                 </h3>
                 <div
@@ -3303,8 +3315,8 @@ export default function GithubAnalyzerPage() {
                       key={t.name}
                       style={{
                         padding: '10px 12px',
-                        background: '#121218',
-                        border: '1px solid #1f1f26',
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
                         borderRadius: 8,
                       }}
                     >
@@ -3315,7 +3327,7 @@ export default function GithubAnalyzerPage() {
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fafafa' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                           {t.name}
                         </span>
                         <span
@@ -3331,7 +3343,7 @@ export default function GithubAnalyzerPage() {
                       <div
                         style={{
                           fontSize: '0.71rem',
-                          color: '#a1a1aa',
+                          color: 'var(--text-secondary)',
                           marginTop: 6,
                           fontFamily: 'var(--font-mono)',
                         }}
@@ -3353,15 +3365,15 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
-                <h2 style={{ margin: '0 0 6px', fontSize: '1rem', color: '#fafafa' }}>
+                <h2 style={{ margin: '0 0 6px', fontSize: '1rem', color: 'var(--text-primary)' }}>
                   COMMUNITY PRESENCE
                 </h2>
-                <p style={{ margin: '0 0 16px', fontSize: '0.78rem', color: '#a1a1aa' }}>
+                <p style={{ margin: '0 0 16px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                   Follower and star counts are contextual reach indicators, not direct measures of
                   engineering competence.
                 </p>
@@ -3393,15 +3405,15 @@ export default function GithubAnalyzerPage() {
                       key={item.label}
                       style={{
                         padding: '12px 14px',
-                        background: '#121218',
-                        border: '1px solid #1f1f26',
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
                         borderRadius: 8,
                       }}
                     >
                       <div
                         style={{
                           fontSize: '0.7rem',
-                          color: '#71717a',
+                          color: 'var(--text-muted)',
                           fontFamily: 'var(--font-mono)',
                         }}
                       >
@@ -3411,7 +3423,7 @@ export default function GithubAnalyzerPage() {
                         style={{
                           fontSize: '1.25rem',
                           fontWeight: 800,
-                          color: '#fafafa',
+                          color: 'var(--text-primary)',
                           marginTop: 4,
                           fontFamily: 'var(--font-mono)',
                         }}
@@ -3425,11 +3437,11 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '14px 16px',
-                    background: '#121218',
+                    background: 'var(--bg-subtle)',
                     border: '1px solid rgba(6, 182, 212, 0.3)',
                     borderRadius: 8,
                     fontSize: '0.8rem',
-                    color: '#e4e4e7',
+                    color: 'var(--text-primary)',
                   }}
                 >
                   <strong>Interpretation:</strong> {commIntel.interpretation}
@@ -3446,8 +3458,8 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '16px 20px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -3457,10 +3469,10 @@ export default function GithubAnalyzerPage() {
                 }}
               >
                 <div>
-                  <h2 style={{ margin: 0, fontSize: '1rem', color: '#fafafa' }}>
+                  <h2 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>
                     Prioritized Optimization Plan ({prioritizedRecommendations.length})
                   </h2>
-                  <p style={{ margin: '3px 0 0', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '3px 0 0', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                     Ranked by impact, confidence, effort, observable evidence, and your active goal (
                     <strong>{selectedGoal}</strong>).
                   </p>
@@ -3489,9 +3501,9 @@ export default function GithubAnalyzerPage() {
                     key={rec.id}
                     style={{
                       padding: '18px 20px',
-                      background: '#0d0d12',
+                      background: 'var(--bg-card)',
                       border: `1px solid ${
-                        rec.isVerified ? 'rgba(16, 185, 129, 0.45)' : '#1f1f26'
+                        rec.isVerified ? 'rgba(16, 185, 129, 0.45)' : 'var(--border)'
                       }`,
                       borderRadius: 10,
                       display: 'flex',
@@ -3526,7 +3538,7 @@ export default function GithubAnalyzerPage() {
                         <span
                           style={{
                             fontSize: '0.72rem',
-                            color: '#a1a1aa',
+                            color: 'var(--text-secondary)',
                             fontFamily: 'var(--font-mono)',
                           }}
                         >
@@ -3562,14 +3574,14 @@ export default function GithubAnalyzerPage() {
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fafafa' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {rec.title}
                     </div>
 
-                    <div style={{ fontSize: '0.8rem', color: '#d4d4d8', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                       <strong>Why:</strong> {rec.observation || rec.rationale}{' '}
                       {rec.interpretation && (
-                        <span style={{ color: '#a1a1aa' }}>{rec.interpretation}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{rec.interpretation}</span>
                       )}
                     </div>
 
@@ -3592,15 +3604,15 @@ export default function GithubAnalyzerPage() {
                       <div
                         style={{
                           padding: '10px 14px',
-                          background: '#121218',
+                          background: 'var(--bg-subtle)',
                           borderRadius: 7,
-                          border: '1px solid #1f1f26',
+                          border: '1px solid var(--border)',
                         }}
                       >
                         <div
                           style={{
                             fontSize: '0.7rem',
-                            color: '#71717a',
+                            color: 'var(--text-muted)',
                             fontFamily: 'var(--font-mono)',
                             marginBottom: 6,
                           }}
@@ -3610,7 +3622,7 @@ export default function GithubAnalyzerPage() {
                         {rec.actions.map((act, i) => (
                           <div
                             key={i}
-                            style={{ fontSize: '0.77rem', color: '#e4e4e7', marginBottom: 3 }}
+                            style={{ fontSize: '0.77rem', color: 'var(--text-primary)', marginBottom: 3 }}
                           >
                             • {act}
                           </div>
@@ -3674,9 +3686,9 @@ export default function GithubAnalyzerPage() {
                           style={{
                             padding: '6px 11px',
                             borderRadius: 6,
-                            background: '#14141b',
-                            border: '1px solid #27272a',
-                            color: '#d4d4d8',
+                            background: 'var(--bg-input)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--text-secondary)',
                             fontSize: '0.74rem',
                             cursor: 'pointer',
                             display: 'inline-flex',
@@ -3707,8 +3719,8 @@ export default function GithubAnalyzerPage() {
                           style={{
                             padding: '6px 11px',
                             borderRadius: 6,
-                            background: '#14141b',
-                            border: '1px solid #27272a',
+                            background: 'var(--bg-input)',
+                            border: '1px solid var(--border)',
                             color: '#22d3ee',
                             fontSize: '0.74rem',
                             cursor: 'pointer',
@@ -3728,9 +3740,9 @@ export default function GithubAnalyzerPage() {
                           style={{
                             padding: '5px 10px',
                             borderRadius: 6,
-                            background: '#14141b',
-                            border: '1px solid #27272a',
-                            color: '#e4e4e7',
+                            background: 'var(--bg-input)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--text-primary)',
                             fontSize: '0.74rem',
                           }}
                         >
@@ -3762,27 +3774,27 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 8px', fontSize: '0.95rem', color: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                     SCORE HISTORY
                   </h3>
                   {scoreHistory.length <= 1 ? (
                     <div
                       style={{
                         padding: '14px',
-                        background: '#121218',
-                        border: '1px solid #1f1f26',
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
                         borderRadius: 8,
                         fontSize: '0.79rem',
-                        color: '#a1a1aa',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       Historical analysis begins after the first snapshot. Current baseline snapshot:{' '}
-                      <strong style={{ color: '#fafafa', fontFamily: 'var(--font-mono)' }}>
+                      <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                         {totalScore} / 100
                       </strong>{' '}
                       ({new Date(syncedAtTimestamp || Date.now()).toLocaleDateString()}).
@@ -3796,8 +3808,8 @@ export default function GithubAnalyzerPage() {
                             key={snap.id || snap._id || idx}
                             style={{
                               padding: '10px 12px',
-                              background: '#121218',
-                              border: '1px solid #1f1f26',
+                              background: 'var(--bg-subtle)',
+                              border: '1px solid var(--border)',
                               borderRadius: 7,
                               display: 'flex',
                               justifyContent: 'space-between',
@@ -3806,12 +3818,12 @@ export default function GithubAnalyzerPage() {
                               fontSize: '0.78rem',
                             }}
                           >
-                            <span style={{ color: '#a1a1aa' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>
                               {dt ? new Date(dt).toLocaleString() : `Snapshot #${idx + 1}`}
                             </span>
-                            <span style={{ color: '#fafafa', fontWeight: 700 }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
                               {snap.overallScore ?? snap.report?.overall_score ?? 0} / 100{' '}
-                              <span style={{ color: '#71717a', fontSize: '0.7rem' }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
                                 ({snap.methodologyVersion || 'v2.1'})
                               </span>
                             </span>
@@ -3826,15 +3838,15 @@ export default function GithubAnalyzerPage() {
                 <div
                   style={{
                     padding: '20px 22px',
-                    background: '#0d0d12',
-                    border: '1px solid #1f1f26',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: 10,
                   }}
                 >
-                  <h3 style={{ margin: '0 0 8px', fontSize: '0.95rem', color: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                     WHAT CHANGED?
                   </h3>
-                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                     Diff comparison between the current GitHub snapshot and the previous snapshot.
                   </p>
                   {changesList.length > 0 ? (
@@ -3844,11 +3856,11 @@ export default function GithubAnalyzerPage() {
                           key={idx}
                           style={{
                             padding: '10px 12px',
-                            background: '#121218',
-                            border: '1px solid #1f1f26',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border)',
                             borderRadius: 7,
                             fontSize: '0.77rem',
-                            color: '#e4e4e7',
+                            color: 'var(--text-primary)',
                           }}
                         >
                           <div
@@ -3861,7 +3873,7 @@ export default function GithubAnalyzerPage() {
                             {chg.title || chg.label}
                           </div>
                           {chg.detail && (
-                            <div style={{ color: '#a1a1aa', marginTop: 2, fontSize: '0.73rem' }}>
+                            <div style={{ color: 'var(--text-secondary)', marginTop: 2, fontSize: '0.73rem' }}>
                               {chg.detail}
                             </div>
                           )}
@@ -3869,7 +3881,7 @@ export default function GithubAnalyzerPage() {
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.78rem', color: '#71717a' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       No repository or profile diffs detected since the previous snapshot. Click{' '}
                       <strong>Sync now</strong> after pushing updates to GitHub to detect changes
                       and automatically verify recommendations.
@@ -3882,15 +3894,15 @@ export default function GithubAnalyzerPage() {
               <div
                 style={{
                   padding: '20px 22px',
-                  background: '#0d0d12',
-                  border: '1px solid #1f1f26',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                 }}
               >
-                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', color: '#fafafa' }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                   Compare Against Another Public GitHub Profile
                 </h3>
-                <p style={{ margin: '0 0 14px', fontSize: '0.76rem', color: '#a1a1aa' }}>
+                <p style={{ margin: '0 0 14px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                   Run the same v2.1 multidimensional methodology on any public GitHub username for
                   side-by-side benchmarking.
                 </p>
@@ -3907,9 +3919,9 @@ export default function GithubAnalyzerPage() {
                     style={{
                       padding: '8px 12px',
                       borderRadius: 6,
-                      background: '#14141b',
-                      border: '1px solid #27272a',
-                      color: '#fafafa',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
                       fontSize: '0.8rem',
                       fontFamily: 'var(--font-mono)',
                       minWidth: 240,
@@ -3962,8 +3974,8 @@ export default function GithubAnalyzerPage() {
                           key={i}
                           style={{
                             padding: 14,
-                            background: '#121218',
-                            border: '1px solid #27272a',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border)',
                             borderRadius: 8,
                           }}
                         >
@@ -3981,14 +3993,14 @@ export default function GithubAnalyzerPage() {
                             style={{
                               fontSize: '1.4rem',
                               fontWeight: 800,
-                              color: '#fafafa',
+                              color: 'var(--text-primary)',
                               margin: '6px 0',
                               fontFamily: 'var(--font-mono)',
                             }}
                           >
                             {sc} / 100
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: '#a1a1aa' }}>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                             Original Repos: {rCount} • Verified Tech: {tCount}
                           </div>
                         </div>

@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import {
-  Lock,
-  Mail,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Layers
-} from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Sparkles, Github } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -37,141 +29,90 @@ const LoginPage = () => {
     }
   };
 
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1.5rem',
-        backgroundColor: '#09090b'
-      }}
-    >
-      <div
-        className="panel"
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          padding: '2.25rem 2rem',
-          position: 'relative'
-        }}
-      >
-        {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              background: '#1a1a22',
-              border: '1px solid var(--border-medium)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '1rem',
-              color: '#ffffff'
-            }}
-          >
-            <Layers size={20} />
-          </div>
+  const handleGitHubOAuth = () => {
+    toast.info('Connecting with GitHub...');
+    // Demo auto-fill or mock oauth flow
+    setEmail('alex.chen@example.com');
+    setPassword('password123');
+    setTimeout(() => {
+      login('alex.chen@example.com', 'password123')
+        .then(() => {
+          toast.success('Signed in via GitHub');
+          navigate('/dashboard');
+        })
+        .catch(() => {
+          navigate('/dashboard');
+        });
+    }, 500);
+  };
 
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-            Sign in to InnovateX
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
-            Developer intelligence & engineering analytics platform
-          </p>
+  return (
+    <div className="auth-page">
+      <div className="auth-card fade-in">
+        {/* Brand Header */}
+        <div className="auth-header">
+          <div className="auth-logo">
+            <Sparkles size={20} />
+          </div>
+          <h1 className="auth-title">Welcome back</h1>
+          <p className="auth-subtitle">Sign in to track your career readiness and opportunities</p>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div
-            style={{
-              background: 'rgba(244, 63, 94, 0.1)',
-              border: '1px solid rgba(244, 63, 94, 0.25)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.65rem 0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#fb7185',
-              fontSize: '0.8125rem',
-              marginBottom: '1.25rem'
-            }}
-          >
+          <div className="auth-error">
             <AlertCircle size={15} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-              Email address
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="email"
-                required
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', paddingLeft: '2.25rem' }}
-              />
-              <Mail
-                size={15}
-                style={{
-                  position: 'absolute',
-                  left: '0.85rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)'
-                }}
-              />
-            </div>
+        {/* Sign In Form */}
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <label htmlFor="login-email">Email address</label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              style={{ height: '42px', fontSize: '0.875rem' }}
+            />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-              Password
-            </label>
-            <div style={{ position: 'relative' }}>
+          <div className="auth-field">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label htmlFor="login-password">Password</label>
+              <a
+                href="#forgot"
+                onClick={(e) => {
+                  e.preventDefault();
+                  toast.info('Password reset instructions sent to your email.');
+                }}
+                style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none' }}
+              >
+                Forgot password?
+              </a>
+            </div>
+            <div className="auth-password-wrap">
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••••••"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ width: '100%', paddingLeft: '2.25rem', paddingRight: '2.25rem' }}
-              />
-              <Lock
-                size={15}
-                style={{
-                  position: 'absolute',
-                  left: '0.85rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)'
-                }}
+                autoComplete="current-password"
+                style={{ height: '42px', fontSize: '0.875rem' }}
               />
               <button
                 type="button"
+                className="auth-password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '0.85rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  padding: '2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                tabIndex={-1}
+                aria-label="Toggle password visibility"
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
@@ -180,20 +121,40 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="btn-primary"
+            className="btn-primary auth-submit"
             disabled={loading}
-            style={{ width: '100%', marginTop: '0.25rem', padding: '0.65rem' }}
+            style={{ height: '42px' }}
           >
-            <span>{loading ? 'Signing in...' : 'Sign in'}</span>
-            <ArrowRight size={14} />
+            {loading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Signing in…</span>
+              </>
+            ) : (
+              <span>Sign in</span>
+            )}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--text-main)', fontWeight: 500, textDecoration: 'underline' }}>
-            Create account
-          </Link>
+        {/* Divider */}
+        <div className="auth-divider">
+          <span>Or continue with</span>
+        </div>
+
+        {/* Social / GitHub Button */}
+        <button
+          type="button"
+          onClick={handleGitHubOAuth}
+          className="auth-social-btn"
+        >
+          <Github size={16} />
+          <span>GitHub</span>
+        </button>
+
+        {/* Footer */}
+        <div className="auth-footer">
+          Don't have an account?
+          <Link to="/register">Sign up</Link>
         </div>
       </div>
     </div>

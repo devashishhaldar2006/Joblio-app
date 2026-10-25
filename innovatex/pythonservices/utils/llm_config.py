@@ -36,9 +36,12 @@ def get_llm_fast(temperature: float = 0.2):
     return _groq_instance
 
 # ---------------------------------------------------------------------------
-# Gemini Flash — high-context for heavy agents
+# Gemini Flash with Automatic Groq Failover when Quota is Exhausted
 # ---------------------------------------------------------------------------
+import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
+
+logger = logging.getLogger("llm_config")
 
 class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
     """Wraps ChatGoogleGenerativeAI to normalize response.content to str."""
@@ -60,19 +63,63 @@ class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
             )
         return res
 
-_gemini_instance = None
+class ResilientSmartChatModel:
+    """
+    Intelligent dual-tier model:
+    Primary: Gemini 3.6 Flash
+    Automatic Failover: Groq (openai/gpt-oss-120b) whenever Gemini quota is exhausted (429 / RESOURCE_EXHAUSTED).
+    """
+    def __init__(self, gemini_model, temperature: float = 0.2):
+        self.gemini = gemini_model
+        self.temperature = temperature
+        self._gemini_exhausted = False
+
+    def _get_groq(self):
+        return get_llm_fast(temperature=self.temperature)
+
+    def invoke(self, *args, **kwargs):
+        if not self._gemini_exhausted and self.gemini:
+            try:
+                return self.gemini.invoke(*args, **kwargs)
+            except Exception as e:
+                err_str = str(e)
+                if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str or "quota" in err_str.lower():
+                    logger.warning("[LLM Failover] Gemini quota exhausted. Automatically routing to Groq (openai/gpt-oss-120b).")
+                    self._gemini_exhausted = True
+                else:
+                    logger.warning(f"[LLM Warning] Gemini call failed ({e}). Falling back to Groq.")
+        return self._get_groq().invoke(*args, **kwargs)
+
+    async def ainvoke(self, *args, **kwargs):
+        if not self._gemini_exhausted and self.gemini:
+            try:
+                return await self.gemini.ainvoke(*args, **kwargs)
+            except Exception as e:
+                err_str = str(e)
+                if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str or "quota" in err_str.lower():
+                    logger.warning("[LLM Failover] Gemini quota exhausted. Automatically routing to Groq (openai/gpt-oss-120b).")
+                    self._gemini_exhausted = True
+                else:
+                    logger.warning(f"[LLM Warning] Gemini call failed ({e}). Falling back to Groq.")
+        return await self._get_groq().ainvoke(*args, **kwargs)
+
+_smart_instance = None
 
 def get_llm_smart(temperature: float = 0.2):
-    """Returns a Gemini 3.6 Flash ChatModel for heavy-context agents."""
-    global _gemini_instance
-    if _gemini_instance is None:
+    """Returns a resilient ChatModel with Gemini 3.6 Flash as primary and Groq as automatic quota failover."""
+    global _smart_instance
+    if _smart_instance is None:
+        gemini_model = None
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set in environment.")
+        if api_key:
+            try:
+                gemini_model = NormalizedChatGoogleGenerativeAI(
+                    model="gemini-3.6-flash",
+                    google_api_key=api_key,
+                    temperature=temperature,
+                )
+            except Exception as e:
+                logger.warning(f"Could not initialize Gemini model: {e}")
 
-        _gemini_instance = NormalizedChatGoogleGenerativeAI(
-            model="gemini-3.6-flash",
-            google_api_key=api_key,
-            temperature=temperature,
-        )
-    return _gemini_instance
+        _smart_instance = ResilientSmartChatModel(gemini_model, temperature=temperature)
+    return _smart_instance

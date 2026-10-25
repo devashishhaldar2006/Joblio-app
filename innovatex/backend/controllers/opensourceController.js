@@ -139,7 +139,13 @@ const getHistory = async (req, res) => {
 
 const bookmarkIssue = async (req, res) => {
   try {
-    const { issue_url, repo_name, issue_title, issue_number, metadata } = req.body;
+    const raw = req.body.issue || req.body;
+    const issue_url = raw.issue_url || raw.url || req.body.issue_url;
+    const repo_name = raw.repo_name || raw.repo || req.body.repo_name;
+    const issue_title = raw.issue_title || raw.title || req.body.issue_title;
+    const issue_number = raw.issue_number || raw.number || req.body.issue_number;
+    const metadata = raw.metadata || raw || req.body.metadata;
+
     if (!issue_url || !repo_name) {
       return res.status(400).json({ error: 'issue_url and repo_name are required.' });
     }

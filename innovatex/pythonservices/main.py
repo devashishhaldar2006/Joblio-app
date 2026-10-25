@@ -2,6 +2,40 @@ import os
 import traceback
 from dotenv import load_dotenv
 
+# Pure Python fallback for uuid_utils on Windows environments where compiled .pyd DLL is restricted
+try:
+    import uuid_utils
+except Exception:
+    import sys, uuid, time
+    from types import ModuleType
+
+    def _uuid7():
+        ms = int(time.time() * 1000)
+        rand_bytes = os.urandom(10)
+        b = bytearray(ms.to_bytes(6, byteorder='big') + rand_bytes)
+        b[6] = (b[6] & 0x0f) | 0x70
+        b[8] = (b[8] & 0x3f) | 0x80
+        return uuid.UUID(bytes=bytes(b))
+
+    u_mod = ModuleType('uuid_utils')
+    u_mod.UUID = uuid.UUID
+    u_mod.uuid1 = uuid.uuid1
+    u_mod.uuid3 = uuid.uuid3
+    u_mod.uuid4 = uuid.uuid4
+    u_mod.uuid5 = uuid.uuid5
+    u_mod.uuid7 = _uuid7
+
+    c_mod = ModuleType('uuid_utils.compat')
+    c_mod.UUID = uuid.UUID
+    c_mod.uuid1 = uuid.uuid1
+    c_mod.uuid3 = uuid.uuid3
+    c_mod.uuid4 = uuid.uuid4
+    c_mod.uuid5 = uuid.uuid5
+    c_mod.uuid7 = _uuid7
+
+    sys.modules['uuid_utils'] = u_mod
+    sys.modules['uuid_utils.compat'] = c_mod
+
 # Load .env variables first
 load_dotenv()
 
@@ -233,7 +267,7 @@ async def search_jobs(
         file_bytes = await resume.read()
         extracted_text = extract_text_from_pdf(file_bytes)
         if not extracted_text:
-            raise HTTPException(status_code=400, detail="Could not extract readable text from uploaded PDF.")
+            raise HTTPException(status_code=400, detail="Could not extract readable text from uploaded document (PDF, DOCX, or TXT).")
 
         initial_state = {
             "resume_text": extracted_text,
@@ -251,7 +285,8 @@ async def search_jobs(
         result = await jobs_graph.ainvoke(initial_state)
         return {
             "parsed_profile": result.get("parsed_profile", {}),
-            "results": result.get("final_results", [])
+            "results": result.get("final_results", []),
+            "platform_links": result.get("platform_links", [])
         }
     except Exception as e:
         traceback.print_exc()
@@ -266,7 +301,7 @@ _market_cache: dict = {
     "trending": {"data": None, "timestamp": 0},
     "snapshot": {"data": None, "timestamp": 0}
 }
-CACHE_TTL_SECONDS = 86400  # 24 hours
+CACHE_TTL_SECONDS = 300  # 5 minutes
 
 @app.post("/market/forecast")
 async def forecast_market_skill(payload: MarketForecastRequest):

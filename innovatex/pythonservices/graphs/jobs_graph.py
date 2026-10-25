@@ -7,14 +7,17 @@ from agents.jobs.jd_analyzer import analyze_jd_node
 from agents.jobs.match_scorer import match_scorer_node
 from agents.jobs.formatter import formatter_node
 
-class JobsGraphState(TypedDict):
+class JobsGraphState(TypedDict, total=False):
     resume_text: str
+    query_override: Optional[str]
+    location_override: Optional[str]
     parsed_profile: Dict[str, Any]
     search_queries: List[str]
     raw_jobs: List[Dict[str, Any]]
     analyzed_jobs: List[Dict[str, Any]]
     scored_jobs: List[Dict[str, Any]]
     final_results: List[Dict[str, Any]]
+    platform_links: List[Dict[str, str]]
     error: Optional[str]
 
 def build_jobs_graph():

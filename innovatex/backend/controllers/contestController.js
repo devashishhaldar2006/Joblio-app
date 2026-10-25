@@ -56,48 +56,66 @@ const getPersonalizedContests = async (req, res) => {
       contests = contests.filter(c => allowed.includes(c.platform_logo_key) || allowed.includes(c.platform.toLowerCase()));
     }
 
-    // Rule-based scoring:
-    // beginner -> prioritize Div.3, Div.4, LeetCode biweekly, beginner
-    // intermediate -> Div.2, CodeChef Starters
-    // advanced -> Div.1, AtCoder ARC/AGC
+    // Dynamic scoring based on difficulty match, duration compatibility, and platform reliability:
     const scoredContests = contests.map(c => {
-      let matchScore = 50;
       const diff = c.difficulty || inferDifficulty(c.title);
+      let baseScore = 60;
       let isRecommended = false;
 
       if (level === 'beginner') {
         if (diff === 'beginner') {
-          matchScore = 95;
+          baseScore = 92;
           isRecommended = true;
         } else if (diff === 'intermediate') {
-          matchScore = 65;
+          baseScore = 68;
         } else {
-          matchScore = 30;
+          baseScore = 38;
         }
       } else if (level === 'intermediate') {
         if (diff === 'intermediate') {
-          matchScore = 95;
+          baseScore = 93;
           isRecommended = true;
         } else if (diff === 'beginner') {
-          matchScore = 75;
+          baseScore = 78;
         } else {
-          matchScore = 60;
+          baseScore = 64;
         }
       } else { // advanced
         if (diff === 'advanced') {
-          matchScore = 95;
+          baseScore = 94;
           isRecommended = true;
         } else if (diff === 'intermediate') {
-          matchScore = 80;
+          baseScore = 82;
         } else {
-          matchScore = 40;
+          baseScore = 52;
         }
       }
 
+      // Duration factor: standard contest rounds (1h - 3h) get a slight synergy bonus
+      const durHours = (c.duration_seconds || 7200) / 3600;
+      let durationModifier = 0;
+      if (durHours >= 1.5 && durHours <= 3.5) {
+        durationModifier = 3;
+      } else if (durHours > 12) {
+        durationModifier = -4;
+      }
+
+      // Platform affinity bonus for official rated circuits
+      const platformLower = (c.platform || '').toLowerCase();
+      let platformModifier = 0;
+      if (platformLower.includes('codeforces') || platformLower.includes('leetcode') || platformLower.includes('atcoder')) {
+        platformModifier = 2;
+      }
+
+      // Deterministic title variance (0-3%) so scores are granular rather than identical blocks
+      const hashBonus = (c.title || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 4;
+
+      const finalMatchScore = Math.min(99, Math.max(25, baseScore + durationModifier + platformModifier + hashBonus));
+
       return {
         ...c,
-        personalized_score: matchScore,
-        is_recommended: isRecommended,
+        personalized_score: finalMatchScore,
+        is_recommended: isRecommended || finalMatchScore >= 85,
         target_skill: level
       };
     });

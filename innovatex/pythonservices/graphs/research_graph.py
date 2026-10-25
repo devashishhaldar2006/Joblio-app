@@ -4,7 +4,7 @@ from agents.research.paper_fetcher import fetch_paper_node
 from agents.research.paper_explainer import explain_paper_node
 from agents.research.related_finder import find_related_papers_node
 
-class ResearchGraphState(TypedDict):
+class ResearchGraphState(TypedDict, total=False):
     input: str
     paper_id: str
     raw_paper: Dict[str, Any]

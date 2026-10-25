@@ -12,6 +12,7 @@ const opensourceRoutes = require('./routes/opensource');
 const contestRoutes = require('./routes/contests');
 const jobRoutes = require('./routes/jobs');
 const marketRoutes = require('./routes/market');
+const reportRoutes = require('./routes/reports');
 
 const { updateContestCache } = require('./utils/contestFetcher');
 
@@ -19,8 +20,8 @@ const app = express();
 
 // Middlewares
 app.use(cors({ origin: '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
 // API Routes
@@ -31,6 +32,7 @@ app.use('/api/opensource', opensourceRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const optionalAuthMiddleware = require('../middleware/optionalAuthMiddleware');
 const {
   findOpportunities,
   guideThroughIssue,
@@ -9,11 +10,11 @@ const {
   bookmarkIssue
 } = require('../controllers/opensourceController');
 
-router.post('/find', authMiddleware, findOpportunities);
-router.post('/guide', authMiddleware, guideThroughIssue);
-router.post('/review', authMiddleware, reviewCode);
-router.get('/history', authMiddleware, getHistory);
-router.post('/bookmark', authMiddleware, bookmarkIssue);
+router.post('/find', optionalAuthMiddleware, findOpportunities);
+router.post('/guide', optionalAuthMiddleware, guideThroughIssue);
+router.post('/review', optionalAuthMiddleware, reviewCode);
+router.get('/history', optionalAuthMiddleware, getHistory);
+router.post('/bookmark', optionalAuthMiddleware, bookmarkIssue);
 
 module.exports = router;
 

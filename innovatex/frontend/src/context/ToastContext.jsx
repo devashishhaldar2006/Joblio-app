@@ -29,91 +29,82 @@ export const ToastProvider = ({ children }) => {
     warning: (msg, duration) => addToast(msg, 'warning', duration)
   };
 
+  const getToastStyle = (type) => {
+    const base = {
+      pointerEvents: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '10px',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-primary)',
+      boxShadow: 'var(--shadow-lg)',
+      color: 'var(--text-primary)',
+      fontSize: '0.8125rem',
+      animation: 'toastSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+    };
+    return base;
+  };
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle2 size={16} style={{ color: 'var(--success)', flexShrink: 0 }} />;
+      case 'error':
+        return <AlertCircle size={16} style={{ color: 'var(--error)', flexShrink: 0 }} />;
+      case 'warning':
+        return <AlertCircle size={16} style={{ color: 'var(--warning)', flexShrink: 0 }} />;
+      default:
+        return <Info size={16} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />;
+    }
+  };
+
   return (
     <ToastContext.Provider value={{ toast, addToast, removeToast }}>
       {children}
-      {/* Toast Render Portal */}
       <div
         style={{
           position: 'fixed',
-          bottom: '24px',
-          right: '24px',
+          bottom: '20px',
+          right: '20px',
           zIndex: 9999,
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
+          gap: '8px',
           pointerEvents: 'none',
-          maxWidth: '420px',
-          width: 'calc(100% - 48px)'
+          maxWidth: '380px',
+          width: 'calc(100% - 40px)'
         }}
       >
-        {toasts.map((t) => {
-          let icon = <Info size={18} style={{ color: '#38bdf8' }} />;
-          let border = 'rgba(56, 189, 248, 0.3)';
-          let bg = 'rgba(15, 23, 42, 0.95)';
-          let shadow = '0 8px 32px rgba(6, 182, 212, 0.15)';
-
-          if (t.type === 'success') {
-            icon = <CheckCircle2 size={18} style={{ color: '#4edea3' }} />;
-            border = 'rgba(78, 222, 163, 0.35)';
-            shadow = '0 8px 32px rgba(78, 222, 163, 0.2)';
-          } else if (t.type === 'error') {
-            icon = <AlertCircle size={18} style={{ color: '#ffb4ab' }} />;
-            border = 'rgba(255, 180, 171, 0.35)';
-            shadow = '0 8px 32px rgba(239, 68, 68, 0.2)';
-          } else if (t.type === 'warning') {
-            icon = <AlertCircle size={18} style={{ color: '#fcd34d' }} />;
-            border = 'rgba(245, 158, 11, 0.35)';
-            shadow = '0 8px 32px rgba(245, 158, 11, 0.2)';
-          }
-
-          return (
-            <div
-              key={t.id}
-              className="toast-item"
+        {toasts.map((t) => (
+          <div key={t.id} style={getToastStyle(t.type)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              {getIcon(t.type)}
+              <span style={{ wordBreak: 'break-word', fontWeight: 500 }}>{t.message}</span>
+            </div>
+            <button
+              onClick={() => removeToast(t.id)}
               style={{
-                pointerEvents: 'auto',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-quaternary)',
+                cursor: 'pointer',
+                padding: '4px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                background: bg,
-                backdropFilter: 'blur(16px)',
-                border: `1px solid ${border}`,
-                boxShadow: shadow,
-                color: '#e4e1eb',
-                fontSize: '0.88rem',
-                animation: 'toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                transition: 'all 0.2s ease'
+                justifyContent: 'center',
+                borderRadius: '4px',
+                flexShrink: 0
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-quaternary)')}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                {icon}
-                <span style={{ wordBreak: 'break-word', fontWeight: 500 }}>{t.message}</span>
-              </div>
-              <button
-                onClick={() => removeToast(t.id)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '6px'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          );
-        })}
+              <X size={14} />
+            </button>
+          </div>
+        ))}
       </div>
     </ToastContext.Provider>
   );

@@ -1,116 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
-import { useToast } from '../../context/ToastContext';
 import {
   Upload,
   Briefcase,
   MapPin,
-  DollarSign,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
   Bookmark,
   BookmarkCheck,
   Trash2,
-  SlidersHorizontal,
-  Edit3,
-  Printer,
-  FileText,
-  X,
-  ArrowUpRight,
   Search,
-  Check,
+  CheckCircle2,
+  AlertCircle,
   Clock,
-  Columns,
-  List,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  RotateCcw,
   Sparkles,
-  Filter
+  DollarSign,
+  Building,
+  Layers,
+  Globe,
+  X
 } from 'lucide-react';
-import { exportJobMatchPdf } from '../../utils/exportUtils';
-import EmptyState from '../../components/common/EmptyState';
+import api from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
-const STAGE_CONFIG = {
-  Saved: { label: 'Saved', color: '#93c5fd', bg: 'rgba(59, 130, 246, 0.10)', border: 'rgba(59, 130, 246, 0.22)' },
-  Applied: { label: 'Applied', color: '#67e8f9', bg: 'rgba(6, 182, 212, 0.10)', border: 'rgba(6, 182, 212, 0.22)' },
-  Interviewing: { label: 'Interviewing', color: '#fde047', bg: 'rgba(234, 179, 8, 0.10)', border: 'rgba(234, 179, 8, 0.22)' },
-  Offer: { label: 'Offer', color: '#86efac', bg: 'rgba(34, 197, 94, 0.10)', border: 'rgba(34, 197, 94, 0.22)' },
-  Rejected: { label: 'Archived', color: '#fda4af', bg: 'rgba(244, 63, 94, 0.10)', border: 'rgba(244, 63, 94, 0.22)' }
-};
+const STAGE_OPTIONS = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
-const JobSearchPage = () => {
+export default function JobSearchPage() {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState('search'); // 'search' | 'tracker'
+  const [activeTab, setActiveTab] = useState('search'); // 'search' | 'pipeline' | 'history'
 
-  // Search State
+  // Search form state
   const [file, setFile] = useState(null);
+  const [roleQuery, setRoleQuery] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [searchInitiated, setSearchInitiated] = useState(false);
   const [parsedProfile, setParsedProfile] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [error, setError] = useState('');
-
-  // Search Overrides
-  const [customRole, setCustomRole] = useState('');
-  const [customLocation, setCustomLocation] = useState('');
-  const [showOverrides, setShowOverrides] = useState(false);
-
-  // In-results Filters & sorting
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('match'); // 'match' | 'date'
-  const [filterType, setFilterType] = useState('ALL');
-  const [minFitScore, setMinFitScore] = useState(0); // 0, 70, 85
   const [expandedJobId, setExpandedJobId] = useState(null);
+  const [jobSearchFilter, setJobSearchFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'INTERNSHIP' | 'FULLTIME'
+  const [platformLinks, setPlatformLinks] = useState([]);
 
-  // Bookmarking / Tracker State
+  // Bookmarks / Pipeline state
   const [bookmarks, setBookmarks] = useState([]);
-  const [trackerFilter, setTrackerFilter] = useState('ALL');
-  const [trackerViewMode, setTrackerViewMode] = useState('board'); // 'board' | 'list'
-  const [editingNotesId, setEditingNotesId] = useState(null);
-  const [noteDraft, setNoteDraft] = useState('');
+  const [loadingBookmarks, setLoadingBookmarks] = useState(false);
+  const [pipelineFilter, setPipelineFilter] = useState('ALL');
 
-  // History State
+  // History state
   const [historySessions, setHistorySessions] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const loadingSteps = [
-    'Deconstructing resume layout and ATS syntax tokens',
-    'Synthesizing candidate profile with Groq Llama 3.3',
-    'Querying live engineering postings across career platforms',
-    'Computing multi-dimensional vector match and skill overlap'
-  ];
-  const [loadingStepIdx, setLoadingStepIdx] = useState(0);
-
-  useEffect(() => {
-    let interval;
-    if (loading) {
-      interval = setInterval(() => {
-        setLoadingStepIdx((prev) => (prev + 1) % loadingSteps.length);
-      }, 1600);
-    } else {
-      setLoadingStepIdx(0);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  // Fetch bookmarks
   const fetchBookmarks = async () => {
     try {
+      setLoadingBookmarks(true);
       const res = await api.get('/jobs/bookmarks');
       setBookmarks(res.data || []);
     } catch (err) {
-      console.error('Failed to load bookmarks:', err);
+      console.warn('Bookmarks load warning:', err.message);
+    } finally {
+      setLoadingBookmarks(false);
     }
   };
 
-  // Fetch history
   const fetchHistory = async () => {
     try {
       setLoadingHistory(true);
       const res = await api.get('/jobs/history');
       setHistorySessions(res.data || []);
     } catch (err) {
-      console.error('Failed to load history:', err);
+      console.warn('History load warning:', err.message);
     } finally {
       setLoadingHistory(false);
     }
@@ -121,528 +81,271 @@ const JobSearchPage = () => {
     fetchHistory();
   }, []);
 
-  const bookmarkedMap = new Map(bookmarks.map((b) => [b.jobId, b]));
+  const normalizeJob = (j, idx = 0) => {
+    const jId = j.job_id || j.jobId || j.id || `job_${idx}`;
+    const skills = j.skill_overlap || j.matched_skills || j.matchedSkills || [];
+    const missing = j.missing_skills || j.missingSkills || [];
+    const fit = j.match_score ?? j.fit_score ?? j.fitScore ?? 75;
+    const sal = j.salary_range || j.salaryRange || j.salary || 'Competitive';
+    const link = j.apply_link || j.applyLink || j.url || '';
+    const advice = j.match_reason || j.matchReason || j.ats_advice || '';
+
+    return {
+      ...j,
+      id: jId,
+      job_id: jId,
+      jobId: jId,
+      title: j.title || j.job_title || 'Software Engineer',
+      company: j.company || j.employer_name || 'Tech Company',
+      location: j.location || (j.job_city ? `${j.job_city}${j.job_country ? `, ${j.job_country}` : ''}` : 'Remote / Flexible'),
+      salary: sal,
+      salary_range: sal,
+      salaryRange: sal,
+      employment_type: j.employment_type || j.job_employment_type || 'Full-time',
+      fit_score: fit,
+      match_score: fit,
+      matchScore: fit,
+      matched_skills: skills,
+      skill_overlap: skills,
+      matchedSkills: skills,
+      missing_skills: missing,
+      missingSkills: missing,
+      ats_advice: advice,
+      match_reason: advice,
+      matchReason: advice,
+      url: link,
+      apply_link: link,
+      applyLink: link,
+      jd_bullets: j.jd_bullets || [],
+      source: j.source || ''
+    };
+  };
+
+  const normalizeProfile = (p) => {
+    if (!p) return null;
+    return {
+      ...p,
+      name: p.name || p.detected_role || 'Candidate',
+      current_role: p.current_role || p.preferred_roles?.[0] || '',
+      top_skills: p.skills || p.top_skills || [],
+      skills: p.skills || p.top_skills || [],
+      experience_level: p.experience_years ? `${p.experience_years} Years Exp` : (p.experience_level || 'Mid-Level')
+    };
+  };
+
+  const bookmarkedMap = new Map();
+  bookmarks.forEach((b) => {
+    if (b.jobId) bookmarkedMap.set(b.jobId, b);
+    if (b._id) bookmarkedMap.set(b._id, b);
+  });
 
   const handleFileDrop = (e) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const dropped = e.dataTransfer.files[0];
-      if (dropped.type === 'application/pdf' || dropped.name.endsWith('.pdf')) {
-        setFile(dropped);
-        setError('');
-      } else {
-        setError('Please upload a PDF document.');
-      }
+    const dropped = e.dataTransfer?.files?.[0];
+    if (dropped && (dropped.type === 'application/pdf' || dropped.name.endsWith('.pdf'))) {
+      setFile(dropped);
+      toast.success(`Resume selected: ${dropped.name}`);
+    } else {
+      toast.error('Please upload a PDF document.');
     }
   };
 
   const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      if (selected.type === 'application/pdf' || selected.name.endsWith('.pdf')) {
-        setFile(selected);
-        setError('');
-      } else {
-        setError('Please select a PDF document.');
-      }
+    const selected = e.target.files?.[0];
+    if (selected && (selected.type === 'application/pdf' || selected.name.endsWith('.pdf'))) {
+      setFile(selected);
+      toast.success(`Resume selected: ${selected.name}`);
+    } else {
+      toast.error('Please select a PDF document.');
     }
   };
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      toast.error('Please select or upload your resume PDF first.');
+      return;
+    }
 
-    setError('');
     setLoading(true);
-    setSearchInitiated(true);
-    setParsedProfile(null);
     setJobs([]);
+    setParsedProfile(null);
 
     const formData = new FormData();
     formData.append('resume', file);
-    if (customRole.trim()) {
-      formData.append('query', customRole.trim());
-    }
-    if (customLocation.trim()) {
-      formData.append('location', customLocation.trim());
-    }
+    if (roleQuery.trim()) formData.append('query', roleQuery.trim());
+    if (locationQuery.trim()) formData.append('location', locationQuery.trim());
 
     try {
       const res = await api.post('/jobs/search', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000
       });
-      setParsedProfile(res.data.parsed_profile || {});
-      const results = res.data.results || [];
-      setJobs(results);
-      fetchHistory(); // refresh history list
-      toast.success(`Evaluated ${results.length} active openings with ATS fit`);
+
+      const { parsed_profile, results, platform_links } = res.data;
+      setParsedProfile(normalizeProfile(parsed_profile));
+      const formatted = (results || []).map((j, idx) => normalizeJob(j, idx));
+      setJobs(formatted);
+      setPlatformLinks(platform_links || []);
+      toast.success(`Matched ${formatted.length} job opportunities with your resume`);
+      fetchHistory();
     } catch (err) {
-      console.error('Job search error:', err);
-      const msg = err.response?.data?.error || 'Multi-agent evaluation failed. Verify PDF contents.';
-      setError(msg);
+      console.error('Job search failed:', err);
+      const msg = err.response?.data?.error || err.message || 'Job match failed. Ensure Python services are active.';
       toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoadHistory = async (historyId) => {
-    try {
-      setLoading(true);
-      setError('');
-      const res = await api.get(`/jobs/history/${historyId}`);
-      if (res.data) {
-        setParsedProfile(res.data.parsedProfile || {});
-        setJobs(res.data.results || []);
-        setSearchInitiated(true);
-        toast.success('Loaded saved candidate evaluation session');
-      }
-    } catch (err) {
-      console.error('Load history error:', err);
-      toast.error('Failed to load past session');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Bookmark / Unbookmark Toggle
   const handleToggleBookmark = async (job) => {
-    const isBookmarked = bookmarkedMap.has(job.job_id);
-
-    try {
-      if (isBookmarked) {
-        const existing = bookmarkedMap.get(job.job_id);
+    const jId = job.job_id || job.jobId || job.id;
+    const existing = bookmarkedMap.get(jId) || bookmarkedMap.get(job.id);
+    if (existing) {
+      try {
         await api.delete(`/jobs/bookmark/${existing._id}`);
-        setBookmarks(bookmarks.filter((b) => b._id !== existing._id));
-        toast.info('Removed role from pipeline');
-      } else {
-        const res = await api.post('/jobs/bookmark', {
-          jobId: job.job_id,
-          title: job.title,
-          company: job.company,
+        setBookmarks((prev) => prev.filter((b) => b._id !== existing._id));
+        toast.success('Removed from saved jobs');
+      } catch (err) {
+        toast.error('Failed to remove bookmark.');
+      }
+    } else {
+      try {
+        const payload = {
+          jobId: jId,
+          title: job.title || job.job_title,
+          company: job.company || job.employer_name,
           location: job.location,
-          employmentType: job.employment_type,
-          salaryRange: job.salary_range,
-          applyLink: job.apply_link,
-          matchScore: job.match_score,
-          matchReason: job.match_reason,
-          skillOverlap: job.skill_overlap,
-          missingSkills: job.missing_skills,
+          employmentType: job.employment_type || job.job_employment_type || 'FULLTIME',
+          salaryRange: job.salary || job.salary_range || 'Competitive',
+          applyLink: job.apply_link || job.url || '',
+          matchScore: job.fit_score ?? job.match_score ?? 75,
+          matchReason: job.ats_advice || job.match_reason || '',
+          skillOverlap: job.matched_skills || job.skill_overlap || [],
+          missingSkills: job.missing_skills || [],
           status: 'Saved',
           rawJobData: job
-        });
-        if (res.data.bookmark) {
-          setBookmarks([res.data.bookmark, ...bookmarks]);
-          toast.success('Added role to Application Pipeline');
-        }
+        };
+        const res = await api.post('/jobs/bookmark', payload);
+        const saved = res.data?.bookmark || res.data;
+        setBookmarks((prev) => [saved, ...prev]);
+        toast.success('Job saved to pipeline');
+      } catch (err) {
+        console.error('Save bookmark error:', err);
+        toast.error('Failed to save job.');
       }
-    } catch (err) {
-      console.error('Bookmark toggle error:', err);
-      toast.error('Failed to update saved job');
     }
   };
 
-  // Status Change
-  const handleStatusChange = async (bookmarkId, newStatus) => {
+  const handleUpdateStage = async (bookmarkId, newStatus) => {
     try {
       const res = await api.patch(`/jobs/bookmark/${bookmarkId}/status`, { status: newStatus });
-      setBookmarks(bookmarks.map((b) => (b._id === bookmarkId ? res.data.bookmark : b)));
-      toast.success(`Pipeline stage updated to "${STAGE_CONFIG[newStatus]?.label || newStatus}"`);
+      setBookmarks((prev) =>
+        prev.map((b) => (b._id === bookmarkId ? { ...b, status: res.data.status || newStatus } : b))
+      );
+      toast.success(`Status updated to ${newStatus}`);
     } catch (err) {
-      console.error('Status update error:', err);
-      toast.error('Failed to update stage');
+      toast.error('Failed to update pipeline stage.');
     }
   };
 
-  // Notes update
-  const handleSaveNotes = async (bookmarkId) => {
-    try {
-      const res = await api.patch(`/jobs/bookmark/${bookmarkId}/status`, { notes: noteDraft });
-      setBookmarks(bookmarks.map((b) => (b._id === bookmarkId ? res.data.bookmark : b)));
-      setEditingNotesId(null);
-      setNoteDraft('');
-      toast.success('Notes saved');
-    } catch (err) {
-      console.error('Notes update error:', err);
-      toast.error('Failed to save notes');
-    }
-  };
+  const filteredJobs = jobs.filter((job) => {
+    const isIntern = job.employment_type === 'INTERNSHIP' || job.title?.toLowerCase().includes('intern');
+    if (typeFilter === 'INTERNSHIP' && !isIntern) return false;
+    if (typeFilter === 'FULLTIME' && isIntern) return false;
 
-  // Delete Bookmark
-  const handleDeleteBookmark = async (bookmarkId) => {
-    try {
-      await api.delete(`/jobs/bookmark/${bookmarkId}`);
-      setBookmarks(bookmarks.filter((b) => b._id !== bookmarkId));
-      toast.info('Role removed from tracker');
-    } catch (err) {
-      console.error('Delete bookmark error:', err);
-    }
-  };
-
-  // Filter & sort jobs in search tab
-  let processedJobs = [...jobs];
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    processedJobs = processedJobs.filter(
-      (j) =>
-        (j.title || '').toLowerCase().includes(q) ||
-        (j.company || '').toLowerCase().includes(q) ||
-        (j.location || '').toLowerCase().includes(q) ||
-        (j.match_reason || '').toLowerCase().includes(q)
-    );
-  }
-  if (filterType !== 'ALL') {
-    processedJobs = processedJobs.filter((j) => (j.employment_type || '').toUpperCase().includes(filterType));
-  }
-  if (minFitScore > 0) {
-    processedJobs = processedJobs.filter((j) => (j.match_score || 0) >= minFitScore);
-  }
-  if (sortBy === 'match') {
-    processedJobs.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-  } else {
-    processedJobs.sort((a, b) => new Date(b.posted_at || 0) - new Date(a.posted_at || 0));
-  }
-
-  // Filter bookmarks in tracker tab
-  const filteredBookmarks = trackerFilter === 'ALL'
-    ? bookmarks
-    : bookmarks.filter((b) => b.status === trackerFilter);
-
-  const renderFitBadge = (score) => {
-    const isHigh = score >= 85;
-    const isGood = score >= 70;
-    const isFair = score >= 55;
-    const color = isHigh ? '#34d399' : isGood ? '#3b82f6' : isFair ? '#fbbf24' : '#fb7185';
-    const bg = isHigh ? 'rgba(52, 211, 153, 0.10)' : isGood ? 'rgba(59, 130, 246, 0.10)' : isFair ? 'rgba(251, 191, 36, 0.10)' : 'rgba(251, 113, 133, 0.10)';
-
+    if (!jobSearchFilter) return true;
+    const term = jobSearchFilter.toLowerCase();
     return (
-      <span
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.72rem',
-          fontWeight: 600,
-          color,
-          backgroundColor: bg,
-          padding: '0.2rem 0.55rem',
-          borderRadius: '3px',
-          letterSpacing: '-0.01em',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.3rem'
-        }}
-      >
-        <span
-          style={{
-            width: '5px',
-            height: '5px',
-            borderRadius: '50%',
-            backgroundColor: color
-          }}
-        />
-        {score}% fit
-      </span>
+      job.title?.toLowerCase().includes(term) ||
+      job.company?.toLowerCase().includes(term) ||
+      job.location?.toLowerCase().includes(term) ||
+      job.source?.toLowerCase().includes(term) ||
+      job.matched_skills?.some((s) => s.toLowerCase().includes(term))
     );
-  };
+  });
 
-  const highMatchCount = jobs.filter((j) => (j.match_score || 0) >= 80).length;
-  const avgMatchScore = jobs.length > 0 ? Math.round(jobs.reduce((acc, j) => acc + (j.match_score || 0), 0) / jobs.length) : 0;
+  const filteredBookmarks = bookmarks.filter((b) => {
+    if (pipelineFilter === 'ALL') return true;
+    return b.status?.toUpperCase() === pipelineFilter.toUpperCase();
+  });
 
   return (
-    <div
-      style={{
-        backgroundColor: '#0B0B0D',
-        minHeight: '100vh',
-        color: '#f4f4f6',
-        padding: '3rem 3.5rem 5rem 3.5rem',
-        maxWidth: '1280px',
-        margin: '0 auto',
-        fontFamily: 'var(--font-sans)',
-        boxSizing: 'border-box'
-      }}
-    >
-      {/* Top Telemetry & Controls */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '2rem',
-          paddingBottom: '1rem',
-          borderBottom: '1px solid #18181d'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span
-            style={{
-              fontSize: '0.72rem',
-              fontFamily: 'var(--font-mono)',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#71717a'
-            }}
-          >
-            CAREER INTELLIGENCE · TALENT MAPPING & APPLICATION PIPELINE
-          </span>
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: '#3b82f6',
-              display: 'inline-block'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {jobs.length > 0 && activeTab === 'search' && (
-            <button
-              type="button"
-              onClick={() => exportJobMatchPdf(jobs, parsedProfile?.name || file?.name || 'Engineering Candidate')}
-              style={{
-                background: 'transparent',
-                border: '1px solid #202026',
-                color: '#d4d4d8',
-                fontSize: '0.74rem',
-                fontFamily: 'var(--font-mono)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                cursor: 'pointer',
-                padding: '0.35rem 0.75rem',
-                borderRadius: '4px',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#363642';
-                e.currentTarget.style.color = '#ffffff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#202026';
-                e.currentTarget.style.color = '#d4d4d8';
-              }}
-              title="Export Fit Dossier as Clean Institutional PDF"
-            >
-              <Printer size={12} />
-              <span>Export Dossier (PDF)</span>
-            </button>
-          )}
-
-          {searchInitiated && !loading && (
-            <button
-              type="button"
-              onClick={() => {
-                setJobs([]);
-                setFile(null);
-                setParsedProfile(null);
-                setSearchInitiated(false);
-                setError('');
-                setSearchQuery('');
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#71717a',
-                fontSize: '0.74rem',
-                fontFamily: 'var(--font-mono)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                cursor: 'pointer',
-                padding: '0.35rem 0.5rem'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#d4d4d8')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
-            >
-              <RotateCcw size={11} />
-              <span>New Analysis</span>
-            </button>
-          )}
-        </div>
+    <div className="page-container fade-in">
+      {/* Top Header */}
+      <div style={{ marginBottom: '1.75rem' }}>
+        <h1 style={{ fontSize: '1.625rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.025em', marginBottom: '0.35rem' }}>
+          Job Search & ATS Match
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          Upload your resume to parse extracted skills, calculate keyword alignment, and track matching job openings
+        </p>
       </div>
 
-      {/* Page Title & Intelligence Summary Header */}
-      <section style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div>
-            <h1
+      {/* View Switcher Tabs */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        borderBottom: '1px solid var(--border)',
+        paddingBottom: '0.75rem',
+        marginBottom: '1.75rem'
+      }}>
+        {[
+          { id: 'search', label: 'Resume Search & ATS Match', icon: Search },
+          { id: 'pipeline', label: `Saved Pipeline (${bookmarks.length})`, icon: Bookmark },
+          { id: 'history', label: `Past Searches (${historySessions.length})`, icon: Clock }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={isActive ? 'btn-primary' : 'btn-secondary'}
               style={{
-                fontSize: '2.25rem',
-                fontWeight: 600,
-                letterSpacing: '-0.035em',
-                color: '#ffffff',
-                margin: '0 0 0.5rem 0',
-                lineHeight: 1.15
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.45rem 0.875rem',
+                fontSize: '0.8125rem',
+                borderRadius: 'var(--radius-full)'
               }}
             >
-              Role Matching & Career Intelligence
-            </h1>
-            <p
-              style={{
-                fontSize: '0.96rem',
-                color: '#8e8e99',
-                margin: 0,
-                maxWidth: '640px',
-                lineHeight: 1.55
-              }}
-            >
-              Autonomous resume parsing paired with semantic vector scoring across live engineering roles and active hiring pipelines.
-            </p>
-          </div>
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Quick Metrics Bar (Editorial typographic signals) */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2.5rem',
-              padding: '0.75rem 1.25rem',
-              backgroundColor: '#101014',
-              border: '1px solid #18181f',
-              borderRadius: '6px'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                {bookmarks.length}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Tracked Roles
-              </div>
-            </div>
-
-            {jobs.length > 0 && (
-              <>
-                <div style={{ width: '1px', height: '24px', backgroundColor: '#1f1f28' }} />
-                <div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
-                    {highMatchCount}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Strong Fits (&gt;80%)
-                  </div>
-                </div>
-
-                <div style={{ width: '1px', height: '24px', backgroundColor: '#1f1f28' }} />
-                <div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                    {avgMatchScore}%
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Avg Alignment
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Tab Switcher: Linear Style */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '2.5rem',
-            marginTop: '2.5rem',
-            borderBottom: '1px solid #18181d'
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveTab('search')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'search' ? '2px solid #3b82f6' : '2px solid transparent',
-              padding: '0.75rem 0.2rem',
-              fontSize: '0.86rem',
-              fontWeight: activeTab === 'search' ? 500 : 400,
-              color: activeTab === 'search' ? '#ffffff' : '#71717a',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              transition: 'color 0.15s ease'
-            }}
-          >
-            <span>Opportunities & Evaluation</span>
-            {jobs.length > 0 && (
-              <span
-                style={{
-                  fontSize: '0.7rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: activeTab === 'search' ? '#3b82f6' : '#71717a',
-                  backgroundColor: activeTab === 'search' ? 'rgba(59, 130, 246, 0.12)' : '#121216',
-                  padding: '0.1rem 0.45rem',
-                  borderRadius: '3px'
-                }}
-              >
-                {jobs.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('tracker')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'tracker' ? '2px solid #3b82f6' : '2px solid transparent',
-              padding: '0.75rem 0.2rem',
-              fontSize: '0.86rem',
-              fontWeight: activeTab === 'tracker' ? 500 : 400,
-              color: activeTab === 'tracker' ? '#ffffff' : '#71717a',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              transition: 'color 0.15s ease'
-            }}
-          >
-            <span>Application Pipeline</span>
-            <span
-              style={{
-                fontSize: '0.7rem',
-                fontFamily: 'var(--font-mono)',
-                color: activeTab === 'tracker' ? '#3b82f6' : '#71717a',
-                backgroundColor: activeTab === 'tracker' ? 'rgba(59, 130, 246, 0.12)' : '#121216',
-                padding: '0.1rem 0.45rem',
-                borderRadius: '3px'
-              }}
-            >
-              {bookmarks.length}
-            </span>
-          </button>
-        </div>
-      </section>
-
-      {/* TAB 1: RESUME SEARCH & LIVE MATCHES */}
+      {/* TAB 1: Search & Match */}
       {activeTab === 'search' && (
-        <>
-          {/* UPLOAD & EVALUATION WORKFLOW (WHEN IDLE) */}
-          {!searchInitiated && !loading && (
-            <div style={{ maxWidth: '720px', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+          {/* Resume Upload & Search Card */}
+          <div className="card" style={{ padding: '1.75rem', boxShadow: 'var(--shadow-card)' }}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+              Upload Resume & Target Role
+            </h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+              Our AI engine parses your resume in real time, scores your profile against market jobs, and identifies skill gaps.
+            </p>
+
+            <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Dropzone */}
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleFileDrop}
-                onClick={() => document.getElementById('resume-file-input').click()}
+                onClick={() => document.getElementById('resume-file-input')?.click()}
                 style={{
-                  border: '1px dashed #24242e',
-                  backgroundColor: '#101014',
-                  borderRadius: '6px',
-                  padding: '3rem 2.5rem',
+                  border: file ? '2px solid var(--primary)' : '2px dashed var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '2rem 1.5rem',
                   textAlign: 'center',
+                  backgroundColor: file ? 'var(--primary-light)' : 'var(--bg-subtle)',
                   cursor: 'pointer',
-                  transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                  marginBottom: '1.5rem'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#3b82f6';
-                  e.currentTarget.style.backgroundColor = '#121218';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#24242e';
-                  e.currentTarget.style.backgroundColor = '#101014';
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <input
@@ -652,55 +355,28 @@ const JobSearchPage = () => {
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
-
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '6px',
-                    backgroundColor: '#16161d',
-                    border: '1px solid #252530',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 1.25rem auto',
-                    color: '#3b82f6'
-                  }}
-                >
-                  <Upload size={18} />
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'var(--bg-card)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 0.75rem',
+                  color: 'var(--primary)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <Upload size={22} />
+                </div>
+                <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                  {file ? file.name : 'Click to select or drag & drop resume (PDF)'}
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  {file ? `${(file.size / 1024).toFixed(1)} KB • Ready for ATS evaluation` : 'PDF format up to 10MB'}
                 </div>
 
-                <div style={{ fontSize: '0.96rem', fontWeight: 500, color: '#ffffff', marginBottom: '0.4rem' }}>
-                  {file ? file.name : 'Drop your engineering resume (PDF) or click to browse'}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#71717a' }}>
-                  {file ? `${(file.size / 1024).toFixed(1)} KB · Ready to evaluate` : 'Parsed privately via Groq Llama 3.3 · Structured ATS extraction & vector alignment'}
-                </div>
-              </div>
-
-              {/* Selected File Token */}
-              {file && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.65rem 1rem',
-                    backgroundColor: '#121217',
-                    border: '1px solid #202028',
-                    borderRadius: '4px',
-                    marginBottom: '1.5rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <FileText size={15} color="#3b82f6" />
-                    <span style={{ fontSize: '0.84rem', color: '#ffffff', fontWeight: 500 }}>
-                      {file.name}
-                    </span>
-                    <span style={{ fontSize: '0.74rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
-                      ({(file.size / 1024).toFixed(1)} KB)
-                    </span>
-                  </div>
+                {file && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -708,211 +384,108 @@ const JobSearchPage = () => {
                       setFile(null);
                     }}
                     style={{
-                      background: 'transparent',
+                      marginTop: '0.75rem',
+                      background: 'none',
                       border: 'none',
-                      color: '#71717a',
+                      color: 'var(--error-text)',
+                      fontSize: '0.75rem',
                       cursor: 'pointer',
-                      padding: '2px',
-                      display: 'flex',
-                      alignItems: 'center'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#fb7185')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
-                    title="Remove file"
                   >
-                    <X size={14} />
+                    <X size={13} />
+                    <span>Remove file</span>
                   </button>
-                </div>
-              )}
-
-              {/* Collapsible Overrides */}
-              <div style={{ marginBottom: '2rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowOverrides(!showOverrides)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#8e8e99',
-                    fontSize: '0.8rem',
-                    fontFamily: 'var(--font-mono)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8e8e99')}
-                >
-                  <SlidersHorizontal size={12} />
-                  <span>{showOverrides ? 'Hide target parameters' : 'Customize target role or location (optional)'}</span>
-                  {showOverrides ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                </button>
-
-                {showOverrides && (
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '1rem',
-                      marginTop: '1rem',
-                      padding: '1.25rem',
-                      backgroundColor: '#101014',
-                      border: '1px solid #1a1a22',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                        Target Role Focus
-                      </label>
-                      <input
-                        type="text"
-                        value={customRole}
-                        onChange={(e) => setCustomRole(e.target.value)}
-                        placeholder="e.g. Distributed Systems, ML Infrastructure"
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#0c0c0f',
-                          border: '1px solid #1f1f28',
-                          color: '#ffffff',
-                          fontSize: '0.84rem',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: '3px'
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                        Preferred Location / Mode
-                      </label>
-                      <input
-                        type="text"
-                        value={customLocation}
-                        onChange={(e) => setCustomLocation(e.target.value)}
-                        placeholder="e.g. Remote, San Francisco, New York"
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#0c0c0f',
-                          border: '1px solid #1f1f28',
-                          color: '#ffffff',
-                          fontSize: '0.84rem',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: '3px'
-                        }}
-                      />
-                    </div>
-                  </div>
                 )}
               </div>
 
-              {error && (
-                <div
+              {/* Optional filters */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                    Target Role (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Full Stack Developer, Systems Engineer, React"
+                    value={roleQuery}
+                    onChange={(e) => setRoleQuery(e.target.value)}
+                    style={{ width: '100%', height: '40px', fontSize: '0.875rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                    Location / Remote (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Remote, San Francisco, London, India"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    style={{ width: '100%', height: '40px', fontSize: '0.875rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
+                <button
+                  type="submit"
+                  disabled={loading || !file}
+                  className="btn-primary"
                   style={{
-                    backgroundColor: 'rgba(244, 63, 94, 0.08)',
-                    border: '1px solid rgba(244, 63, 94, 0.25)',
-                    color: '#fb7185',
-                    fontSize: '0.82rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '4px',
-                    marginBottom: '1.5rem'
+                    padding: '0.625rem 1.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                   }}
                 >
-                  {error}
+                  <Search size={15} />
+                  <span>{loading ? 'Analyzing Resume & Matching Openings...' : 'Search & Match Jobs'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Parsed Profile Summary from Live Resume */}
+          {parsedProfile && (
+            <div className="card" style={{ padding: '1.5rem', backgroundColor: 'var(--bg-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={16} style={{ color: 'var(--primary)' }} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Parsed Candidate Profile
+                  </span>
                 </div>
-              )}
+                {parsedProfile.experience_level && (
+                  <span className="badge badge-primary">{parsedProfile.experience_level}</span>
+                )}
+              </div>
 
-              <button
-                type="button"
-                onClick={handleSearch}
-                disabled={!file}
-                style={{
-                  backgroundColor: file ? '#ffffff' : '#18181f',
-                  color: file ? '#0B0B0D' : '#52525b',
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                  padding: '0.75rem 1.75rem',
-                  borderRadius: '4px',
-                  border: 'none',
-                  cursor: file ? 'pointer' : 'not-allowed',
-                  transition: 'background-color 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-                onMouseEnter={(e) => {
-                  if (file) e.currentTarget.style.backgroundColor = '#e4e4e7';
-                }}
-                onMouseLeave={(e) => {
-                  if (file) e.currentTarget.style.backgroundColor = '#ffffff';
-                }}
-              >
-                <span>Evaluate Live Role Matches</span>
-                <ArrowUpRight size={14} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                <div style={{ fontWeight: 600, fontSize: '1.125rem', color: 'var(--text-primary)' }}>
+                  {parsedProfile.name || parsedProfile.detected_role || 'Candidate'}
+                </div>
+                {parsedProfile.current_role && (
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    • {parsedProfile.current_role}
+                  </span>
+                )}
+              </div>
 
-              {/* Past Resume Sessions Quick-Select */}
-              {historySessions.length > 0 && (
-                <div style={{ marginTop: '3.5rem', paddingTop: '2rem', borderTop: '1px solid #18181d' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      RECENT EVALUATIONS
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: '#52525b' }}>
-                      Click to reload session without re-uploading
-                    </span>
+              {parsedProfile.top_skills && (
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.375rem' }}>
+                    Extracted Skills from Resume:
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {historySessions.slice(0, 4).map((h) => (
-                      <div
-                        key={h._id}
-                        onClick={() => handleLoadHistory(h._id)}
-                        style={{
-                          padding: '0.85rem 1rem',
-                          backgroundColor: '#101014',
-                          border: '1px solid #18181f',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          transition: 'border-color 0.15s ease, background-color 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#2c2c36';
-                          e.currentTarget.style.backgroundColor = '#131318';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = '#18181f';
-                          e.currentTarget.style.backgroundColor = '#101014';
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <FileText size={14} color="#71717a" />
-                          <div>
-                            <span style={{ fontSize: '0.84rem', fontWeight: 500, color: '#ffffff' }}>
-                              {h.parsedProfile?.name || 'Evaluated Candidate'}
-                            </span>
-                            {h.parsedProfile?.current_role && (
-                              <span style={{ fontSize: '0.8rem', color: '#71717a', marginLeft: '0.5rem' }}>
-                                · {h.parsedProfile.current_role}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#3b82f6' }}>
-                            {h.results?.length || 0} roles matched
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: '#52525b', fontFamily: 'var(--font-mono)' }}>
-                            {new Date(h.searchedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                    {parsedProfile.top_skills.map((skill, idx) => (
+                      <span key={idx} className="badge badge-gray" style={{ fontSize: '0.75rem' }}>
+                        {skill}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -920,929 +493,572 @@ const JobSearchPage = () => {
             </div>
           )}
 
-          {/* LOADING STATE */}
-          {loading && (
-            <div
-              style={{
-                maxWidth: '600px',
-                margin: '4rem 0',
-                padding: '2rem 0'
-              }}
-            >
-              <div style={{ fontSize: '0.92rem', color: '#ffffff', fontWeight: 500, marginBottom: '0.4rem' }}>
-                {loadingSteps[loadingStepIdx]}...
-              </div>
-              <div style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '1.5rem' }}>
-                Multi-agent inference across candidate technical footprint and live hiring feeds
-              </div>
-              <div
-                style={{
-                  height: '2px',
-                  backgroundColor: '#18181f',
-                  borderRadius: '1px',
-                  overflow: 'hidden',
-                  width: '100%'
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${((loadingStepIdx + 1) / loadingSteps.length) * 100}%`,
-                    backgroundColor: '#3b82f6',
-                    transition: 'width 0.4s ease'
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* RESULTS VIEW */}
-          {searchInitiated && !loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-              {/* Parsed Profile Executive Dossier */}
-              {parsedProfile && (
-                <div
-                  style={{
-                    padding: '2rem',
-                    backgroundColor: '#101014',
-                    border: '1px solid #1a1a22',
-                    borderRadius: '6px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.85rem' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.3rem' }}>
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
-                          {parsedProfile.name || 'Candidate Profile'}
-                        </h2>
-                        {parsedProfile.current_role && (
-                          <span
-                            style={{
-                              fontSize: '0.74rem',
-                              fontFamily: 'var(--font-mono)',
-                              color: '#3b82f6',
-                              backgroundColor: 'rgba(59, 130, 246, 0.10)',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '3px'
-                            }}
-                          >
-                            {parsedProfile.current_role}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#71717a', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span>{parsedProfile.experience_years ? `${parsedProfile.experience_years} years experience` : 'Full-stack background'}</span>
-                        <span>·</span>
-                        <span>{parsedProfile.location || 'Location flexible'}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => exportJobMatchPdf(jobs, parsedProfile?.name || 'Candidate')}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid #202028',
-                          color: '#d4d4d8',
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '3px',
-                          fontSize: '0.74rem',
-                          fontFamily: 'var(--font-mono)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem'
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3b82f6')}
-                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#202028')}
-                      >
-                        <Printer size={12} />
-                        <span>Export PDF</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {parsedProfile.summary && (
-                    <div style={{ fontSize: '0.88rem', color: '#a1a1aa', marginBottom: '1.25rem', lineHeight: 1.6 }}>
-                      {parsedProfile.summary}
-                    </div>
-                  )}
-
-                  {/* Skills Chips */}
-                  {parsedProfile.skills && parsedProfile.skills.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        IDENTIFIED CORE COMPETENCIES ({parsedProfile.skills.length})
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                        {parsedProfile.skills.map((sk, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              fontSize: '0.72rem',
-                              fontFamily: 'var(--font-mono)',
-                              color: '#d4d4d8',
-                              backgroundColor: '#14141a',
-                              border: '1px solid #202028',
-                              padding: '0.2rem 0.55rem',
-                              borderRadius: '3px'
-                            }}
-                          >
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {/* Matched Jobs Section */}
+          {jobs.length > 0 && (
+            <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                <div>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Matched Job Openings ({filteredJobs.length})
+                  </h3>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                    Ranked by ATS keyword match and skill overlap with your uploaded resume
+                  </p>
                 </div>
-              )}
 
-              {/* Search, Filter & Sort Controls */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '1rem',
-                  paddingBottom: '1rem',
-                  borderBottom: '1px solid #18181d'
-                }}
-              >
-                {/* Search in results */}
-                <div style={{ position: 'relative', width: '280px' }}>
-                  <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Filter by role, company..."
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#101014',
-                      border: '1px solid #1f1f28',
-                      color: '#ffffff',
-                      fontSize: '0.8rem',
-                      padding: '0.45rem 0.75rem 0.45rem 2rem',
-                      borderRadius: '4px'
-                    }}
-                  />
-                  {searchQuery && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--bg-card)', padding: '0.2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                     <button
                       type="button"
-                      onClick={() => setSearchQuery('')}
-                      style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}
+                      onClick={() => setTypeFilter('ALL')}
+                      style={{
+                        padding: '0.25rem 0.65rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: typeFilter === 'ALL' ? 'var(--primary)' : 'transparent',
+                        color: typeFilter === 'ALL' ? '#ffffff' : 'var(--text-muted)'
+                      }}
                     >
-                      <X size={12} />
+                      All Roles
                     </button>
-                  )}
-                </div>
-
-                {/* Filters */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                  {/* Min Fit Toggle */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>FIT:</span>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      {[
-                        { label: 'All', val: 0 },
-                        { label: '70%+', val: 70 },
-                        { label: '85%+', val: 85 }
-                      ].map((btn) => (
-                        <button
-                          key={btn.val}
-                          type="button"
-                          onClick={() => setMinFitScore(btn.val)}
-                          style={{
-                            background: minFitScore === btn.val ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                            color: minFitScore === btn.val ? '#ffffff' : '#71717a',
-                            border: minFitScore === btn.val ? '1px solid #2e2e38' : '1px solid transparent',
-                            padding: '0.25rem 0.55rem',
-                            borderRadius: '3px',
-                            fontSize: '0.72rem',
-                            fontFamily: 'var(--font-mono)',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {btn.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Type Filter */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>TYPE:</span>
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
+                    <button
+                      type="button"
+                      onClick={() => setTypeFilter('INTERNSHIP')}
                       style={{
-                        background: '#101014',
-                        border: '1px solid #1f1f28',
-                        color: '#d4d4d8',
-                        fontSize: '0.76rem',
-                        fontFamily: 'var(--font-mono)',
+                        padding: '0.25rem 0.65rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
                         cursor: 'pointer',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '3px'
+                        backgroundColor: typeFilter === 'INTERNSHIP' ? 'var(--accent-rose)' : 'transparent',
+                        color: typeFilter === 'INTERNSHIP' ? '#ffffff' : 'var(--text-muted)'
                       }}
                     >
-                      <option value="ALL">All types</option>
-                      <option value="FULLTIME">Full-time</option>
-                      <option value="CONTRACT">Contract</option>
-                      <option value="PARTTIME">Part-time</option>
-                    </select>
-                  </div>
-
-                  {/* Sort Filter */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>SORT:</span>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
+                      🎓 Internships Only
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTypeFilter('FULLTIME')}
                       style={{
-                        background: '#101014',
-                        border: '1px solid #1f1f28',
-                        color: '#d4d4d8',
-                        fontSize: '0.76rem',
-                        fontFamily: 'var(--font-mono)',
+                        padding: '0.25rem 0.65rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
                         cursor: 'pointer',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '3px'
+                        backgroundColor: typeFilter === 'FULLTIME' ? 'var(--primary)' : 'transparent',
+                        color: typeFilter === 'FULLTIME' ? '#ffffff' : 'var(--text-muted)'
                       }}
                     >
-                      <option value="match">ATS Fit Score</option>
-                      <option value="date">Posting Date</option>
-                    </select>
+                      💼 Full-Time
+                    </button>
+                  </div>
+
+                  <div style={{ position: 'relative', width: '220px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                      type="text"
+                      placeholder="Filter by title, skill..."
+                      value={jobSearchFilter}
+                      onChange={(e) => setJobSearchFilter(e.target.value)}
+                      style={{ width: '100%', height: '34px', paddingLeft: '2.25rem', fontSize: '0.8125rem' }}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Feed Status Count */}
-              <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                SHOWING {processedJobs.length} OF {jobs.length} EVALUATED OPENINGS
-              </div>
-
-              {/* Jobs List (Editorial Feed, Divided by 1px rules) */}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {processedJobs.map((job) => {
-                  const isExpanded = expandedJobId === job.job_id;
-                  const isBookmarked = bookmarkedMap.has(job.job_id);
+              {/* Jobs Grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filteredJobs.map((job) => {
+                  const isSaved = bookmarkedMap.has(job.id);
+                  const isExpanded = expandedJobId === job.id;
 
                   return (
                     <div
-                      key={job.job_id}
+                      key={job.id}
+                      className="card"
                       style={{
-                        padding: '2rem 0',
-                        borderBottom: '1px solid #18181d',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.85rem'
+                        padding: '1.5rem',
+                        transition: 'border-color 0.15s ease',
+                        border: isSaved ? '1px solid var(--primary)' : '1px solid var(--border)'
                       }}
                     >
-                      {/* Top Row: Title, Company, Score, Actions */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.35rem' }}>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
-                              {job.title}
-                            </h3>
-                            {renderFitBadge(job.match_score)}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '280px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                              {job.company}
+                            </span>
+                            {job.location && (
+                              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <MapPin size={13} />
+                                {job.location}
+                              </span>
+                            )}
+                            {job.salary && (
+                              <span className="badge badge-gray" style={{ fontSize: '0.75rem' }}>
+                                {job.salary}
+                              </span>
+                            )}
+                            {job.source && (
+                              <span style={{
+                                fontSize: '0.6875rem',
+                                fontWeight: 600,
+                                padding: '0.15rem 0.5rem',
+                                borderRadius: 'var(--radius-full)',
+                                backgroundColor: 'var(--primary-light)',
+                                color: 'var(--primary)',
+                                border: '1px solid var(--primary-border)',
+                                letterSpacing: '0.02em'
+                              }}>
+                                via {job.source}
+                              </span>
+                            )}
+                            {(job.employment_type === 'INTERNSHIP' || job.title?.toLowerCase().includes('intern')) && (
+                              <span style={{
+                                fontSize: '0.6875rem',
+                                fontWeight: 600,
+                                padding: '0.15rem 0.5rem',
+                                borderRadius: 'var(--radius-full)',
+                                backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                                color: '#f472b6',
+                                border: '1px solid rgba(236, 72, 153, 0.3)',
+                                letterSpacing: '0.02em'
+                              }}>
+                                🎓 Internship
+                              </span>
+                            )}
                           </div>
 
-                          <div style={{ fontSize: '0.86rem', color: '#a1a1aa', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 500, color: '#ffffff' }}>{job.company}</span>
-                            <span>·</span>
-                            <span>{job.location}</span>
-                            <span>·</span>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>{job.employment_type}</span>
-                            {job.salary_range && (
-                              <>
-                                <span>·</span>
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: '#86efac' }}>
-                                  {job.salary_range}
-                                </span>
-                              </>
-                            )}
+                          <h4 style={{ fontSize: '1.0625rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                            {job.title}
+                          </h4>
+
+                          {/* Skills Overview */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                            {job.matched_skills?.slice(0, 5).map((s, idx) => (
+                              <span key={idx} className="badge badge-success" style={{ fontSize: '0.6875rem' }}>
+                                ✓ {s}
+                              </span>
+                            ))}
+                            {job.missing_skills?.slice(0, 3).map((s, idx) => (
+                              <span key={idx} className="badge badge-warning" style={{ fontSize: '0.6875rem' }}>
+                                + {s}
+                              </span>
+                            ))}
                           </div>
                         </div>
 
-                        {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                        {/* Match Score & Action Buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{
+                            textAlign: 'center',
+                            padding: '0.5rem 0.75rem',
+                            backgroundColor: job.fit_score >= 80 ? 'var(--success-light)' : 'var(--primary-light)',
+                            borderRadius: 'var(--radius-md)',
+                            border: `1px solid ${job.fit_score >= 80 ? 'var(--success-border)' : 'var(--primary-border)'}`
+                          }}>
+                            <div style={{
+                              fontSize: '1.125rem',
+                              fontWeight: 700,
+                              color: job.fit_score >= 80 ? 'var(--success-text)' : 'var(--primary)'
+                            }}>
+                              {job.fit_score || 75}%
+                            </div>
+                            <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>ATS Fit</div>
+                          </div>
+
                           <button
                             type="button"
                             onClick={() => handleToggleBookmark(job)}
-                            style={{
-                              background: isBookmarked ? 'rgba(59, 130, 246, 0.10)' : 'transparent',
-                              border: isBookmarked ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #202028',
-                              color: isBookmarked ? '#60a5fa' : '#8e8e99',
-                              borderRadius: '4px',
-                              padding: '0.42rem 0.8rem',
-                              fontSize: '0.76rem',
-                              fontFamily: 'var(--font-mono)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isBookmarked) {
-                                e.currentTarget.style.color = '#ffffff';
-                                e.currentTarget.style.borderColor = '#363642';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isBookmarked) {
-                                e.currentTarget.style.color = '#8e8e99';
-                                e.currentTarget.style.borderColor = '#202028';
-                              }
-                            }}
+                            className={isSaved ? 'btn-primary' : 'btn-secondary'}
+                            style={{ padding: '0.5rem 0.75rem', fontSize: '0.8125rem' }}
+                            title={isSaved ? 'Remove from saved' : 'Save job to pipeline'}
                           >
-                            {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
-                            <span>{isBookmarked ? 'In Pipeline' : 'Track Role'}</span>
+                            {isSaved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
                           </button>
 
-                          <a
-                            href={job.apply_link}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              backgroundColor: '#ffffff',
-                              color: '#0B0B0D',
-                              borderRadius: '4px',
-                              padding: '0.42rem 0.9rem',
-                              fontSize: '0.76rem',
-                              fontWeight: 600,
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              transition: 'background-color 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#e4e4e7')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                          {job.url && (
+                            <a
+                              href={job.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-primary"
+                              style={{ padding: '0.5rem 0.875rem', fontSize: '0.8125rem', textDecoration: 'none' }}
+                            >
+                              <span>Apply</span>
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
+                            className="btn-secondary"
+                            style={{ padding: '0.5rem' }}
+                            title="Toggle detailed ATS view"
                           >
-                            <span>Apply</span>
-                            <ArrowUpRight size={12} />
-                          </a>
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
                         </div>
                       </div>
 
-                      {/* Why You Match Note */}
-                      <p style={{ fontSize: '0.88rem', color: '#8e8e99', lineHeight: 1.55, margin: '0.2rem 0' }}>
-                        {job.match_reason}
-                      </p>
+                      {/* Expandable ATS Alignment Details */}
+                      {isExpanded && (
+                        <div style={{
+                          borderTop: '1px solid var(--border-light)',
+                          marginTop: '1.25rem',
+                          paddingTop: '1.25rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1rem' }}>
+                            <div>
+                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                                Matched Keywords in Resume:
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                {job.matched_skills?.map((s, idx) => (
+                                  <span key={idx} className="badge badge-success">{s}</span>
+                                ))}
+                              </div>
+                            </div>
 
-                      {/* Skill Overlap & Missing Skills */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
-                        {job.skill_overlap?.map((sk, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              fontSize: '0.7rem',
-                              fontFamily: 'var(--font-mono)',
-                              color: '#34d399',
-                              backgroundColor: 'rgba(52, 211, 153, 0.08)',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '2px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
-                            }}
-                          >
-                            <Check size={10} />
-                            <span>{sk}</span>
-                          </span>
-                        ))}
+                            <div>
+                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                                Missing High-Value Keywords:
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                {job.missing_skills?.map((s, idx) => (
+                                  <span key={idx} className="badge badge-warning">{s}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
 
-                        {job.missing_skills?.map((sk, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              fontSize: '0.7rem',
-                              fontFamily: 'var(--font-mono)',
-                              color: '#71717a',
-                              backgroundColor: '#121217',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '2px'
-                            }}
-                          >
-                            gap: {sk}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Expand Key Scope Details */}
-                      {job.jd_bullets && job.jd_bullets.length > 0 && (
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedJobId(isExpanded ? null : job.job_id)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#71717a',
-                              fontSize: '0.74rem',
-                              fontFamily: 'var(--font-mono)',
-                              cursor: 'pointer',
-                              padding: '0.35rem 0 0 0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.35rem'
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#d4d4d8')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
-                          >
-                            <span>{isExpanded ? 'Hide scope details' : 'View scope details'}</span>
-                            {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                          </button>
-
-                          {isExpanded && (
-                            <ul
-                              style={{
-                                margin: '0.75rem 0 0 1.25rem',
-                                padding: 0,
-                                fontSize: '0.82rem',
-                                color: '#a1a1aa',
-                                lineHeight: 1.6
-                              }}
-                            >
-                              {job.jd_bullets.map((b, i) => (
-                                <li key={i}>{b}</li>
-                              ))}
-                            </ul>
+                          {job.ats_advice && (
+                            <div style={{
+                              padding: '0.875rem 1rem',
+                              backgroundColor: 'rgba(79, 70, 229, 0.04)',
+                              border: '1px solid rgba(79, 70, 229, 0.2)',
+                              borderRadius: 'var(--radius-md)',
+                              color: 'var(--text-secondary)'
+                            }}>
+                              <span style={{ fontWeight: 600, color: 'var(--primary)' }}>ATS Recommendation: </span>
+                              {job.ats_advice}
+                            </div>
                           )}
                         </div>
                       )}
                     </div>
                   );
                 })}
-
-                {processedJobs.length === 0 && (
-                  <div style={{ padding: '4rem 0', textAlign: 'center', color: '#71717a', fontSize: '0.88rem' }}>
-                    No roles match your active filter criteria. Adjust your search or fit threshold.
-                  </div>
-                )}
               </div>
             </div>
           )}
-        </>
-      )}
 
-      {/* TAB 2: APPLICATION TRACKER */}
-      {activeTab === 'tracker' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Header Controls: Stage Pills & View Mode */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingBottom: '1rem',
-              borderBottom: '1px solid #18181d',
-              flexWrap: 'wrap',
-              gap: '1rem'
-            }}
-          >
-            {/* Status Filter Pills */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {['ALL', 'Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'].map((status) => {
-                const count = status === 'ALL'
-                  ? bookmarks.length
-                  : bookmarks.filter((b) => b.status === status).length;
-                const isSelected = trackerFilter === status;
-                const displayLabel = status === 'Rejected' ? 'Archived' : status === 'ALL' ? 'All Roles' : status;
-
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setTrackerFilter(status)}
-                    style={{
-                      background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                      color: isSelected ? '#ffffff' : '#71717a',
-                      border: isSelected ? '1px solid #2e2e38' : '1px solid transparent',
-                      padding: '0.35rem 0.75rem',
-                      borderRadius: '3px',
-                      fontSize: '0.76rem',
-                      fontFamily: 'var(--font-mono)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {displayLabel} ({count})
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* View Mode Toggle: Board vs List */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div
-                style={{
+          {/* Search on More Platforms Section */}
+          {platformLinks.length > 0 && jobs.length > 0 && (
+            <div className="card" style={{ padding: '1.75rem', boxShadow: 'var(--shadow-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.35rem' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(236, 72, 153, 0.12))',
+                  border: '1px solid rgba(249, 115, 22, 0.25)',
                   display: 'flex',
-                  backgroundColor: '#101014',
-                  border: '1px solid #1f1f28',
-                  borderRadius: '4px',
-                  padding: '2px'
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setTrackerViewMode('board')}
-                  style={{
-                    background: trackerViewMode === 'board' ? '#1c1c24' : 'transparent',
-                    border: 'none',
-                    color: trackerViewMode === 'board' ? '#ffffff' : '#71717a',
-                    padding: '0.3rem 0.6rem',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    fontSize: '0.74rem',
-                    fontFamily: 'var(--font-mono)'
-                  }}
-                  title="Pipeline Board View"
-                >
-                  <Columns size={12} />
-                  <span>Board</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTrackerViewMode('list')}
-                  style={{
-                    background: trackerViewMode === 'list' ? '#1c1c24' : 'transparent',
-                    border: 'none',
-                    color: trackerViewMode === 'list' ? '#ffffff' : '#71717a',
-                    padding: '0.3rem 0.6rem',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    fontSize: '0.74rem',
-                    fontFamily: 'var(--font-mono)'
-                  }}
-                  title="Detailed List View"
-                >
-                  <List size={12} />
-                  <span>List</span>
-                </button>
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)'
+                }}>
+                  <Globe size={17} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.0625rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                    Explore on More Platforms
+                  </h3>
+                </div>
               </div>
-            </div>
-          </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1.25rem', marginLeft: '2.625rem' }}>
+                Pre-filtered search links based on your resume skills — click to open directly on each platform
+              </p>
 
-          {/* APPLICATION TRACKER BOARD (KANBAN) VIEW */}
-          {filteredBookmarks.length > 0 && trackerViewMode === 'board' && (
-            <div
-              style={{
+              <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '1.25rem',
-                alignItems: 'start'
-              }}
-            >
-              {['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'].map((stage) => {
-                const stageJobs = bookmarks.filter((b) => b.status === stage);
-                const cfg = STAGE_CONFIG[stage];
-
-                return (
-                  <div
-                    key={stage}
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '0.75rem'
+              }}>
+                {platformLinks.map((platform, idx) => (
+                  <a
+                    key={idx}
+                    href={platform.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
-                      backgroundColor: '#101014',
-                      border: '1px solid #18181f',
-                      borderRadius: '6px',
-                      padding: '1rem',
-                      minHeight: '400px',
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.85rem'
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.875rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-card)',
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = platform.color;
+                      e.currentTarget.style.boxShadow = `0 0 0 1px ${platform.color}22, 0 4px 12px ${platform.color}15`;
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    {/* Stage Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid #1a1a22' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            backgroundColor: cfg.color
-                          }}
-                        />
-                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ffffff' }}>
-                          {cfg.label}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
-                        {stageJobs.length}
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: `${platform.color}12`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <span style={{
+                        fontSize: '0.875rem',
+                        fontWeight: 700,
+                        color: platform.color
+                      }}>
+                        {platform.name.charAt(0)}
                       </span>
                     </div>
-
-                    {/* Stage Job Cards */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {stageJobs.map((bm) => (
-                        <div
-                          key={bm._id}
-                          style={{
-                            backgroundColor: '#141419',
-                            border: '1px solid #202028',
-                            borderRadius: '4px',
-                            padding: '0.85rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.5rem',
-                            transition: 'border-color 0.15s ease'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.25 }}>
-                              {bm.title}
-                            </div>
-                            {renderFitBadge(bm.matchScore)}
-                          </div>
-
-                          <div style={{ fontSize: '0.78rem', color: '#8e8e99' }}>
-                            {bm.company} · {bm.location}
-                          </div>
-
-                          {/* Quick Stage Selector */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid #1a1a22' }}>
-                            <select
-                              value={bm.status}
-                              onChange={(e) => handleStatusChange(bm._id, e.target.value)}
-                              style={{
-                                background: 'transparent',
-                                color: cfg.color,
-                                border: 'none',
-                                fontSize: '0.72rem',
-                                fontFamily: 'var(--font-mono)',
-                                cursor: 'pointer',
-                                padding: 0
-                              }}
-                            >
-                              <option value="Saved" style={{ background: '#0B0B0D', color: '#ffffff' }}>Move to Saved</option>
-                              <option value="Applied" style={{ background: '#0B0B0D', color: '#ffffff' }}>Move to Applied</option>
-                              <option value="Interviewing" style={{ background: '#0B0B0D', color: '#ffffff' }}>Move to Interviewing</option>
-                              <option value="Offer" style={{ background: '#0B0B0D', color: '#ffffff' }}>Move to Offer</option>
-                              <option value="Rejected" style={{ background: '#0B0B0D', color: '#ffffff' }}>Move to Archived</option>
-                            </select>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              {bm.applyLink && (
-                                <a
-                                  href={bm.applyLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{ color: '#71717a', display: 'flex' }}
-                                  title="Open job link"
-                                >
-                                  <ArrowUpRight size={12} />
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteBookmark(bm._id)}
-                                style={{ background: 'none', border: 'none', color: '#52525b', cursor: 'pointer', padding: 0 }}
-                                title="Remove"
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      {stageJobs.length === 0 && (
-                        <div style={{ padding: '2rem 0', textAlign: 'center', color: '#52525b', fontSize: '0.74rem', fontStyle: 'italic' }}>
-                          Empty stage
-                        </div>
-                      )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.3
+                      }}>
+                        {platform.name}
+                      </div>
+                      <div style={{
+                        fontSize: '0.6875rem',
+                        color: 'var(--text-muted)',
+                        lineHeight: 1.3
+                      }}>
+                        Search jobs →
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                    <ExternalLink size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* APPLICATION TRACKER LIST VIEW */}
-          {filteredBookmarks.length > 0 && trackerViewMode === 'list' && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {filteredBookmarks.map((bookmark) => {
-                const isEditingNotes = editingNotesId === bookmark._id;
-                const cfg = STAGE_CONFIG[bookmark.status] || STAGE_CONFIG.Saved;
-
-                return (
-                  <div
-                    key={bookmark._id}
-                    style={{
-                      padding: '1.75rem 0',
-                      borderBottom: '1px solid #18181d',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.85rem'
-                    }}
-                  >
-                    {/* Top Row */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.35rem' }}>
-                          <h3 style={{ fontSize: '1.18rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
-                            {bookmark.title}
-                          </h3>
-                          {renderFitBadge(bookmark.matchScore)}
-                        </div>
-
-                        <div style={{ fontSize: '0.86rem', color: '#a1a1aa', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                          <span style={{ fontWeight: 500, color: '#ffffff' }}>{bookmark.company}</span>
-                          <span>·</span>
-                          <span>{bookmark.location}</span>
-                          <span>·</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>{bookmark.employmentType}</span>
-                        </div>
-                      </div>
-
-                      {/* Stage Selector & Actions */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-                        <select
-                          value={bookmark.status}
-                          onChange={(e) => handleStatusChange(bookmark._id, e.target.value)}
-                          style={{
-                            background: cfg.bg,
-                            color: cfg.color,
-                            border: `1px solid ${cfg.border}`,
-                            borderRadius: '3px',
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.76rem',
-                            fontFamily: 'var(--font-mono)',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <option value="Saved" style={{ background: '#0B0B0D', color: '#ffffff' }}>Saved</option>
-                          <option value="Applied" style={{ background: '#0B0B0D', color: '#ffffff' }}>Applied</option>
-                          <option value="Interviewing" style={{ background: '#0B0B0D', color: '#ffffff' }}>Interviewing</option>
-                          <option value="Offer" style={{ background: '#0B0B0D', color: '#ffffff' }}>Offer</option>
-                          <option value="Rejected" style={{ background: '#0B0B0D', color: '#ffffff' }}>Archived</option>
-                        </select>
-
-                        {bookmark.applyLink && (
-                          <a
-                            href={bookmark.applyLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              background: 'transparent',
-                              border: '1px solid #24242e',
-                              color: '#d4d4d8',
-                              padding: '0.35rem 0.65rem',
-                              borderRadius: '3px',
-                              fontSize: '0.76rem',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem'
-                            }}
-                          >
-                            <span>Open</span>
-                            <ArrowUpRight size={11} />
-                          </a>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBookmark(bookmark._id)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#52525b',
-                            cursor: 'pointer',
-                            padding: '4px'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = '#fb7185')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#52525b')}
-                          title="Remove from pipeline"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Match evaluation note */}
-                    {bookmark.matchReason && (
-                      <p style={{ fontSize: '0.86rem', color: '#8e8e99', lineHeight: 1.5, margin: 0 }}>
-                        {bookmark.matchReason}
-                      </p>
-                    )}
-
-                    {/* Notes Row */}
-                    <div style={{ marginTop: '0.35rem' }}>
-                      {isEditingNotes ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '640px' }}>
-                          <textarea
-                            rows={2}
-                            value={noteDraft}
-                            onChange={(e) => setNoteDraft(e.target.value)}
-                            placeholder="Add recruiter contacts, salary negotiations, or interview notes..."
-                            style={{
-                              backgroundColor: '#101014',
-                              border: '1px solid #24242e',
-                              color: '#ffffff',
-                              fontSize: '0.82rem',
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '3px'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveNotes(bookmark._id)}
-                              style={{
-                                backgroundColor: '#ffffff',
-                                color: '#0B0B0D',
-                                border: 'none',
-                                borderRadius: '3px',
-                                padding: '0.28rem 0.75rem',
-                                fontSize: '0.74rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Save note
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingNotesId(null)}
-                              style={{
-                                background: 'transparent',
-                                border: '1px solid #24242e',
-                                color: '#71717a',
-                                borderRadius: '3px',
-                                padding: '0.28rem 0.65rem',
-                                fontSize: '0.74rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                          <span style={{ fontSize: '0.8rem', color: bookmark.notes ? '#a1a1aa' : '#52525b', fontStyle: bookmark.notes ? 'normal' : 'italic' }}>
-                            {bookmark.notes || 'No tracking notes added.'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingNotesId(bookmark._id);
-                              setNoteDraft(bookmark.notes || '');
-                            }}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#71717a',
-                              fontSize: '0.72rem',
-                              fontFamily: 'var(--font-mono)',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                              padding: 0
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#3b82f6')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = '#71717a')}
-                          >
-                            <Edit3 size={11} />
-                            <span>{bookmark.notes ? 'Edit' : 'Add note'}</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Empty State when no search run yet */}
+          {jobs.length === 0 && !loading && (
+            <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: 'var(--radius-lg)',
+                backgroundColor: 'var(--bg-subtle)',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem'
+              }}>
+                <Briefcase size={24} />
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                No active resume evaluation yet
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', maxWidth: '460px', margin: '0 auto' }}>
+                Upload your resume in PDF format above and click "Search & Match Jobs" to parse your competencies and view ATS compatibility with open tech positions.
+              </p>
             </div>
           )}
+        </div>
+      )}
 
-          {filteredBookmarks.length === 0 && (
-            <EmptyState
-              icon={Briefcase}
-              badge="APPLICATION PIPELINE EMPTY"
-              title="No tracked roles in this view."
-              description="Save engineering opportunities from Resume & Opportunities to monitor your active application stages."
-              actionLabel="Explore Openings"
-              onAction={() => setActiveTab('search')}
-            />
+      {/* TAB 2: Saved Pipeline */}
+      {activeTab === 'pipeline' && (
+        <div>
+          {/* Pipeline Stage Filter Pills */}
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+            {['ALL', ...STAGE_OPTIONS].map((stage) => {
+              const count = stage === 'ALL'
+                ? bookmarks.length
+                : bookmarks.filter((b) => b.status?.toUpperCase() === stage.toUpperCase()).length;
+              const isActive = pipelineFilter === stage;
+
+              return (
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => setPipelineFilter(stage)}
+                  className={isActive ? 'btn-primary' : 'btn-secondary'}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    fontSize: '0.75rem',
+                    borderRadius: 'var(--radius-full)'
+                  }}
+                >
+                  {stage} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredBookmarks.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {filteredBookmarks.map((bookmark) => (
+                <div key={bookmark._id} className="card" style={{ padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                        {bookmark.company} • {bookmark.location || 'Remote'}
+                      </div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {bookmark.title}
+                      </h4>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <select
+                        value={bookmark.status || 'Saved'}
+                        onChange={(e) => handleUpdateStage(bookmark._id, e.target.value)}
+                        style={{
+                          height: '34px',
+                          padding: '0 0.75rem',
+                          fontSize: '0.8125rem',
+                          borderRadius: 'var(--radius-md)'
+                        }}
+                      >
+                        {STAGE_OPTIONS.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+
+                      {(bookmark.applyLink || bookmark.url) && (
+                        <a
+                          href={bookmark.applyLink || bookmark.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary"
+                          style={{ padding: '0.45rem 0.75rem', fontSize: '0.8125rem' }}
+                        >
+                          <ExternalLink size={13} />
+                        </a>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await api.delete(`/jobs/bookmark/${bookmark._id}`);
+                            setBookmarks((prev) => prev.filter((b) => b._id !== bookmark._id));
+                            toast.success('Removed bookmark');
+                          } catch {
+                            toast.error('Failed to remove bookmark.');
+                          }
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--error-text)',
+                          cursor: 'pointer',
+                          padding: '0.45rem'
+                        }}
+                        title="Delete from pipeline"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+              <Bookmark size={24} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem' }} />
+              <div style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                No jobs saved in this pipeline category
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Bookmark matched positions from your resume search to track application stages.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: History */}
+      {activeTab === 'history' && (
+        <div>
+          {historySessions.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {historySessions.map((hist) => (
+                <div key={hist._id} className="card" style={{ padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {new Date(hist.searchedAt).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
+                        {hist.parsedProfile?.current_role || hist.parsedProfile?.name || 'Resume Search'}
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                        {hist.results?.length || 0} jobs evaluated
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setParsedProfile(normalizeProfile(hist.parsedProfile));
+                        setJobs((hist.results || []).map((j, idx) => normalizeJob(j, idx)));
+                        setActiveTab('search');
+                        toast.success('Loaded past search evaluation');
+                      }}
+                      className="btn-secondary"
+                      style={{ padding: '0.45rem 0.875rem', fontSize: '0.8125rem' }}
+                    >
+                      View Results
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+              <Clock size={24} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem' }} />
+              <div style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                No evaluation history recorded yet
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Past resume ATS evaluations will appear here for quick review.
+              </p>
+            </div>
           )}
         </div>
       )}
     </div>
   );
-};
-
-export default JobSearchPage;
+}

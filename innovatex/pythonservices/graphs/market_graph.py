@@ -14,7 +14,7 @@ from agents.market.gap_analyzer import analyze_skill_gap
 from utils.skill_dictionary import normalize_skill
 from utils.db import get_async_db
 
-class MarketState(TypedDict):
+class MarketState(TypedDict, total=False):
     skill: str
     user_skills: List[str]
     timeseries: Dict[str, Any]

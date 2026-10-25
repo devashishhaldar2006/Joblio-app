@@ -133,10 +133,10 @@ const AIActionModal = ({
           width: '100%',
           maxWidth: '780px',
           maxHeight: '90vh',
-          background: '#0b0b0f',
-          border: '1px solid #262638',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: '6px',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.92)',
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden'
@@ -147,8 +147,8 @@ const AIActionModal = ({
         <div
           style={{
             padding: '1rem 1.35rem',
-            borderBottom: '1px solid #1a1a26',
-            background: '#09090c',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
@@ -175,14 +175,14 @@ const AIActionModal = ({
                 <Sparkles size={11} />
                 <span>AI-ASSISTED FIX</span>
               </span>
-              <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: '#71717a' }}>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
                 @{report.username}
               </span>
             </div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f4f4f6', margin: 0 }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               {meta.title}
             </h3>
-            <p style={{ fontSize: '0.78rem', color: '#a1a1aa', margin: '2px 0 0 0' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
               {meta.subtitle}
             </p>
           </div>
@@ -192,11 +192,11 @@ const AIActionModal = ({
             onClick={onClose}
             aria-label="Close modal"
             style={{
-              background: '#14141c',
-              border: '1px solid #232332',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
               padding: '0.35rem',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -208,7 +208,7 @@ const AIActionModal = ({
         <div
           style={{
             padding: '0.75rem 1.35rem',
-            borderBottom: '1px solid #181822',
+            borderBottom: '1px solid var(--border)',
             background: '#0e0e14',
             display: 'flex',
             flexWrap: 'wrap',
@@ -229,9 +229,9 @@ const AIActionModal = ({
               fontSize: '0.78rem',
               fontFamily: 'var(--font-mono)',
               background: '#12121a',
-              border: '1px solid #242434',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
-              color: '#f4f4f6'
+              color: 'var(--text-primary)'
             }}
           >
             <optgroup label="Profile Fixes">
@@ -261,7 +261,7 @@ const AIActionModal = ({
                 fontSize: '0.78rem',
                 fontFamily: 'var(--font-mono)',
                 background: '#12121a',
-                border: '1px solid #242434',
+                border: '1px solid var(--border)',
                 borderRadius: '4px',
                 color: '#38bdf8'
               }}
@@ -289,8 +289,8 @@ const AIActionModal = ({
               minWidth: '200px',
               padding: '0.38rem 0.65rem',
               fontSize: '0.78rem',
-              background: '#09090c',
-              border: '1px solid #20202c'
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border)'
             }}
           />
         </div>
@@ -336,7 +336,7 @@ const AIActionModal = ({
                 lineHeight: 1.55,
                 background: '#08080b',
                 border: '1px solid #2c2c3e',
-                color: '#f4f4f6',
+                color: 'var(--text-primary)',
                 padding: '0.9rem',
                 borderRadius: '4px',
                 resize: 'vertical'
@@ -352,7 +352,7 @@ const AIActionModal = ({
                 lineHeight: 1.55,
                 background: '#08080b',
                 border: '1px solid #1d1d28',
-                color: '#e4e4e7',
+                color: 'var(--text-primary)',
                 padding: '1rem',
                 borderRadius: '4px',
                 whiteSpace: 'pre-wrap',
@@ -368,8 +368,8 @@ const AIActionModal = ({
         <div
           style={{
             padding: '0.85rem 1.35rem',
-            borderTop: '1px solid #181822',
-            background: '#09090c',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -377,7 +377,7 @@ const AIActionModal = ({
             gap: '0.75rem'
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
             Preview & copy only — never modifies GitHub without your action.
           </span>
 

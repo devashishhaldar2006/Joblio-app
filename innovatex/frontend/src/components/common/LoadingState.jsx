@@ -19,9 +19,9 @@ const LoadingState = ({
         justifyContent: 'center',
         textAlign: 'center',
         padding: '3.5rem 2rem',
-        background: '#0d0d11',
-        border: '1px solid #1a1a24',
-        borderRadius: '6px',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
         margin: '1.5rem 0',
         minHeight: '300px'
       }}
@@ -31,12 +31,12 @@ const LoadingState = ({
           width: '44px',
           height: '44px',
           borderRadius: '50%',
-          background: '#12121a',
-          border: '1px solid #232332',
+          background: 'var(--bg-subtle)',
+          border: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#38bdf8',
+          color: 'var(--primary)',
           marginBottom: '1.25rem',
           position: 'relative'
         }}
@@ -50,7 +50,7 @@ const LoadingState = ({
           fontWeight: 700,
           fontFamily: 'var(--font-mono)',
           letterSpacing: '0.08em',
-          color: '#38bdf8',
+          color: 'var(--primary)',
           textTransform: 'uppercase',
           marginBottom: '0.4rem'
         }}
@@ -62,7 +62,7 @@ const LoadingState = ({
         style={{
           fontSize: '1.15rem',
           fontWeight: 600,
-          color: 'var(--text-main)',
+          color: 'var(--text-primary)',
           marginBottom: '1.25rem'
         }}
       >
@@ -75,9 +75,9 @@ const LoadingState = ({
           display: 'flex',
           alignItems: 'center',
           gap: '0.4rem',
-          background: '#121218',
-          border: '1px solid #1f1f2c',
-          borderRadius: '4px',
+          background: 'var(--bg-subtle)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.4rem 0.75rem',
           maxWidth: '560px',
           width: '100%',
@@ -88,7 +88,7 @@ const LoadingState = ({
         {steps.map((st, i) => {
           const isDone = i < currentStepIndex;
           const isCurrent = i === currentStepIndex;
-          const color = isCurrent ? '#38bdf8' : isDone ? '#10b981' : '#52525b';
+          const color = isCurrent ? 'var(--primary)' : isDone ? 'var(--success-text)' : 'var(--text-muted)';
 
           return (
             <React.Fragment key={st}>
@@ -98,7 +98,7 @@ const LoadingState = ({
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: color
+                    backgroundColor: isCurrent ? 'var(--primary)' : isDone ? '#10b981' : 'var(--text-muted)'
                   }}
                 />
                 <span
@@ -113,7 +113,7 @@ const LoadingState = ({
                 </span>
               </div>
               {i < steps.length - 1 && (
-                <span style={{ color: '#272732', fontSize: '0.65rem' }}>→</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>→</span>
               )}
             </React.Fragment>
           );

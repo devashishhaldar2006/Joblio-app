@@ -23,7 +23,7 @@ export const StatusIndicator = ({
         fontSize: '0.6875rem',
         fontFamily: 'var(--font-mono)',
         letterSpacing: '0.06em',
-        color: '#a1a1aa',
+        color: 'var(--text-muted)',
         ...style
       }}
     >
@@ -50,8 +50,8 @@ export const Insight = ({
   title = 'QUANTITATIVE SYNTHESIS',
   children,
   accent = '#10b981',
-  bg = 'rgba(16, 185, 129, 0.05)',
-  border = 'rgba(16, 185, 129, 0.25)'
+  bg = 'var(--bg-subtle)',
+  border = 'var(--border)'
 }) => {
   return (
     <div
@@ -59,11 +59,11 @@ export const Insight = ({
         background: bg,
         border: `1px solid ${border}`,
         borderLeft: `3px solid ${accent}`,
-        borderRadius: '4px',
+        borderRadius: 'var(--radius-md)',
         padding: '0.85rem 1.1rem',
         fontSize: '0.825rem',
         lineHeight: '1.5',
-        color: '#e4e4e7',
+        color: 'var(--text-primary)',
         margin: '0.75rem 0'
       }}
     >

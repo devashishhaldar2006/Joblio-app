@@ -292,7 +292,7 @@ async function fetchFromAtCoder() {
 async function updateContestCache() {
   console.log('[ContestFetcher] Starting multi-source contest fetch...');
 
-  const [clistList, cfList, lcList, ccList, acList] = await Promise.all([
+  const results = await Promise.allSettled([
     fetchFromCLIST(),
     fetchFromCodeforces(),
     fetchFromLeetCode(),
@@ -300,7 +300,14 @@ async function updateContestCache() {
     fetchFromAtCoder()
   ]);
 
-  const combined = [...clistList, ...cfList, ...lcList, ...ccList, ...acList];
+  const combined = [];
+  results.forEach((r, idx) => {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+      combined.push(...r.value);
+    } else if (r.status === 'rejected') {
+      console.warn(`[ContestFetcher] Source #${idx} failed:`, r.reason?.message || r.reason);
+    }
+  });
 
   // Deduplicate by platform_logo_key + start_time
   const seen = new Set();

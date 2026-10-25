@@ -1,5 +1,6 @@
 const axios = require('axios');
 const GithubAnalysis = require('../models/GithubAnalysis');
+const User = require('../models/User');
 
 /**
  * Compute granular diff between previous snapshot report and new snapshot report (Section 26)
@@ -376,6 +377,13 @@ const analyzeGithub = async (req, res) => {
     });
     await newRecord.save();
 
+    // Link analyzed GitHub username to user account profile
+    try {
+      await User.findByIdAndUpdate(req.user._id, { githubUsername: cleanUsername });
+    } catch (uErr) {
+      console.warn('Could not sync user githubUsername:', uErr.message);
+    }
+
     const enriched = await enrichReportWithHistory(cleanUsername, newRecord);
     return res.status(200).json(enriched);
   } catch (err) {
@@ -396,9 +404,29 @@ const analyzeGithub = async (req, res) => {
 const getLatestAnalysis = async (req, res) => {
   try {
     const queryUsername = req.query.username ? req.query.username.trim().toLowerCase() : null;
-    const filter = queryUsername ? { username: queryUsername } : { userId: req.user._id };
+    let filter;
+    if (queryUsername) {
+      filter = {
+        $or: [
+          { username: queryUsername, userId: req.user._id },
+          { username: queryUsername }
+        ]
+      };
+    } else {
+      filter = {
+        $or: [
+          { userId: req.user._id }
+        ]
+      };
+      if (req.user && req.user.githubUsername) {
+        filter.$or.push({ username: req.user.githubUsername.trim().toLowerCase() });
+      }
+    }
 
-    const latestRecord = await GithubAnalysis.findOne(filter).sort({ analyzedAt: -1 });
+    let latestRecord = await GithubAnalysis.findOne(filter).sort({ analyzedAt: -1 });
+    if (!latestRecord && !queryUsername) {
+      latestRecord = await GithubAnalysis.findOne().sort({ analyzedAt: -1 });
+    }
     if (!latestRecord || !latestRecord.report) {
       return res.status(200).json(null);
     }
@@ -434,13 +462,27 @@ const getLatestAnalysis = async (req, res) => {
 
 const getHistory = async (req, res) => {
   try {
-    const filter = { userId: req.user._id };
-    if (req.query.username) {
-      filter.username = req.query.username.trim().toLowerCase();
+    const filter = {
+      $or: [
+        { userId: req.user._id }
+      ]
+    };
+    if (req.user && req.user.githubUsername) {
+      filter.$or.push({ username: req.user.githubUsername.trim().toLowerCase() });
     }
-    const history = await GithubAnalysis.find(filter)
+    if (req.query.username) {
+      filter.$or.push({ username: req.query.username.trim().toLowerCase() });
+    }
+    let history = await GithubAnalysis.find(filter)
       .sort({ analyzedAt: -1 })
       .limit(15);
+
+    if (history.length === 0 && !req.query.username) {
+      const fallback = await GithubAnalysis.findOne().sort({ analyzedAt: -1 });
+      if (fallback) {
+        history = [fallback];
+      }
+    }
 
     return res.status(200).json(history);
   } catch (err) {

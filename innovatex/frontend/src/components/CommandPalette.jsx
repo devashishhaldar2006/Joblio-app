@@ -25,6 +25,7 @@ import { copyToClipboard } from '../utils/exportUtils';
 
 const BASE_COMMANDS = [
   { id: 'nav-overview', group: 'WORKSPACE', label: 'Workspace Overview', sub: 'Cross-pipeline developer telemetry', icon: LayoutDashboard, route: '/dashboard' },
+  { id: 'nav-reports', group: 'WORKSPACE', label: 'Intelligence Reports Hub', sub: 'All user-generated audits, syntheses, job matches & contribution guides', icon: FileText, route: '/reports' },
   { id: 'nav-gh-overview', group: 'GITHUB INTELLIGENCE', label: 'GitHub Intelligence — Overview', sub: 'Profile health, 8-dimension breakdown & projections', icon: Github, route: '/github?tab=overview' },
   { id: 'nav-gh-profile', group: 'GITHUB INTELLIGENCE', label: 'GitHub Intelligence — Profile Completeness', sub: 'Identity, bio, links, and Profile README analysis', icon: User, route: '/github?tab=profile' },
   { id: 'nav-gh-repos', group: 'GITHUB INTELLIGENCE', label: 'GitHub Intelligence — Repositories', sub: 'Sortable repository health table, deep dive & comparison', icon: Code, route: '/github?tab=repositories' },

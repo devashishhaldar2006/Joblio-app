@@ -45,27 +45,112 @@ const register = async (req, res) => {
   }
 };
 
+// const login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     if (!email || !password) {
+//       return res.status(400).json({ error: 'Email and password are required.' });
+//     }
+
+//     const cleanEmail = email.trim().toLowerCase();
+//     let user = await User.findOne({ email: cleanEmail });
+//     if (!user && cleanEmail.includes('@') && !cleanEmail.split('@')[1].includes('.')) {
+//       user = await User.findOne({ email: `${cleanEmail}.com` });
+//     }
+
+//     if (!user) {
+//       return res.status(400).json({ error: 'Invalid credentials.' });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(400).json({ error: 'Invalid password.' });
+//     }
+
+//     const token = jwt.sign(
+//       { _id: user._id, name: user.name, email: user.email },
+//       process.env.JWT_SECRET || 'innovatex_super_secret_jwt_key_987654321',
+//       { expiresIn: '7d' }
+//     );
+
+//     return res.status(200).json({
+//       token,
+//       user: {
+//         _id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         githubUsername: user.githubUsername,
+//         bio: user.bio,
+//         targetRole: user.targetRole,
+//         skills: user.skills,
+//         location: user.location,
+//         preferences: user.preferences
+//       }
+//     });
+//   } catch (err) {
+//     console.error('Login error:', err);
+//     return res.status(500).json({ error: 'Login failed due to server error.' });
+//   }
+// };
+
+
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required.' });
+    const { email, password } = req.body ?? {};
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        error: "Email and password are required.",
+      });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = email.trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: cleanEmail,
+    });
+
     if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({
+        error: "Invalid credentials.",
+      });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials.' });
+      return res.status(401).json({
+        error: "Invalid credentials.",
+      });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+
+    // Also validate JWT_SECRET at application startup.
+    if (!jwtSecret) {
+      console.error("JWT_SECRET is not configured.");
+
+      return res.status(500).json({
+        error: "Internal server error.",
+      });
     }
 
     const token = jwt.sign(
-      { _id: user._id, name: user.name, email: user.email },
-      process.env.JWT_SECRET || 'innovatex_super_secret_jwt_key_987654321',
-      { expiresIn: '7d' }
+      {
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+      },
+      jwtSecret,
+      { expiresIn: "7d" }
     );
 
     return res.status(200).json({
@@ -79,14 +164,18 @@ const login = async (req, res) => {
         targetRole: user.targetRole,
         skills: user.skills,
         location: user.location,
-        preferences: user.preferences
-      }
+        preferences: user.preferences,
+      },
     });
   } catch (err) {
-    console.error('Login error:', err);
-    return res.status(500).json({ error: 'Login failed due to server error.' });
+    console.error("Login error:", err);
+
+    return res.status(500).json({
+      error: "Login failed due to server error.",
+    });
   }
 };
+
 
 const getProfile = async (req, res) => {
   try {

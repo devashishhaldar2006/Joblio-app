@@ -13,13 +13,19 @@ const explainPaper = async (req, res) => {
 
     const finalOutput = pyRes.data;
 
-    const record = new ResearchHistory({
-      userId: req.user._id,
-      input,
-      output: finalOutput,
-      timestamp: new Date()
-    });
-    await record.save();
+    if (req.user && req.user._id) {
+      try {
+        const record = new ResearchHistory({
+          userId: req.user._id,
+          input,
+          output: finalOutput,
+          timestamp: new Date()
+        });
+        await record.save();
+      } catch (saveErr) {
+        console.warn('Research history save warning:', saveErr.message);
+      }
+    }
 
     return res.status(200).json(finalOutput);
   } catch (err) {

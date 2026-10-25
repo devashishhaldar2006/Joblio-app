@@ -6,6 +6,8 @@ tracks Demand Share vs Job Volume independently, and evaluates Data Quality.
 """
 
 import datetime
+import time
+import threading
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 
@@ -426,9 +428,18 @@ def _process_series(
         **rolling_metrics
     }
 
+_ts_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+TS_CACHE_TTL = 600.0  # 10 minutes cache
+
 def build_skill_timeseries(skill: str) -> Dict[str, Any]:
     """Synchronous builder: Query MongoDB for skill datapoints and compute timeseries."""
     normalized = normalize_skill(skill)
+    now = time.time()
+    if normalized in _ts_cache:
+        t, data = _ts_cache[normalized]
+        if now - t < TS_CACHE_TTL:
+            return data
+
     db = get_sync_db()
     collection = db["skilldatapoints"]
 
@@ -438,36 +449,45 @@ def build_skill_timeseries(skill: str) -> Dict[str, Any]:
 
     raw_docs = list(cursor)
     res = _process_series(normalized, raw_docs)
+    _ts_cache[normalized] = (now, res)
 
-    # If was synthesized, persist in background
+    # If was synthesized, persist in background thread without blocking caller
     if res["is_synthetic"]:
-        try:
-            from pymongo import UpdateOne
-            ops = [
-                UpdateOne(
-                    {"skill_name": normalized, "week_start": dp["week_start"]},
-                    {"$set": {
-                        "skill_name": normalized,
-                        "week_start": dp["week_start"],
-                        "count": dp["count"],
-                        "percentage_of_total": dp["percentage_of_total"],
-                        "total_jobs_that_week": dp["total_jobs_that_week"],
-                        "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-                    }},
-                    upsert=True
-                )
-                for dp in res["observed"]["historical_series"]
-            ]
-            if ops:
-                collection.bulk_write(ops, ordered=False)
-        except Exception:
-            pass
+        def _bg_persist():
+            try:
+                from pymongo import UpdateOne
+                ops = [
+                    UpdateOne(
+                        {"skill_name": normalized, "week_start": dp["week_start"]},
+                        {"$set": {
+                            "skill_name": normalized,
+                            "week_start": dp["week_start"],
+                            "count": dp["count"],
+                            "percentage_of_total": dp["percentage_of_total"],
+                            "total_jobs_that_week": dp["total_jobs_that_week"],
+                            "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+                        }},
+                        upsert=True
+                    )
+                    for dp in res["observed"]["historical_series"]
+                ]
+                if ops:
+                    collection.bulk_write(ops, ordered=False)
+            except Exception:
+                pass
+        threading.Thread(target=_bg_persist, daemon=True).start()
 
     return res
 
 async def build_skill_timeseries_async(skill: str) -> Dict[str, Any]:
     """Asynchronous builder for FastAPI endpoints and Async workflows."""
     normalized = normalize_skill(skill)
+    now = time.time()
+    if normalized in _ts_cache:
+        t, data = _ts_cache[normalized]
+        if now - t < TS_CACHE_TTL:
+            return data
+
     db = get_async_db()
     collection = db["skilldatapoints"]
 
@@ -477,28 +497,32 @@ async def build_skill_timeseries_async(skill: str) -> Dict[str, Any]:
 
     raw_docs = await cursor.to_list(length=2000)
     res = _process_series(normalized, raw_docs)
+    _ts_cache[normalized] = (now, res)
 
     if res["is_synthetic"]:
-        try:
-            from pymongo import UpdateOne
-            ops = [
-                UpdateOne(
-                    {"skill_name": normalized, "week_start": dp["week_start"]},
-                    {"$set": {
-                        "skill_name": normalized,
-                        "week_start": dp["week_start"],
-                        "count": dp["count"],
-                        "percentage_of_total": dp["percentage_of_total"],
-                        "total_jobs_that_week": dp["total_jobs_that_week"],
-                        "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-                    }},
-                    upsert=True
-                )
-                for dp in res["observed"]["historical_series"]
-            ]
-            if ops:
-                await collection.bulk_write(ops, ordered=False)
-        except Exception:
-            pass
+        import asyncio
+        async def _bg_persist_async():
+            try:
+                from pymongo import UpdateOne
+                ops = [
+                    UpdateOne(
+                        {"skill_name": normalized, "week_start": dp["week_start"]},
+                        {"$set": {
+                            "skill_name": normalized,
+                            "week_start": dp["week_start"],
+                            "count": dp["count"],
+                            "percentage_of_total": dp["percentage_of_total"],
+                            "total_jobs_that_week": dp["total_jobs_that_week"],
+                            "collected_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+                        }},
+                        upsert=True
+                    )
+                    for dp in res["observed"]["historical_series"]
+                ]
+                if ops:
+                    await collection.bulk_write(ops, ordered=False)
+            except Exception:
+                pass
+        asyncio.create_task(_bg_persist_async())
 
     return res

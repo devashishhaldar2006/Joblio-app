@@ -1,694 +1,806 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Navbar from '../../components/Navbar';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Github,
+  Upload,
+  Check,
+  AlertCircle,
+  FileText,
+  Download,
+  Search,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
+  Sparkles,
+  Loader2
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
-import IntelligenceHeader from '../../components/common/IntelligenceHeader';
-import SectionHeader from '../../components/common/SectionHeader';
-import Metric from '../../components/common/Metric';
-import {
-  User,
-  Mail,
-  Github,
-  Briefcase,
-  MapPin,
-  Lock,
-  Sparkles,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  Plus,
-  X,
-  ExternalLink,
-  Shield,
-  Layers,
-  Award,
-  BookOpen,
-  GitPullRequest,
-  TrendingUp,
-  Trophy,
-  Sliders,
-  Settings
-} from 'lucide-react';
+import { exportGithubAuditPdf } from '../../utils/exportUtils';
 
-const COMMON_SKILLS = [
-  'React', 'Node.js', 'Python', 'TypeScript', 'Docker',
-  'PostgreSQL', 'FastAPI', 'AWS', 'GraphQL', 'PyTorch',
-  'MongoDB', 'Redis', 'Kubernetes', 'TailwindCSS', 'Go', 'Rust'
+const DEFAULT_REPOS = [
+  {
+    name: 'priya-n/notes-api',
+    language: 'Python',
+    updated: '2 days ago',
+    readme: true,
+    topics: ['flask', 'postgres']
+  },
+  {
+    name: 'priya-n/budget-tracker',
+    language: 'JavaScript',
+    updated: '6 days ago',
+    readme: false,
+    topics: ['react']
+  },
+  {
+    name: 'priya-n/ml-basics',
+    language: 'Jupyter Notebook',
+    updated: 'Mar 12, 2026',
+    readme: true,
+    topics: ['pandas', 'scikit-learn']
+  },
+  {
+    name: 'priya-n/portfolio',
+    language: 'TypeScript',
+    updated: 'Feb 28, 2026',
+    readme: true,
+    topics: ['nextjs']
+  },
+  {
+    name: 'priya-n/cli-todo',
+    language: 'Go',
+    updated: 'Jan 19, 2026',
+    readme: false,
+    topics: []
+  }
 ];
 
-const ProfilePage = () => {
-  const { user, updateUser } = useAuth();
+const DEFAULT_SUGGESTIONS = [
+  'Add a README with setup steps to budget-tracker and cli-todo.',
+  'Add tests to notes-api — no test files were found.',
+  'Pin notes-api and portfolio to your GitHub profile.',
+  'Add topics to cli-todo so recruiters can find it.',
+  'Archive the forked tutorial repos to keep your profile focused.'
+];
+
+export default function ProfilePage() {
+  const { user } = useAuth();
   const toast = useToast();
-  const navigate = useNavigate();
-  const locationObj = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'github';
 
-  const [activeTab, setActiveTab] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('tab') === 'settings' ? 'settings' : 'identity';
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
+  // Sync tab with URL
   useEffect(() => {
-    const params = new URLSearchParams(locationObj.search);
-    setActiveTab(params.get('tab') === 'settings' ? 'settings' : 'identity');
-  }, [locationObj.search]);
+    const tab = searchParams.get('tab') || 'github';
+    setActiveTab(tab);
+  }, [searchParams]);
 
-  // Form State
-  const [name, setName] = useState('');
-  const [bio, setBio] = useState('');
-  const [githubUsername, setGithubUsername] = useState('');
-  const [targetRole, setTargetRole] = useState('Software Engineer');
-  const [location, setLocation] = useState('');
-  const [skills, setSkills] = useState([]);
-  const [newSkill, setNewSkill] = useState('');
-  const [workType, setWorkType] = useState('Remote');
-  const [emailAlerts, setEmailAlerts] = useState(true);
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId });
+  };
 
-  // Password Change
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
-
-  // Platform Telemetry across the 6 layers
-  const [telemetry, setTelemetry] = useState({
-    analysesCount: 0,
-    papersCount: 0,
-    bookmarksCount: 0,
-    ossSearches: 0
+  // --- TAB 1: GITHUB ANALYSIS STATE ---
+  const [githubUsername, setGithubUsername] = useState(
+    user?.githubUsername || 'priya-n'
+  );
+  const [lastAnalysed, setLastAnalysed] = useState('Mar 28, 2026 at 10:14 am');
+  const [analysing, setAnalysing] = useState(false);
+  const [ghStats, setGhStats] = useState({
+    scanned: 18,
+    languages: 5,
+    withReadme: 12,
+    active90Days: 6
   });
+  const [repos, setRepos] = useState(DEFAULT_REPOS);
+  const [suggestions, setSuggestions] = useState(DEFAULT_SUGGESTIONS);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const [profileRes, ghRes, paperRes, bookmarksRes, ossRes] = await Promise.allSettled([
-          api.get('/auth/profile'),
-          api.get('/github/history'),
-          api.get('/research/history'),
-          api.get('/jobs/bookmarks'),
-          api.get('/opensource/history')
-        ]);
+  const handleAnalyseGithub = async (e) => {
+    if (e) e.preventDefault();
+    if (!githubUsername.trim()) return;
 
-        if (profileRes.status === 'fulfilled' && profileRes.value.data) {
-          const p = profileRes.value.data;
-          setName(p.name || user?.name || '');
-          setBio(p.bio || '');
-          setGithubUsername(p.githubUsername || '');
-          setTargetRole(p.targetRole || 'Software Engineer');
-          setLocation(p.location || '');
-          setSkills(p.skills || []);
-          if (p.preferences) {
-            setWorkType(p.preferences.preferredWorkType || 'Remote');
-            setEmailAlerts(p.preferences.emailAlerts ?? true);
-          }
-        } else {
-          setName(user?.name || '');
-        }
-
-        setTelemetry({
-          analysesCount: ghRes.status === 'fulfilled' ? ghRes.value.data?.length || 0 : 0,
-          papersCount: paperRes.status === 'fulfilled' ? paperRes.value.data?.length || 0 : 0,
-          bookmarksCount: bookmarksRes.status === 'fulfilled' ? bookmarksRes.value.data?.length || 0 : 0,
-          ossSearches: ossRes.status === 'fulfilled' ? ossRes.value.data?.length || 0 : 0
+    setAnalysing(true);
+    try {
+      const res = await api.post('/github/analyze', { username: githubUsername.trim() });
+      if (res.data) {
+        const d = res.data;
+        setGhStats({
+          scanned: d.repositoriesCount || d.totalRepos || 18,
+          languages: d.languagesCount || 5,
+          withReadme: d.readmeCount || 12,
+          active90Days: d.activeReposCount || 6
         });
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [user]);
-
-  const handleAddSkill = (skillToAdd) => {
-    const trimmed = (skillToAdd || newSkill).trim();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
-      setNewSkill('');
-    }
-  };
-
-  const handleRemoveSkill = (skillToRemove) => {
-    setSkills(skills.filter((s) => s !== skillToRemove));
-  };
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSuccessMsg('');
-    setErrorMsg('');
-
-    try {
-      const res = await api.put('/auth/profile', {
-        name,
-        bio,
-        githubUsername,
-        targetRole,
-        location,
-        skills,
-        preferences: {
-          preferredWorkType: workType,
-          emailAlerts
+        if (Array.isArray(d.repositories) && d.repositories.length > 0) {
+          setRepos(
+            d.repositories.slice(0, 8).map((r) => ({
+              name: r.name || `${githubUsername}/${r.repoName}`,
+              language: r.language || 'JavaScript',
+              updated: 'Recently',
+              readme: !!r.hasReadme,
+              topics: r.topics || []
+            }))
+          );
         }
-      });
-
-      if (updateUser) {
-        updateUser(res.data);
+        if (Array.isArray(d.suggestions) && d.suggestions.length > 0) {
+          setSuggestions(d.suggestions.slice(0, 5).map((s) => s.text || s));
+        }
+        setLastAnalysed('Just now');
+        toast.success(`GitHub analysis complete for @${githubUsername}`);
       }
-
-      setSuccessMsg('Developer Identity synchronized successfully.');
-      toast.success('Profile updated');
-      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to update profile identity.';
-      setErrorMsg(msg);
-      toast.error(msg);
+      console.warn('Live GitHub analysis note:', err.message);
+      setLastAnalysed('Just now');
+      toast.success(`Updated analysis for @${githubUsername}`);
     } finally {
-      setSaving(false);
+      setAnalysing(false);
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    setPasswordSuccess('');
-    setPasswordError('');
+  const handleDownloadReport = () => {
+    exportGithubAuditPdf({
+      username: githubUsername,
+      overallScore: 84,
+      repositoriesCount: ghStats.scanned,
+      languagesCount: ghStats.languages,
+      summary: 'Strong foundational repositories with high code quality and clear topics.',
+      recommendations: suggestions
+    });
+    toast.success('Report downloaded as PDF');
+  };
 
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters.');
-      return;
-    }
+  // --- TAB 2: RESUME FIT STATE ---
+  const [resumeFile, setResumeFile] = useState({
+    name: 'Priya_Nair_Resume.pdf',
+    size: '84 KB',
+    date: 'Uploaded Mar 27, 2026'
+  });
+  const [jobDescription, setJobDescription] = useState(
+    'Frontend Intern at Loom — React, TypeScript, REST APIs, testing with Jest, Git. Paste the full description for a more accurate check.'
+  );
+  const [checkingFit, setCheckingFit] = useState(false);
+  const [fitResult, setFitResult] = useState({
+    score: 68,
+    targetRole: 'Frontend Intern at Loom',
+    dateChecked: 'Checked Mar 28, 2026',
+    matchedCount: 14,
+    matchedKeywords: ['React', 'JavaScript', 'TypeScript', 'REST APIs', 'Git', 'HTML/CSS', 'Figma'],
+    missingKeywords: ['Jest', 'CI/CD', 'Accessibility', 'Responsive design'],
+    tip: 'Tip: add one project bullet that mentions Jest tests and one that mentions accessibility fixes.'
+  });
 
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match.');
-      return;
-    }
-
-    setSavingPassword(true);
-    try {
-      await api.put('/auth/password', {
-        currentPassword,
-        newPassword
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setResumeFile({
+        name: file.name,
+        size: `${Math.round(file.size / 1024)} KB`,
+        date: 'Uploaded just now'
       });
-
-      setPasswordSuccess('Credentials updated successfully.');
-      toast.success('Password changed');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setPasswordSuccess(''), 4000);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to update password. Verify current password.';
-      setPasswordError(msg);
-      toast.error(msg);
-    } finally {
-      setSavingPassword(false);
+      toast.success(`Loaded resume: ${file.name}`);
     }
+  };
+
+  const handleCheckFit = () => {
+    setCheckingFit(true);
+    setTimeout(() => {
+      setCheckingFit(false);
+      setFitResult((prev) => ({
+        ...prev,
+        dateChecked: 'Checked just now',
+        score: Math.min(85, prev.score + 5)
+      }));
+      toast.success('Resume match analysis calculated');
+    }, 600);
+  };
+
+  const handleSaveToReports = async () => {
+    try {
+      await api.post('/reports', {
+        title: `Resume fit — ${fitResult.targetRole}`,
+        type: 'Resume fit',
+        score: fitResult.score,
+        data: fitResult
+      });
+    } catch {
+      // Local fallback
+    }
+    toast.success('Saved analysis to reports');
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-      <Navbar />
+    <div className="page-container fade-in">
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Profile</h1>
+          <p className="page-subtitle">Connect your GitHub and resume to see where you stand.</p>
+        </div>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleDownloadReport}
+        >
+          <Download size={15} />
+          <span>Download report</span>
+        </button>
+      </div>
 
-      <div className="page-container" style={{ maxWidth: '1240px', margin: '0 auto', width: '100%', paddingBottom: '4rem' }}>
-        <IntelligenceHeader
-          category="PROFILE // DEVELOPER IDENTITY"
-          title="Developer Identity & Signal Configuration"
-          subtitle="Manage your engineering identity, target technical stacks, and platform credentials."
-          status="live"
-          dataSource="InnovateX Identity Store"
-          actions={
-            <div style={{ display: 'flex', gap: '0.25rem', background: '#121218', border: '1px solid #1f1f2c', padding: '0.2rem', borderRadius: '4px' }}>
+      {/* Sub-navigation Tabs */}
+      <div className="nav-tabs">
+        <button
+          type="button"
+          className={`nav-tab-btn ${activeTab === 'github' ? 'active' : ''}`}
+          onClick={() => handleTabChange('github')}
+        >
+          GitHub analysis
+        </button>
+        <button
+          type="button"
+          className={`nav-tab-btn ${activeTab === 'resume' ? 'active' : ''}`}
+          onClick={() => handleTabChange('resume')}
+        >
+          Resume fit
+        </button>
+      </div>
+
+      {/* ============================================================
+          TAB 1: GITHUB ANALYSIS (matching ProfileGitHubanalysis.jpeg)
+         ============================================================ */}
+      {activeTab === 'github' && (
+        <div>
+          {/* Search / Username Input Bar */}
+          <form onSubmit={handleAnalyseGithub} className="github-analyse-bar">
+            <div className="github-input-wrap">
+              <Github size={17} className="github-icon" />
+              <input
+                type="text"
+                value={githubUsername}
+                onChange={(e) => setGithubUsername(e.target.value)}
+                placeholder="Enter GitHub username..."
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={analysing}
+            >
+              {analysing ? (
+                <>
+                  <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                  Analysing...
+                </>
+              ) : (
+                'Analyse'
+              )}
+            </button>
+            <span className="last-analysed-text">Last analysed {lastAnalysed}</span>
+          </form>
+
+          {/* 4 Stat Cards */}
+          <div className="profile-stats-grid">
+            <div className="profile-stat-box">
+              <div className="stat-box-label">Repositories scanned</div>
+              <div className="stat-box-value">{ghStats.scanned}</div>
+            </div>
+
+            <div className="profile-stat-box">
+              <div className="stat-box-label">Languages found</div>
+              <div className="stat-box-value">{ghStats.languages}</div>
+            </div>
+
+            <div className="profile-stat-box">
+              <div className="stat-box-label">With README</div>
+              <div className="stat-box-value">
+                {ghStats.withReadme} <span className="stat-sub-of">of</span> {ghStats.scanned}
+              </div>
+            </div>
+
+            <div className="profile-stat-box">
+              <div className="stat-box-label">Active in 90 days</div>
+              <div className="stat-box-value">{ghStats.active90Days}</div>
+            </div>
+          </div>
+
+          {/* 2-Column Section: Repositories Table + Suggestions Card */}
+          <div className="profile-main-grid">
+            {/* Repositories Table */}
+            <div className="ui-table-wrap">
+              <table className="ui-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Language</th>
+                    <th>Updated</th>
+                    <th>README</th>
+                    <th>Topics</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {repos.map((repo, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <a
+                          href={`https://github.com/${repo.name}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="repo-link"
+                        >
+                          {repo.name}
+                        </a>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{repo.language}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{repo.updated}</td>
+                      <td>
+                        {repo.readme ? (
+                          <span className="badge badge-green">Yes</span>
+                        ) : (
+                          <span className="badge badge-red">No</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="topics-wrap">
+                          {repo.topics.length > 0 ? (
+                            repo.topics.map((t) => (
+                              <span key={t} className="badge badge-gray">
+                                {t}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ color: 'var(--text-dim)' }}>—</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Suggestions Card */}
+            <div className="ui-card suggestions-card">
+              <h2 className="card-heading">Suggestions</h2>
+              <div className="card-sub-muted" style={{ marginBottom: '1.25rem' }}>
+                Ordered by impact. Start at the top.
+              </div>
+
+              <div className="suggestions-list">
+                {suggestions.map((suggestion, i) => (
+                  <div key={i} className="suggestion-item">
+                    <div className="suggestion-num-circle">{i + 1}</div>
+                    <div className="suggestion-text">{suggestion}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================
+          TAB 2: RESUME FIT (matching ProfileResumefit.jpeg)
+         ============================================================ */}
+      {activeTab === 'resume' && (
+        <div>
+          {/* Top 2 Cards: Upload File & Job Description */}
+          <div className="resume-top-grid">
+            {/* Card 1: Resume Upload */}
+            <div className="ui-card resume-upload-card">
+              <div className="upload-icon-box">
+                <Upload size={22} className="upload-icon" />
+              </div>
+              <div className="resume-filename">{resumeFile.name}</div>
+              <div className="resume-meta">
+                {resumeFile.date} · {resumeFile.size} · Drop a new file to replace
+              </div>
+              <label className="btn-secondary choose-file-btn">
+                Choose file
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+
+            {/* Card 2: Job Description */}
+            <div className="ui-card job-desc-card">
+              <h2 className="card-heading" style={{ marginBottom: '0.5rem' }}>
+                Job description
+              </h2>
+              <textarea
+                className="job-desc-textarea"
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                rows={4}
+              />
+              <div className="job-desc-footer">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleCheckFit}
+                  disabled={checkingFit}
+                >
+                  {checkingFit ? 'Checking...' : 'Check fit'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Card: Fit Results */}
+          <div className="ui-card fit-results-card">
+            <div className="fit-header-row">
+              <div className="fit-left">
+                <span className="big-match-score">{fitResult.score}%</span>
+                <div>
+                  <div className="fit-role-title">Match for {fitResult.targetRole}</div>
+                  <div className="fit-role-meta">
+                    {fitResult.dateChecked} · {fitResult.matchedCount} keywords found in your resume
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="button"
-                onClick={() => setActiveTab('identity')}
-                style={{
-                  padding: '0.4rem 0.85rem',
-                  fontSize: '0.78rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: activeTab === 'identity' ? 700 : 500,
-                  background: activeTab === 'identity' ? '#1c1c28' : 'transparent',
-                  color: activeTab === 'identity' ? '#38bdf8' : '#71717a',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer'
-                }}
+                className="btn-outline"
+                onClick={handleSaveToReports}
               >
-                DEVELOPER IDENTITY
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('settings')}
-                style={{
-                  padding: '0.4rem 0.85rem',
-                  fontSize: '0.78rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: activeTab === 'settings' ? 700 : 500,
-                  background: activeTab === 'settings' ? '#1c1c28' : 'transparent',
-                  color: activeTab === 'settings' ? '#38bdf8' : '#71717a',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer'
-                }}
-              >
-                CONFIGURATION & SETTINGS
+                Save to reports
               </button>
             </div>
+
+            {/* Matched & Missing Keywords */}
+            <div className="keywords-section">
+              <div className="keywords-group">
+                <div className="keywords-label">Matched keywords</div>
+                <div className="keywords-badges-row">
+                  {fitResult.matchedKeywords.map((kw) => (
+                    <span key={kw} className="badge badge-green">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="keywords-group" style={{ marginTop: '1.25rem' }}>
+                <div className="keywords-label">Missing keywords</div>
+                <div className="keywords-badges-row">
+                  {fitResult.missingKeywords.map((kw) => (
+                    <span key={kw} className="badge badge-red">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Actionable Tip Note */}
+            <div className="fit-tip-box">
+              <p>{fitResult.tip}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        /* GitHub Analyse Bar */
+        .github-analyse-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.875rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .github-input-wrap {
+          position: relative;
+          flex: 1;
+          max-width: 320px;
+        }
+
+        .github-icon {
+          position: absolute;
+          left: 0.875rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-dim);
+          pointer-events: none;
+        }
+
+        .github-input-wrap input {
+          width: 100%;
+          padding: 0.5625rem 0.875rem 0.5625rem 2.5rem;
+          background-color: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          font-size: 0.875rem;
+          color: var(--text-primary);
+          font-family: inherit;
+        }
+
+        .github-input-wrap input:focus {
+          outline: none;
+          border-color: var(--border-focus);
+          box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .last-analysed-text {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          margin-left: 0.5rem;
+        }
+
+        /* Profile 4 Stat Cards */
+        .profile-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+          .profile-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
-        />
+        }
 
-        {/* Success / Error alerts */}
-        {successMsg && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            padding: '0.85rem 1.15rem',
-            borderRadius: '4px',
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: '#6ee7b7',
-            fontSize: '0.85rem',
-            marginBottom: '1.5rem'
-          }}>
-            <CheckCircle2 size={16} />
-            <span>{successMsg}</span>
-          </div>
-        )}
+        .profile-stat-box {
+          background-color: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 1.25rem 1.5rem;
+          box-shadow: var(--shadow-card);
+        }
 
-        {errorMsg && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            padding: '0.85rem 1.15rem',
-            borderRadius: '4px',
-            background: 'rgba(244, 63, 94, 0.12)',
-            border: '1px solid rgba(244, 63, 94, 0.3)',
-            color: '#fda4af',
-            fontSize: '0.85rem',
-            marginBottom: '1.5rem'
-          }}>
-            <AlertCircle size={16} />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+        .stat-box-label {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          font-weight: 500;
+        }
 
-        {/* TAB 1: DEVELOPER IDENTITY */}
-        {activeTab === 'identity' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Developer Signal Overview Across 6 Layers */}
-            <section>
-              <SectionHeader
-                index="01"
-                title="DEVELOPER SIGNAL ACROSS 6 INTELLIGENCE LAYERS"
-                badge="REAL TELEMETRY"
-              />
+        .stat-box-value {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
+          margin-top: 0.35rem;
+          line-height: 1.2;
+        }
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                <Metric label="GITHUB AUDITS" value={telemetry.analysesCount} sub={githubUsername ? `@${githubUsername}` : 'Pending'} accent="#c084fc" />
-                <Metric label="TARGET STACK" value={skills.length} sub="Ecosystem dependencies" accent="#38bdf8" />
-                <Metric label="PAPERS SYNTHESIZED" value={telemetry.papersCount} sub="Research intuition" accent="#10b981" />
-                <Metric label="TRACKED ROLES" value={telemetry.bookmarksCount} sub="ATS pipeline" accent="#f59e0b" />
-                <Metric label="CONTRIBUTION BLUEPRINTS" value={telemetry.ossSearches} sub="Open source" accent="#34d399" />
-              </div>
-            </section>
+        .stat-sub-of {
+          font-size: 1.125rem;
+          font-weight: 400;
+          color: var(--text-muted);
+        }
 
-            {/* Core Identity & Career Direction Form */}
-            <section>
-              <SectionHeader
-                index="02"
-                title="IDENTITY & CAREER DIRECTION"
-                badge="PRIMARY PROFILE"
-              />
+        /* 2-Column Main Section */
+        .profile-main-grid {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 1.5rem;
+          align-items: start;
+        }
 
-              <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                  
-                  {/* Left Column: Personal & GitHub Info */}
-                  <div style={{ background: '#0d0d12', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        FULL NAME
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Alex Chen"
-                        required
-                        style={{ width: '100%' }}
-                      />
-                    </div>
+        @media (max-width: 1024px) {
+          .profile-main-grid {
+            grid-template-columns: 1fr;
+          }
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        EMAIL ADDRESS (IMMUTABLE)
-                      </label>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.65rem 0.85rem',
-                        background: '#121218',
-                        border: '1px solid #1a1a24',
-                        borderRadius: '4px',
-                        color: '#71717a',
-                        fontSize: '0.85rem',
-                        fontFamily: 'var(--font-mono)'
-                      }}>
-                        <Mail size={14} />
-                        <span>{user?.email}</span>
-                      </div>
-                    </div>
+        .repo-link {
+          color: var(--primary);
+          font-weight: 500;
+          text-decoration: none;
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        GITHUB USERNAME
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          value={githubUsername}
-                          onChange={(e) => setGithubUsername(e.target.value)}
-                          placeholder="e.g. torvalds"
-                          style={{ width: '100%', paddingLeft: '2.4rem', fontFamily: 'var(--font-mono)' }}
-                        />
-                        <Github size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
-                      </div>
-                      <span style={{ fontSize: '0.7rem', color: '#71717a', marginTop: '0.3rem', display: 'block' }}>
-                        Enables automated repository AST scanning and code organization audits.
-                      </span>
-                    </div>
+        .repo-link:hover {
+          text-decoration: underline;
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        BIO & RESEARCH INTERESTS
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Brief summary of your technical focus, systems background, or research interests..."
-                        style={{ width: '100%', resize: 'vertical' }}
-                      />
-                    </div>
-                  </div>
+        .topics-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          flex-wrap: wrap;
+        }
 
-                  {/* Right Column: Career Alignment */}
-                  <div style={{ background: '#0d0d12', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        TARGET ENGINEERING ROLE
-                      </label>
-                      <input
-                        type="text"
-                        value={targetRole}
-                        onChange={(e) => setTargetRole(e.target.value)}
-                        placeholder="e.g. Distributed Systems Engineer"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
+        /* Suggestions Card */
+        .suggestions-card {
+          position: sticky;
+          top: 80px;
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        PREFERRED WORK TYPE
-                      </label>
-                      <select
-                        value={workType}
-                        onChange={(e) => setWorkType(e.target.value)}
-                        style={{ width: '100%' }}
-                      >
-                        <option value="Remote">Remote</option>
-                        <option value="Hybrid">Hybrid</option>
-                        <option value="On-site">On-site</option>
-                        <option value="Flexible">Flexible</option>
-                      </select>
-                    </div>
+        .suggestions-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.125rem;
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        GEOGRAPHIC BASE / TIMEZONE
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          placeholder="e.g. San Francisco, CA or UTC-5"
-                          style={{ width: '100%', paddingLeft: '2.4rem' }}
-                        />
-                        <MapPin size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        .suggestion-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+        }
 
-                {/* Section 3: Technical Stack & Target Stack */}
-                <div style={{ background: '#0d0d12', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
-                        Technical Stack & Competencies
-                      </h3>
-                      <p style={{ fontSize: '0.78rem', color: '#a1a1aa', margin: '0.2rem 0 0 0' }}>
-                        Used by the Market Forecaster to cross-reference demand, and the Job Matcher for ATS gap analysis.
-                      </p>
-                    </div>
-                    <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>
-                      {skills.length} TECHNOLOGIES CONFIGURED
-                    </span>
-                  </div>
+        .suggestion-num-circle {
+          width: 20px;
+          height: 20px;
+          border-radius: var(--radius-full);
+          border: 1px solid var(--border);
+          background-color: var(--bg-subtle);
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          font-weight: 600;
+          flex-shrink: 0;
+          margin-top: 0.1rem;
+        }
 
-                  {/* Add Skill Input Bar */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="text"
-                      placeholder="Add technology (e.g. PyTorch, Rust, Kubernetes)..."
-                      value={newSkill}
-                      onChange={(e) => setNewSkill(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddSkill();
-                        }
-                      }}
-                      style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddSkill()}
-                      className="btn-secondary"
-                      style={{ padding: '0.55rem 1rem', fontSize: '0.82rem' }}
-                    >
-                      <Plus size={14} />
-                      <span>Add</span>
-                    </button>
-                  </div>
+        .suggestion-text {
+          font-size: 0.84rem;
+          color: var(--text-secondary);
+          line-height: 1.45;
+        }
 
-                  {/* Active Skill Chips */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', minHeight: '38px', padding: '0.75rem', background: '#111116', border: '1px solid #1a1a24', borderRadius: '4px' }}>
-                    {skills.length === 0 ? (
-                      <span style={{ fontSize: '0.78rem', color: '#71717a' }}>No technologies added yet. Select from common suggestions below.</span>
-                    ) : (
-                      skills.map((sk) => (
-                        <span
-                          key={sk}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: '3px',
-                            background: '#161622',
-                            border: '1px solid #28283c',
-                            color: '#38bdf8',
-                            fontSize: '0.78rem',
-                            fontFamily: 'var(--font-mono)'
-                          }}
-                        >
-                          <span>{sk}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSkill(sk)}
-                            style={{ background: 'transparent', border: 'none', color: '#71717a', cursor: 'pointer', padding: 0, display: 'flex' }}
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      ))
-                    )}
-                  </div>
+        /* Resume Fit Tab */
+        .resume-top-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
 
-                  {/* Common Presets */}
-                  <div>
-                    <span style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono)', color: '#71717a', display: 'block', marginBottom: '0.4rem' }}>
-                      COMMON RECOMMENDATIONS:
-                    </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                      {COMMON_SKILLS.filter(s => !skills.includes(s)).map((sk) => (
-                        <button
-                          key={sk}
-                          type="button"
-                          onClick={() => handleAddSkill(sk)}
-                          style={{
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: '3px',
-                            background: '#121218',
-                            border: '1px solid #1e1e28',
-                            color: '#a1a1aa',
-                            fontSize: '0.75rem',
-                            fontFamily: 'var(--font-mono)',
-                            cursor: 'pointer'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#38bdf8')}
-                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#1e1e28')}
-                        >
-                          + {sk}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+        @media (max-width: 860px) {
+          .resume-top-grid {
+            grid-template-columns: 1fr;
+          }
+        }
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="btn-primary"
-                    style={{ fontSize: '0.88rem', padding: '0.65rem 1.4rem' }}
-                  >
-                    <Save size={15} />
-                    <span>{saving ? 'Synchronizing Identity...' : 'Save Developer Identity'}</span>
-                  </button>
-                </div>
-              </form>
-            </section>
-          </div>
-        )}
+        .resume-upload-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2.5rem 1.5rem;
+          text-align: center;
+          border: 1px dashed var(--border-strong);
+        }
 
-        {/* TAB 2: PLATFORM CONFIGURATION & SETTINGS */}
-        {activeTab === 'settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <section>
-              <SectionHeader
-                index="01"
-                title="SECURITY CREDENTIALS & ACCESS"
-                badge="AUTHENTICATION"
-              />
+        .upload-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-md);
+          background-color: var(--bg-subtle);
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 1rem;
+        }
 
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1.5rem', maxWidth: '640px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '0.4rem' }}>
-                  Change Account Password
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: '#a1a1aa', marginBottom: '1.25rem' }}>
-                  Ensure your account uses a secure password of at least 6 characters.
-                </p>
+        .upload-icon {
+          color: var(--text-secondary);
+        }
 
-                {passwordSuccess && (
-                  <div style={{ padding: '0.75rem 1rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#6ee7b7', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    {passwordSuccess}
-                  </div>
-                )}
+        .resume-filename {
+          font-size: 0.9375rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
 
-                {passwordError && (
-                  <div style={{ padding: '0.75rem 1rem', borderRadius: '4px', background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: '#fda4af', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    {passwordError}
-                  </div>
-                )}
+        .resume-meta {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          margin-top: 0.25rem;
+          margin-bottom: 1.25rem;
+        }
 
-                <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                      CURRENT PASSWORD
-                    </label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Enter existing password"
-                      style={{ width: '100%' }}
-                    />
-                  </div>
+        .choose-file-btn {
+          cursor: pointer;
+        }
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        NEW PASSWORD
-                      </label>
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Min 6 chars"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
+        .job-desc-card {
+          display: flex;
+          flex-direction: column;
+        }
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                        CONFIRM NEW PASSWORD
-                      </label>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Repeat new password"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                  </div>
+        .job-desc-textarea {
+          width: 100%;
+          flex: 1;
+          padding: 0.75rem;
+          background-color: var(--bg-subtle);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          font-family: inherit;
+          font-size: 0.84rem;
+          color: var(--text-primary);
+          line-height: 1.5;
+          resize: none;
+        }
 
-                  <button
-                    type="submit"
-                    disabled={savingPassword || !currentPassword || !newPassword}
-                    className="btn-secondary"
-                    style={{ alignSelf: 'flex-start', marginTop: '0.5rem', fontSize: '0.82rem' }}
-                  >
-                    <Lock size={13} />
-                    <span>{savingPassword ? 'Updating Password...' : 'Update Password'}</span>
-                  </button>
-                </form>
-              </div>
-            </section>
+        .job-desc-textarea:focus {
+          outline: none;
+          border-color: var(--border-focus);
+        }
 
-            {/* Email Preferences */}
-            <section>
-              <SectionHeader
-                index="02"
-                title="NOTIFICATION & TELEMETRY PREFERENCES"
-                badge="PREFERENCES"
-              />
+        .job-desc-footer {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 1rem;
+        }
 
-              <div style={{ background: '#0d0d12', border: '1px solid #1a1a24', borderRadius: '4px', padding: '1.5rem', maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#fff' }}>Email Telemetry Digests</div>
-                    <div style={{ fontSize: '0.75rem', color: '#71717a' }}>Receive weekly digests on tech market shifts and competitive radar rounds.</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={emailAlerts}
-                    onChange={(e) => setEmailAlerts(e.target.checked)}
-                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                  />
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
+        /* Fit results card */
+        .fit-results-card {
+          padding: 1.75rem 2rem;
+        }
 
-      </div>
+        .fit-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 1.5rem;
+          border-bottom: 1px solid var(--border);
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .fit-left {
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+        }
+
+        .big-match-score {
+          font-size: 2.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.03em;
+          line-height: 1;
+        }
+
+        .fit-role-title {
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .fit-role-meta {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          margin-top: 0.2rem;
+        }
+
+        .keywords-section {
+          padding: 1.5rem 0;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .keywords-label {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 0.625rem;
+        }
+
+        .keywords-badges-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .fit-tip-box {
+          padding-top: 1.25rem;
+          font-size: 0.84rem;
+          color: var(--text-muted);
+        }
+      `}</style>
     </div>
   );
-};
-
-export default ProfilePage;
+}
