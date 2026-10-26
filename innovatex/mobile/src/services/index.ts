@@ -1,3 +1,4 @@
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import apiClient from './apiClient';
 
 export const AuthService = {
@@ -32,35 +33,87 @@ export const GithubService = {
 
 export const JobService = {
   uploadAndSearch: async (fileUri: string, fileName: string, fileType: string, query?: string, location?: string) => {
-    const formData = new FormData();
-
-    formData.append('resume', {
-      uri: fileUri,
-      name: fileName || 'resume.pdf',
-      type: fileType || 'application/pdf',
-    } as any);
-
-    if (query) formData.append('query', query);
-    if (location) formData.append('location', location);
-
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     const token = await AsyncStorage.getItem('auth_token');
-
     const { API_CONFIG } = require('../config/api');
-    const response = await fetch(`${API_CONFIG.NODE_URL}/api/jobs/search`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: formData,
-    });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Job search pipeline failed.');
+    let targetUri = fileUri;
+    try {
+      const cacheDir = FileSystemLegacy.cacheDirectory || FileSystemLegacy.documentDirectory;
+      if (cacheDir && !targetUri.startsWith(cacheDir)) {
+        const destUri = `${cacheDir}upload_${Date.now()}_${(fileName || 'resume.pdf').replace(/\s+/g, '_')}`;
+        await FileSystemLegacy.copyAsync({
+          from: targetUri,
+          to: destUri,
+        });
+        targetUri = destUri;
+      }
+    } catch (e) {
+      console.warn('Could not mirror file to cache directory, trying direct URI', e);
     }
-    return data;
+
+    // Try multipart uploadAsync first
+    try {
+      const uploadType = FileSystemLegacy?.FileSystemUploadType?.MULTIPART ?? 1;
+      const uploadRes = await (FileSystemLegacy.uploadAsync || (FileSystemLegacy as any).default?.uploadAsync)(
+        `${API_CONFIG.NODE_URL}/api/jobs/search`,
+        targetUri,
+        {
+          fieldName: 'resume',
+          httpMethod: 'POST',
+          uploadType,
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          parameters: {
+            ...(query ? { query } : {}),
+            ...(location ? { location } : {}),
+          },
+        }
+      );
+
+      let data;
+      try {
+        data = JSON.parse(uploadRes.body);
+      } catch {
+        data = { error: uploadRes.body };
+      }
+
+      if (uploadRes.status >= 200 && uploadRes.status < 300) {
+        return data;
+      }
+      if (uploadRes.status >= 400 && data.error && !data.error.includes('isn\'t readable')) {
+        throw new Error(data.error);
+      }
+    } catch (uploadErr: any) {
+      console.warn('uploadAsync failed, falling back to base64 payload:', uploadErr.message);
+    }
+
+    // Fallback: Read file as Base64 and send via JSON payload
+    try {
+      let base64Data: string;
+      try {
+        base64Data = await FileSystemLegacy.readAsStringAsync(targetUri, {
+          encoding: FileSystemLegacy.EncodingType.Base64,
+        });
+      } catch {
+        base64Data = await FileSystemLegacy.readAsStringAsync(fileUri, {
+          encoding: FileSystemLegacy.EncodingType.Base64,
+        });
+      }
+
+      const res = await apiClient.post('/jobs/search', {
+        base64: base64Data,
+        filename: fileName || 'resume.pdf',
+        mimetype: fileType || 'application/pdf',
+        query,
+        location,
+      });
+      return res.data;
+    } catch (base64Err: any) {
+      throw new Error(base64Err.response?.data?.error || base64Err.message || 'Job search upload failed');
+    }
   },
   getBookmarks: async () => {
     const res = await apiClient.get('/jobs/bookmarks');

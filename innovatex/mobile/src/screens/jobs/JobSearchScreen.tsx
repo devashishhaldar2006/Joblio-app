@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,24 @@ export default function JobSearchScreen() {
   const [parsedProfile, setParsedProfile] = useState<any>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    const fetchExistingBookmarks = async () => {
+      try {
+        const bookmarks = await JobService.getBookmarks();
+        if (Array.isArray(bookmarks)) {
+          const map: Record<string, boolean> = {};
+          bookmarks.forEach((b: any) => {
+            if (b.jobId) map[b.jobId] = true;
+          });
+          setBookmarkedIds(map);
+        }
+      } catch (e) {
+        // Silently skip if user is not authenticated or offline
+      }
+    };
+    fetchExistingBookmarks();
+  }, []);
+
   const handleOpenApplyLink = async (url: string) => {
     if (!url) return;
     try {
@@ -41,11 +59,31 @@ export default function JobSearchScreen() {
     try {
       const res = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false,
       });
 
       if (!res.canceled && res.assets && res.assets.length > 0) {
-        setSelectedFile(res.assets[0]);
+        const picked = res.assets[0];
+        try {
+          const FileSystem = require('expo-file-system/legacy');
+          const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+          if (cacheDir && picked.uri) {
+            const safeName = `resume_${Date.now()}_${picked.name || 'resume.pdf'}`.replace(/\s+/g, '_');
+            const destUri = `${cacheDir}${safeName}`;
+            await FileSystem.copyAsync({
+              from: picked.uri,
+              to: destUri,
+            });
+            setSelectedFile({
+              ...picked,
+              uri: destUri,
+            });
+            return;
+          }
+        } catch (copyErr) {
+          console.warn('Failed to cache picked file locally, using raw uri', copyErr);
+        }
+        setSelectedFile(picked);
       }
     } catch (err) {
       console.warn('Document picker error', err);
@@ -182,9 +220,16 @@ export default function JobSearchScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {job.match_score ? (
-                  <Text style={styles.jobScore}>{job.match_score}% alignment</Text>
-                ) : null}
+                <View style={styles.jobMetaRow}>
+                  {job.source ? (
+                    <View style={styles.platformBadge}>
+                      <Text style={styles.platformBadgeText}>{job.source.toUpperCase()}</Text>
+                    </View>
+                  ) : null}
+                  {job.match_score ? (
+                    <Text style={styles.jobScore}>{job.match_score}% alignment</Text>
+                  ) : null}
+                </View>
 
                 {job.match_reason ? (
                   <Text style={styles.jobReason}>{job.match_reason}</Text>
@@ -347,12 +392,32 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     marginTop: 2,
   },
+  jobMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  platformBadge: {
+    backgroundColor: COLORS.bgCanvas,
+    borderWidth: 1,
+    borderColor: COLORS.textPrimary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  platformBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    fontFamily: FONTS.mono,
+    letterSpacing: 0.5,
+  },
   jobScore: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.textPrimary,
     fontFamily: FONTS.mono,
-    marginTop: 6,
   },
   jobReason: {
     fontSize: 12,

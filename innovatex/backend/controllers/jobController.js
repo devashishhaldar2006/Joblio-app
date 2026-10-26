@@ -5,7 +5,17 @@ const JobBookmark = require('../models/JobBookmark');
 
 const searchJobs = async (req, res) => {
   try {
-    if (!req.file) {
+    let fileBuffer = req.file?.buffer;
+    let fileName = req.file?.originalname || 'resume.pdf';
+    let fileMime = req.file?.mimetype || 'application/pdf';
+
+    if (!fileBuffer && req.body.base64) {
+      fileBuffer = Buffer.from(req.body.base64, 'base64');
+      fileName = req.body.filename || 'resume.pdf';
+      fileMime = req.body.mimetype || 'application/pdf';
+    }
+
+    if (!fileBuffer) {
       return res.status(400).json({ error: 'Please upload a PDF, DOCX, or TXT resume file.' });
     }
 
@@ -13,9 +23,9 @@ const searchJobs = async (req, res) => {
 
     // Prepare multipart form data to forward to FastAPI
     const form = new FormData();
-    form.append('resume', req.file.buffer, {
-      filename: req.file.originalname || 'resume.pdf',
-      contentType: req.file.mimetype || 'application/pdf'
+    form.append('resume', fileBuffer, {
+      filename: fileName,
+      contentType: fileMime
     });
 
     if (req.body.query) {
