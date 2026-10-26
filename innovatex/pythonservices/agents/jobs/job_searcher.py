@@ -16,6 +16,35 @@ def clean_html(raw_html: str) -> str:
     return clean.strip()
 
 
+def is_english_text(text: str) -> bool:
+    """Check if the text is primarily English and discard non-English/foreign scripts."""
+    if not text:
+        return True
+    # Strip whitespace & common punctuation
+    sample = text[:500]
+    # Check for foreign scripts (Cyrillic, Arabic, Chinese/Japanese/Korean, Thai, Devanagari, Hebrew, etc.)
+    non_latin = re.findall(r'[\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF\u3040-\u30FF\u0E00-\u0E7F\u0900-\u097F\u0590-\u05FF]', sample)
+    if len(non_latin) > 3:
+        return False
+    # Check percentage of standard ASCII printable chars
+    ascii_chars = sum(1 for c in sample if ord(c) < 128)
+    if len(sample) > 0 and (ascii_chars / len(sample)) < 0.85:
+        return False
+    # Check for common German/French/Spanish-exclusive stop words when in non-English job postings
+    lower_sample = f" {sample.lower()} "
+    foreign_words = [
+        " und ", " für ", " der ", " die ", " das ", " mit ", " werden ", " wir suchen ", # German
+        " pour ", " dans ", " avec ", " nous recherchons ", " une ", " des ", # French
+        " para ", " con ", " sobre ", " trabajo ", " estamos buscando ", # Spanish
+        " per ", " con ", " dei ", " del ", " siamo alla ricerca " # Italian
+    ]
+    foreign_matches = sum(1 for w in foreign_words if w in lower_sample)
+    if foreign_matches >= 2:
+        return False
+    return True
+
+
+
 # ---------------------------------------------------------------------------
 # Platform search-link generators (for platforms without free public APIs)
 # ---------------------------------------------------------------------------
@@ -88,6 +117,10 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
     skills = parsed_profile.get("skills", [])
     roles = parsed_profile.get("preferred_roles", ["Software Engineer"])
     location_override = state.get("location_override", "")
+    work_type = (state.get("work_type") or "all").lower()
+    job_type = (state.get("job_type") or "both").lower()
+    country_filter = (state.get("country") or "all").lower()
+    source_filter = (state.get("source") or "all").lower()
 
     rapidapi_key = os.getenv("RAPIDAPI_KEY")
     rapidapi_host = os.getenv("RAPIDAPI_HOST", "jsearch.p.rapidapi.com")
@@ -293,37 +326,38 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
         return []
 
     # =========================================================================
-    # Parallel fetch — all sources at once for speed
+    # Parallel fetch — conditionally fetch based on user source and job_type filters
     # =========================================================================
     async with httpx.AsyncClient() as client:
         all_tasks = []
-
-        # JSearch queries (up to 3)
-        for q in search_queries[:3]:
-            all_tasks.append(("jsearch", fetch_jsearch(client, q)))
+        primary_role = roles[0] if roles else "Software Engineer"
+        search_loc = "India" if country_filter == "india" else (location_override or "")
 
         # LinkedIn Guest API
-        primary_role = roles[0] if roles else "Software Engineer"
-        all_tasks.append(("linkedin", fetch_linkedin(client, f"{primary_role} intern", location_override or "")))
+        if source_filter in ["all", "linkedin"]:
+            li_query = f"{primary_role} intern" if job_type == "internship" else primary_role
+            all_tasks.append(("linkedin", fetch_linkedin(client, li_query, search_loc)))
 
-        # Internshala
-        all_tasks.append(("internshala", fetch_internshala(client, primary_role)))
+        # Internshala (Specialized in India & remote internships)
+        if (source_filter in ["all", "internshala"]) and (job_type in ["both", "internship"]):
+            all_tasks.append(("internshala", fetch_internshala(client, primary_role)))
 
         # Y Combinator
-        all_tasks.append(("ycombinator", fetch_ycombinator(client)))
+        if source_filter in ["all", "ycombinator", "yc"]:
+            all_tasks.append(("ycombinator", fetch_ycombinator(client)))
 
-        # Remotive queries
-        for t in query_terms:
-            all_tasks.append(("remotive", fetch_remotive(client, t)))
+        # JSearch queries (up to 3)
+        if source_filter in ["all", "linkedin", "indeed"]:
+            for q in search_queries[:3]:
+                all_tasks.append(("jsearch", fetch_jsearch(client, f"{q} {search_loc}".strip())))
 
-        # Arbeitnow
-        all_tasks.append(("arbeitnow", fetch_arbeitnow(client)))
-
-        # RemoteOK
-        all_tasks.append(("remoteok", fetch_remoteok(client)))
-
-        # Jobicy
-        all_tasks.append(("jobicy", fetch_jobicy(client)))
+        # Remote-specialized sources (only if work_type is not strictly onsite)
+        if work_type != "onsite" and source_filter in ["all", "remotive", "remoteok", "jobicy", "arbeitnow"]:
+            for t in query_terms:
+                all_tasks.append(("remotive", fetch_remotive(client, t)))
+            all_tasks.append(("arbeitnow", fetch_arbeitnow(client)))
+            all_tasks.append(("remoteok", fetch_remoteok(client)))
+            all_tasks.append(("jobicy", fetch_jobicy(client)))
 
         labels = [t[0] for t in all_tasks]
         coros = [t[1] for t in all_tasks]
@@ -544,13 +578,72 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 })
 
     # =========================================================================
+    # Apply Filters: English-only, Work Type, Job/Internship, India, Source
+    # =========================================================================
+    filtered_jobs: List[Dict[str, Any]] = []
+    india_keywords = ["india", "bangalore", "bengaluru", "delhi", "mumbai", "hyderabad", "pune", "gurgaon", "noida", "chennai", "kolkata", "in", "inr"]
+
+    for job in raw_jobs:
+        title = (job.get("job_title") or "").strip()
+        desc = (job.get("job_description") or "").strip()
+        loc = f"{job.get('job_city', '')} {job.get('job_country', '')}".lower()
+        emp_type = (job.get("job_employment_type") or "").upper()
+        src = (job.get("source") or "").lower()
+
+        # 1. English-only filter
+        if not is_english_text(title) or not is_english_text(desc):
+            continue
+
+        # 2. Opportunity Type filter (job vs internship vs both)
+        is_intern = "INTERN" in emp_type or "intern" in title.lower() or "internship" in title.lower()
+        if job_type == "internship" and not is_intern:
+            continue
+        if job_type == "job" and is_intern:
+            continue
+
+        # 3. Workplace Type filter (remote, onsite, hybrid)
+        is_remote = "REMOTE" in emp_type or "remote" in loc or "remote" in title.lower() or "worldwide" in loc
+        is_hybrid = "hybrid" in loc or "hybrid" in title.lower()
+        if work_type == "remote" and not is_remote:
+            continue
+        if work_type == "onsite" and (is_remote or is_hybrid):
+            continue
+        if work_type == "hybrid" and not is_hybrid:
+            continue
+
+        # 4. Country / Location Filter (India based)
+        if country_filter == "india":
+            # Must match India or Indian tech hub, or have INR currency, or be open to Worldwide/Remote
+            matches_india = any(kw in loc for kw in india_keywords) or (job.get("job_salary_currency") == "INR")
+            if not matches_india and not is_remote:
+                continue
+
+        # 5. Source filter
+        if source_filter != "all":
+            if source_filter in ["ycombinator", "yc"] and "y combinator" not in src and "yc" not in src:
+                continue
+            if source_filter == "linkedin" and "linkedin" not in src:
+                continue
+            if source_filter == "internshala" and "internshala" not in src:
+                continue
+
+        filtered_jobs.append(job)
+
+    # Fallback to English-only raw jobs if user-selected multi-filters yielded 0 results
+    if len(filtered_jobs) > 0:
+        final_jobs = filtered_jobs
+    else:
+        # Guarantee non-English jobs are never shown even in fallback
+        final_jobs = [j for j in raw_jobs if is_english_text(j.get("job_title", "")) and is_english_text(j.get("job_description", ""))]
+
+    # =========================================================================
     # Build platform search links for platforms without public APIs
     # =========================================================================
-    platform_links = _build_platform_links(roles, skills, location_override or "")
+    platform_links = _build_platform_links(roles, skills, "India" if country_filter == "india" else (location_override or ""))
 
     return {
         **state,
-        "raw_jobs": raw_jobs[:45],
+        "raw_jobs": final_jobs[:45],
         "platform_links": platform_links
     }
 

@@ -10,12 +10,17 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
+  clerkId?: string;
+  avatar?: string;
   githubUsername?: string;
   bio?: string;
   targetRole?: string;
   skills: string[];
   location?: string;
   preferences: IUserPreferences;
+  hasCompletedOnboarding: boolean;
+  authProvider: 'email' | 'google' | 'github';
+  resumeText?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,7 +40,17 @@ const userSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: true
+    required: false
+  },
+  clerkId: {
+    type: String,
+    sparse: true,
+    index: true,
+    trim: true
+  },
+  avatar: {
+    type: String,
+    default: ''
   },
   githubUsername: {
     type: String,
@@ -65,6 +80,19 @@ const userSchema = new Schema<IUser>({
     emailAlerts: { type: Boolean, default: true },
     theme: { type: String, default: 'dark' },
     preferredWorkType: { type: String, default: 'Remote' }
+  },
+  hasCompletedOnboarding: {
+    type: Boolean,
+    default: false
+  },
+  authProvider: {
+    type: String,
+    enum: ['email', 'google', 'github'],
+    default: 'email'
+  },
+  resumeText: {
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,

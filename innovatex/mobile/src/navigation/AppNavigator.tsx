@@ -8,6 +8,7 @@ import { COLORS, FONTS } from '../constants/theme';
 
 // Screens
 import AuthScreen from '../screens/auth/AuthScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import GithubAnalyzerScreen from '../screens/github/GithubAnalyzerScreen';
 import JobSearchScreen from '../screens/jobs/JobSearchScreen';
@@ -157,24 +158,28 @@ export default function AppNavigator() {
         }}
       >
         {user ? (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-            <Stack.Screen
-              name="GithubAudit"
-              component={GithubAnalyzerScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="OpenSource"
-              component={OpenSourceScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Research"
-              component={ResearchScreen}
-              options={{ headerShown: false }}
-            />
-          </>
+          !user.hasCompletedOnboarding ? (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          ) : (
+            <>
+              <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+              <Stack.Screen
+                name="GithubAudit"
+                component={GithubAnalyzerScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="OpenSource"
+                component={OpenSourceScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Research"
+                component={ResearchScreen}
+                options={{ headerShown: false }}
+              />
+            </>
+          )
         ) : (
           <Stack.Screen name="Auth" component={AuthScreen} />
         )}

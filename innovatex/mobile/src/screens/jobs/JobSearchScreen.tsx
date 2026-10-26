@@ -24,6 +24,12 @@ export default function JobSearchScreen() {
   const [parsedProfile, setParsedProfile] = useState<any>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({});
 
+  // Filter states
+  const [jobType, setJobType] = useState<'both' | 'job' | 'internship'>('both');
+  const [workType, setWorkType] = useState<'all' | 'remote' | 'onsite' | 'hybrid'>('all');
+  const [country, setCountry] = useState<'all' | 'india'>('all');
+  const [source, setSource] = useState<'all' | 'linkedin' | 'ycombinator' | 'internshala'>('all');
+
   useEffect(() => {
     const fetchExistingBookmarks = async () => {
       try {
@@ -104,7 +110,13 @@ export default function JobSearchScreen() {
         selectedFile.name,
         selectedFile.mimeType || 'application/pdf',
         query.trim(),
-        location.trim()
+        location.trim(),
+        {
+          work_type: workType,
+          job_type: jobType,
+          country: country,
+          source: source,
+        }
       );
       setResults(data.results || []);
       setParsedProfile(data.parsed_profile || null);
@@ -181,6 +193,97 @@ export default function JobSearchScreen() {
           />
         </View>
 
+        {/* Multi-Dimensional Filters */}
+        <View style={styles.filterSection}>
+          {/* Opportunity Type */}
+          <Text style={styles.filterSectionLabel}>OPPORTUNITY TYPE</Text>
+          <View style={styles.filterRow}>
+            {(['both', 'job', 'internship'] as const).map((type) => {
+              const active = jobType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setJobType(type)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {type === 'both' ? 'Both' : type === 'job' ? 'Jobs' : 'Internships'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Workplace Type */}
+          <Text style={[styles.filterSectionLabel, { marginTop: 10 }]}>WORKPLACE</Text>
+          <View style={styles.filterRow}>
+            {(['all', 'remote', 'hybrid', 'onsite'] as const).map((wt) => {
+              const active = workType === wt;
+              return (
+                <TouchableOpacity
+                  key={wt}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setWorkType(wt)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {wt === 'all' ? 'All' : wt.charAt(0).toUpperCase() + wt.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Location / India Filter */}
+          <Text style={[styles.filterSectionLabel, { marginTop: 10 }]}>GEOGRAPHY</Text>
+          <View style={styles.filterRow}>
+            {(['all', 'india'] as const).map((loc) => {
+              const active = country === loc;
+              return (
+                <TouchableOpacity
+                  key={loc}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setCountry(loc)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {loc === 'all' ? 'Global' : 'India-Based Only 🇮🇳'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Platform / Source */}
+          <Text style={[styles.filterSectionLabel, { marginTop: 10 }]}>SOURCE PLATFORM</Text>
+          <View style={styles.filterRow}>
+            {(['all', 'linkedin', 'ycombinator', 'internshala'] as const).map((src) => {
+              const active = source === src;
+              const label =
+                src === 'all'
+                  ? 'All Platforms'
+                  : src === 'linkedin'
+                  ? 'LinkedIn'
+                  : src === 'ycombinator'
+                  ? 'Y Combinator'
+                  : 'Internshala';
+              return (
+                <TouchableOpacity
+                  key={src}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setSource(src)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         <TouchableOpacity
           style={styles.searchBtn}
           onPress={handleSearch}
@@ -190,7 +293,7 @@ export default function JobSearchScreen() {
           {loading ? (
             <ActivityIndicator color={COLORS.textInverse} size="small" />
           ) : (
-            <Text style={styles.searchBtnText}>Run matching</Text>
+            <Text style={styles.searchBtnText}>Run Matching with Filters</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -352,6 +455,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     fontFamily: FONTS.medium,
+  },
+  filterSection: {
+    marginTop: 14,
+    marginBottom: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1A',
+  },
+  filterSectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#777777',
+    fontFamily: FONTS.mono,
+    letterSpacing: 0.6,
+    marginBottom: 6,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  filterChip: {
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  filterChipActive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  filterChipText: {
+    color: '#888888',
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+  },
+  filterChipTextActive: {
+    color: '#000000',
+    fontWeight: '700',
   },
   profileBox: {
     borderWidth: 1,

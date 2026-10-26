@@ -10,6 +10,15 @@ export const AuthService = {
     const res = await apiClient.put('/auth/profile', data);
     return res.data;
   },
+  completeOnboarding: async (data: {
+    githubUsername?: string;
+    targetRole?: string;
+    skills?: string[];
+    resumeText?: string;
+  }) => {
+    const res = await apiClient.post('/auth/onboarding', data);
+    return res.data;
+  },
 };
 
 export const GithubService = {
@@ -32,7 +41,19 @@ export const GithubService = {
 };
 
 export const JobService = {
-  uploadAndSearch: async (fileUri: string, fileName: string, fileType: string, query?: string, location?: string) => {
+  uploadAndSearch: async (
+    fileUri: string,
+    fileName: string,
+    fileType: string,
+    query?: string,
+    location?: string,
+    filters?: {
+      work_type?: string;
+      job_type?: string;
+      country?: string;
+      source?: string;
+    }
+  ) => {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     const token = await AsyncStorage.getItem('auth_token');
     const { API_CONFIG } = require('../config/api');
@@ -69,6 +90,10 @@ export const JobService = {
           parameters: {
             ...(query ? { query } : {}),
             ...(location ? { location } : {}),
+            ...(filters?.work_type ? { work_type: filters.work_type } : {}),
+            ...(filters?.job_type ? { job_type: filters.job_type } : {}),
+            ...(filters?.country ? { country: filters.country } : {}),
+            ...(filters?.source ? { source: filters.source } : {}),
           },
         }
       );
@@ -109,6 +134,10 @@ export const JobService = {
         mimetype: fileType || 'application/pdf',
         query,
         location,
+        work_type: filters?.work_type,
+        job_type: filters?.job_type,
+        country: filters?.country,
+        source: filters?.source,
       });
       return res.data;
     } catch (base64Err: any) {

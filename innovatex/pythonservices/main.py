@@ -261,7 +261,11 @@ async def review_opensource(payload: OpenSourceReviewRequest):
 async def search_jobs(
     resume: UploadFile = File(...),
     query: Optional[str] = Form(None),
-    location: Optional[str] = Form(None)
+    location: Optional[str] = Form(None),
+    work_type: Optional[str] = Form(None),
+    job_type: Optional[str] = Form(None),
+    country: Optional[str] = Form(None),
+    source: Optional[str] = Form(None)
 ):
     try:
         file_bytes = await resume.read()
@@ -273,6 +277,10 @@ async def search_jobs(
             "resume_text": extracted_text,
             "query_override": query.strip() if query else None,
             "location_override": location.strip() if location else None,
+            "work_type": work_type.strip().lower() if work_type else "all",
+            "job_type": job_type.strip().lower() if job_type else "both",
+            "country": country.strip().lower() if country else "all",
+            "source": source.strip().lower() if source else "all",
             "parsed_profile": {},
             "search_queries": [],
             "raw_jobs": [],

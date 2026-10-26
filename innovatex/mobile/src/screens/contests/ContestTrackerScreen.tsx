@@ -56,13 +56,37 @@ export default function ContestTrackerScreen() {
     return `${hrs}h${mins > 0 ? ` ${mins}m` : ''}`;
   };
 
+  const formatISTDateTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+      return date.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }) + ' IST';
+    } catch {
+      return isoString;
+    }
+  };
+
+  const isEnglishOnly = (text: string) => {
+    if (!text) return false;
+    const nonEnglishRegex = /[\u0400-\u04FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF\u0600-\u06FF]/;
+    return !nonEnglishRegex.test(text);
+  };
+
   return (
     <View style={styles.container}>
       <AppHeader
         title="Coding Contests"
         badge="Live"
         badgeType="yellow"
-        subtitle="Competitive programming schedule"
+        subtitle="Competitive programming schedule (IST)"
       />
       {/* Platform Filter Bar */}
       <View style={styles.filterBar}>
@@ -91,7 +115,9 @@ export default function ContestTrackerScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.textPrimary} />}
         >
           {contests.length > 0 ? (
-            contests.map((c, idx) => (
+            contests
+              .filter((c) => isEnglishOnly(c.title))
+              .map((c, idx) => (
               <View key={idx} style={styles.item}>
                 <View style={styles.itemHeader}>
                   <View style={styles.platformBadge}>
@@ -106,10 +132,8 @@ export default function ContestTrackerScreen() {
 
                 <View style={styles.metaRow}>
                   <View style={styles.yellowDot} />
-                  <Text style={styles.metaText}>
-                    {new Date(c.start_time).toLocaleDateString()} {new Date(c.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                  <Text style={styles.metaText}>· {formatDuration(c.duration_seconds)}</Text>
+                  <Text style={styles.metaText}>{formatISTDateTime(c.start_time)}</Text>
+                  <Text style={styles.metaDuration}>· {formatDuration(c.duration_seconds)}</Text>
                 </View>
 
                 {c.url ? (
@@ -118,7 +142,7 @@ export default function ContestTrackerScreen() {
                     onPress={() => Linking.openURL(c.url)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.actionText}>Register</Text>
+                    <Text style={styles.actionText}>Register & Participate</Text>
                     <ExternalLink size={12} color={COLORS.yellowText} />
                   </TouchableOpacity>
                 ) : null}
@@ -231,6 +255,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.yellowText,
   },
   metaText: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    fontFamily: FONTS.mono,
+  },
+  metaDuration: {
     fontSize: 12,
     color: COLORS.textSecondary,
     fontFamily: FONTS.mono,

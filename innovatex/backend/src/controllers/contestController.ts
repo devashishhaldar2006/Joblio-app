@@ -20,6 +20,9 @@ export const getContests = async (req: Request, res: Response) => {
 
     let contests: IContest[] = (cacheDoc?.contests || []) as IContest[];
 
+    const nonEnglishRegex = /[\u0400-\u04FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF\u0600-\u06FF]/;
+    contests = contests.filter(c => c.title && !nonEnglishRegex.test(c.title) && c.url && c.url.startsWith('http'));
+
     const limitDate = new Date(Date.now() + maxDays * 24 * 60 * 60 * 1000);
     contests = contests.filter(c => new Date(c.start_time) <= limitDate);
 

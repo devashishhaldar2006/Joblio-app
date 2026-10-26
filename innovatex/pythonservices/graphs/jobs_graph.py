@@ -11,6 +11,10 @@ class JobsGraphState(TypedDict, total=False):
     resume_text: str
     query_override: Optional[str]
     location_override: Optional[str]
+    work_type: Optional[str]      # 'all' | 'remote' | 'onsite' | 'hybrid'
+    job_type: Optional[str]       # 'both' | 'job' | 'internship'
+    country: Optional[str]        # 'all' | 'india'
+    source: Optional[str]         # 'all' | 'linkedin' | 'ycombinator' | 'internshala' | etc.
     parsed_profile: Dict[str, Any]
     search_queries: List[str]
     raw_jobs: List[Dict[str, Any]]

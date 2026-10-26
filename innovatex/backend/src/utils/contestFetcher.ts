@@ -27,6 +27,16 @@ export function inferDifficulty(title: string): 'beginner' | 'intermediate' | 'a
   return 'intermediate';
 }
 
+/**
+ * Filter out contests that contain non-Latin scripts (Cyrillic, Chinese, Japanese, Korean, Arabic, etc.)
+ */
+export function isEnglishContest(title: string): boolean {
+  if (!title || typeof title !== 'string') return false;
+  // Exclude Cyrillic, CJK (Chinese, Japanese Kanji/Kana, Korean), Arabic, etc.
+  const nonEnglishRegex = /[\u0400-\u04FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF\u0600-\u06FF]/;
+  return !nonEnglishRegex.test(title);
+}
+
 function getPlatformKey(platformStr: string): string {
   const p = (platformStr || '').toLowerCase();
   if (p.includes('codeforces')) return 'codeforces';
@@ -329,6 +339,9 @@ export async function updateContestCache(): Promise<IContest[]> {
   const deduplicated: IContest[] = [];
 
   for (const c of combined) {
+    if (!c.title || !isEnglishContest(c.title)) continue;
+    if (!c.url || !c.url.startsWith('http')) continue;
+
     const startHour = c.start_time ? c.start_time.substring(0, 13) : '';
     const key = `${c.platform_logo_key}_${startHour}_${c.title.slice(0, 10).toLowerCase()}`;
     if (!seen.has(key)) {

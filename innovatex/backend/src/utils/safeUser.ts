@@ -4,12 +4,17 @@ export interface ISafeUser {
   _id?: string;
   name: string;
   email: string;
+  clerkId?: string;
+  avatar?: string;
   githubUsername: string;
   bio: string;
   targetRole: string;
   skills: string[];
   location: string;
   preferences: Record<string, any>;
+  hasCompletedOnboarding: boolean;
+  authProvider: string;
+  hasResume: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -22,12 +27,17 @@ export function getSafeUserData(user: any): ISafeUser | null {
     _id: obj._id ? obj._id.toString() : undefined,
     name: obj.name || '',
     email: obj.email || '',
+    clerkId: obj.clerkId || '',
+    avatar: obj.avatar || '',
     githubUsername: obj.githubUsername || '',
     bio: obj.bio || '',
     targetRole: obj.targetRole || '',
     skills: Array.isArray(obj.skills) ? obj.skills : [],
     location: obj.location || '',
     preferences: obj.preferences || {},
+    hasCompletedOnboarding: Boolean(obj.hasCompletedOnboarding),
+    authProvider: obj.authProvider || 'email',
+    hasResume: Boolean(obj.resumeText && obj.resumeText.length > 20),
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt
   };

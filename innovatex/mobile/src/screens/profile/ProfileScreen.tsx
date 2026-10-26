@@ -47,6 +47,13 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.row}>
+          <Text style={styles.label}>Auth Provider</Text>
+          <Text style={[styles.val, user?.clerkId ? { color: COLORS.accentWarning } : undefined]}>
+            {user?.clerkId ? 'Clerk OAuth/SSO' : 'Joblio Secure JWT'}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
           <Text style={styles.label}>Competencies</Text>
           <Text style={styles.val}>
             {user?.skills && user.skills.length > 0

@@ -1,24 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import apiClient from '../services/apiClient';
 
-interface User {
+export interface User {
   _id: string;
   name: string;
   email: string;
+  clerkId: string;
+  avatar?: string;
   githubUsername?: string;
   skills?: string[];
   targetRole?: string;
+  hasCompletedOnboarding?: boolean;
+  authProvider?: 'email' | 'google' | 'github';
+  hasResume?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  isClerkActive: boolean;
   logout: () => Promise<void>;
   updateUser: (updatedData: Partial<User>) => void;
+  syncClerkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -28,11 +34,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStoredSession();
-  }, []);
+  // Clerk hook bindings
+  let clerkAuth: any = null;
+  let clerkUser: any = null;
+  try {
+    clerkAuth = useClerkAuth();
+    clerkUser = useClerkUser();
+  } catch (e) {
+    console.warn('[Clerk] Hook initialization warning', e);
+  }
 
-  const loadStoredSession = async () => {
+  const isClerkActive = Boolean(clerkAuth?.isLoaded);
+
+  const loadStoredSession = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem('auth_token');
       const storedUser = await AsyncStorage.getItem('auth_user');
@@ -45,43 +59,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  // When Clerk signs in, retrieve Clerk JWT and sync developer document in Mongo
+  const syncClerkSession = useCallback(async () => {
+    if (!clerkAuth?.isSignedIn || !clerkAuth?.getToken) return;
     try {
-      const res = await apiClient.post('/auth/login', { email, password });
-      if (res.data && res.data.token) {
-        setToken(res.data.token);
-        setUser(res.data.user);
-        await AsyncStorage.setItem('auth_token', res.data.token);
-        await AsyncStorage.setItem('auth_user', JSON.stringify(res.data.user));
-        return true;
-      }
-      return false;
-    } catch (err: any) {
-      console.error('Login error', err.response?.data || err.message);
-      throw new Error(err.response?.data?.error || 'Login failed. Please check credentials.');
-    }
-  };
+      setLoading(true);
+      const clerkJwt = await clerkAuth.getToken();
+      if (clerkJwt) {
+        setToken(clerkJwt);
+        await AsyncStorage.setItem('auth_token', clerkJwt);
 
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      const res = await apiClient.post('/auth/register', { name, email, password });
-      if (res.data && res.data.token) {
-        setToken(res.data.token);
-        setUser(res.data.user);
-        await AsyncStorage.setItem('auth_token', res.data.token);
-        await AsyncStorage.setItem('auth_user', JSON.stringify(res.data.user));
-        return true;
+        const email = clerkUser?.user?.primaryEmailAddress?.emailAddress || '';
+        const name = clerkUser?.user?.fullName || clerkUser?.user?.firstName || 'Developer';
+        const avatar = clerkUser?.user?.imageUrl || '';
+        const clerkId = clerkAuth.userId || '';
+
+        try {
+          const res = await apiClient.post(
+            '/auth/sync',
+            {},
+            { headers: { Authorization: `Bearer ${clerkJwt}` } }
+          );
+          if (res.data?.user) {
+            setUser(res.data.user);
+            await AsyncStorage.setItem('auth_user', JSON.stringify(res.data.user));
+            return;
+          }
+        } catch (syncErr) {
+          const fallbackUser: User = {
+            _id: clerkId,
+            clerkId,
+            name,
+            email,
+            avatar,
+            skills: ['TypeScript', 'React', 'Node.js'],
+            targetRole: 'Software Engineer',
+          };
+          setUser(fallbackUser);
+          await AsyncStorage.setItem('auth_user', JSON.stringify(fallbackUser));
+        }
       }
-      return false;
-    } catch (err: any) {
-      console.error('Register error', err.response?.data || err.message);
-      throw new Error(err.response?.data?.error || 'Registration failed.');
+    } catch (err) {
+      console.warn('[AuthContext] Error syncing Clerk session:', err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [clerkAuth?.isSignedIn, clerkAuth?.userId, clerkUser?.user]);
+
+  useEffect(() => {
+    if (clerkAuth?.isLoaded) {
+      if (clerkAuth.isSignedIn) {
+        syncClerkSession();
+      } else {
+        setUser(null);
+        setToken(null);
+        AsyncStorage.removeItem('auth_token');
+        AsyncStorage.removeItem('auth_user');
+        setLoading(false);
+      }
+    } else {
+      loadStoredSession();
+    }
+  }, [clerkAuth?.isLoaded, clerkAuth?.isSignedIn, syncClerkSession, loadStoredSession]);
 
   const logout = async () => {
+    try {
+      if (clerkAuth?.signOut) {
+        await clerkAuth.signOut();
+      }
+    } catch (e) {
+      console.warn('[Clerk] Sign out failed', e);
+    }
     setUser(null);
     setToken(null);
     await AsyncStorage.removeItem('auth_token');
@@ -98,7 +148,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isClerkActive,
+        logout,
+        updateUser,
+        syncClerkSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

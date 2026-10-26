@@ -40,6 +40,9 @@ export const COLORS = {
   statusWarningBg: 'rgba(245, 176, 65, 0.12)',
   statusNeutralText: '#A0A0A0',
   statusNeutralBg: '#1A1A1A',
+
+  accentWarning: '#F5B041',
+  accentAlert: '#FF5C5C',
 };
 
 export const FONTS = {

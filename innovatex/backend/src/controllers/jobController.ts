@@ -36,6 +36,18 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
     if (req.body?.location) {
       form.append('location', req.body.location);
     }
+    if (req.body?.work_type) {
+      form.append('work_type', req.body.work_type);
+    }
+    if (req.body?.job_type) {
+      form.append('job_type', req.body.job_type);
+    }
+    if (req.body?.country) {
+      form.append('country', req.body.country);
+    }
+    if (req.body?.source) {
+      form.append('source', req.body.source);
+    }
 
     const pyRes = await axios.post(`${pythonUrl}/jobs/search`, form, {
       headers: {
@@ -56,6 +68,28 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
       searchedAt: new Date()
     });
     await historyDoc.save();
+
+    // Auto-update user profile with parsed skills and role if candidate skills exist
+    try {
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findById(req.user!._id);
+      if (user) {
+        let changed = false;
+        if (parsed_profile?.skills?.length && (!user.skills || user.skills.length === 0)) {
+          user.skills = parsed_profile.skills;
+          changed = true;
+        }
+        if (parsed_profile?.current_role && (!user.targetRole || user.targetRole === 'Software Engineer')) {
+          user.targetRole = parsed_profile.current_role;
+          changed = true;
+        }
+        if (changed) {
+          await user.save();
+        }
+      }
+    } catch (e) {
+      // Non-critical profile sync error
+    }
 
     return res.status(200).json({
       history_id: historyDoc._id,
