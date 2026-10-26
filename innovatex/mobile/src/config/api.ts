@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-const getBaseUrl = (port: number) => {
+const getDevFallbackUrl = (port: number) => {
   if (Platform.OS === 'android') {
     return `http://10.0.2.2:${port}`;
   }
@@ -8,6 +8,6 @@ const getBaseUrl = (port: number) => {
 };
 
 export const API_CONFIG = {
-  NODE_URL: getBaseUrl(5000),
-  PYTHON_URL: getBaseUrl(8000),
+  NODE_URL: process.env.EXPO_PUBLIC_API_URL || getDevFallbackUrl(5000),
+  PYTHON_URL: process.env.EXPO_PUBLIC_PYTHON_URL || getDevFallbackUrl(8000),
 };

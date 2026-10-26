@@ -15,6 +15,7 @@ import { useSignIn, useSignUp, useOAuth } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { useAuth } from '../../context/AuthContext';
+import { getClerkFrontendApi } from '../../config/clerk';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { ArrowRight, Mail, CheckCircle2 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -62,7 +63,8 @@ export default function AuthScreen() {
       const redirectUrl = 'joblio://oauth-native-callback';
       
       // Step 1: Create sign-in attempt on Clerk's Native API
-      const resp = await fetch('https://saved-gazelle-8482.clerk.accounts.dev/v1/client/sign_ins?_is_native=1', {
+      const clerkFrontendApi = getClerkFrontendApi();
+      const resp = await fetch(`${clerkFrontendApi}/v1/client/sign_ins?_is_native=1`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `strategy=${strategy}&redirect_url=${encodeURIComponent(redirectUrl)}`
