@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -17,10 +17,9 @@ import OpenSourceScreen from '../screens/opensource/OpenSourceScreen';
 import ResearchScreen from '../screens/research/ResearchScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
-// Icons
+// Clean Minimal Lucide Icons
 import {
-  LayoutDashboard,
-  Code2,
+  Home,
   Briefcase,
   TrendingUp,
   Trophy,
@@ -34,35 +33,38 @@ function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
+        headerShown: false,
         headerStyle: {
-          backgroundColor: COLORS.bgCanvas,
-          borderBottomColor: COLORS.border,
+          backgroundColor: '#000000',
+          borderBottomColor: '#1A1A1A',
           borderBottomWidth: 1,
           elevation: 0,
           shadowOpacity: 0,
         },
         headerTitleStyle: {
-          color: COLORS.textPrimary,
-          fontSize: 15,
-          fontWeight: '700',
-          fontFamily: FONTS.medium,
-        },
-        headerTintColor: COLORS.textPrimary,
-        tabBarStyle: {
-          backgroundColor: COLORS.bgCanvas,
-          borderTopColor: COLORS.border,
-          borderTopWidth: 1,
-          elevation: 0,
-          height: 56,
-          paddingBottom: 6,
-          paddingTop: 6,
-        },
-        tabBarActiveTintColor: COLORS.textPrimary,
-        tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarLabelStyle: {
-          fontSize: 10,
+          color: '#FFFFFF',
+          fontSize: 16,
           fontWeight: '600',
+          fontFamily: FONTS.medium,
+          letterSpacing: -0.3,
+        },
+        headerTintColor: '#FFFFFF',
+        tabBarStyle: {
+          backgroundColor: '#0A0A0A',
+          borderTopColor: '#1A1A1A',
+          borderTopWidth: 1,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+          paddingTop: 8,
+          elevation: 0,
+        },
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#555555',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
           fontFamily: FONTS.regular,
+          marginTop: 2,
         },
       }}
     >
@@ -70,54 +72,65 @@ function MainTabNavigator() {
         name="DashboardTab"
         component={DashboardScreen}
         options={{
-          title: 'Joblio',
-          tabBarLabel: 'Overview',
-          tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size - 2} />,
-        }}
-      />
-      <Tab.Screen
-        name="GithubTab"
-        component={GithubAnalyzerScreen}
-        options={{
-          title: 'GitHub Audit',
-          tabBarLabel: 'GitHub',
-          tabBarIcon: ({ color, size }) => <Code2 color={color} size={size - 2} />,
+          headerShown: false,
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIconWrapper, focused && styles.tabIconActive]}>
+              <Home color={color} size={20} strokeWidth={focused ? 2.2 : 1.6} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen
         name="JobsTab"
         component={JobSearchScreen}
         options={{
-          title: 'Job Matching',
+          headerTitle: 'Jobs',
           tabBarLabel: 'Jobs',
-          tabBarIcon: ({ color, size }) => <Briefcase color={color} size={size - 2} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIconWrapper, focused && styles.tabIconActive]}>
+              <Briefcase color={color} size={20} strokeWidth={focused ? 2.2 : 1.6} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen
         name="MarketTab"
         component={MarketIntelligenceScreen}
         options={{
-          title: 'Market Intelligence',
+          headerTitle: 'Skills & Market',
           tabBarLabel: 'Market',
-          tabBarIcon: ({ color, size }) => <TrendingUp color={color} size={size - 2} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIconWrapper, focused && styles.tabIconActive]}>
+              <TrendingUp color={color} size={20} strokeWidth={focused ? 2.2 : 1.6} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen
         name="ContestsTab"
         component={ContestTrackerScreen}
         options={{
-          title: 'Contests & Rounds',
+          headerTitle: 'Contests',
           tabBarLabel: 'Contests',
-          tabBarIcon: ({ color, size }) => <Trophy color={color} size={size - 2} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIconWrapper, focused && styles.tabIconActive]}>
+              <Trophy color={color} size={20} strokeWidth={focused ? 2.2 : 1.6} />
+            </View>
+          ),
         }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          title: 'Profile',
-          tabBarLabel: 'Account',
-          tabBarIcon: ({ color, size }) => <User color={color} size={size - 2} />,
+          headerTitle: 'Profile',
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIconWrapper, focused && styles.tabIconActive]}>
+              <User color={color} size={20} strokeWidth={focused ? 2.2 : 1.6} />
+            </View>
+          ),
         }}
       />
     </Tab.Navigator>
@@ -129,8 +142,8 @@ export default function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.bgCanvas, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="small" color={COLORS.textPrimary} />
+      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="small" color="#FFFFFF" />
       </View>
     );
   }
@@ -140,43 +153,26 @@ export default function AppNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: COLORS.bgCanvas },
+          contentStyle: { backgroundColor: '#000000' },
         }}
       >
         {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
             <Stack.Screen
-              name="OpenSourceTab"
-              component={OpenSourceScreen}
-              options={{
-                headerShown: true,
-                title: 'Open Source',
-                headerStyle: {
-                  backgroundColor: COLORS.bgCanvas,
-                },
-                headerTintColor: COLORS.textPrimary,
-                headerTitleStyle: {
-                  fontFamily: FONTS.medium,
-                  fontSize: 15,
-                },
-              }}
+              name="GithubAudit"
+              component={GithubAnalyzerScreen}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
-              name="ResearchTab"
+              name="OpenSource"
+              component={OpenSourceScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Research"
               component={ResearchScreen}
-              options={{
-                headerShown: true,
-                title: 'Research Synthesis',
-                headerStyle: {
-                  backgroundColor: COLORS.bgCanvas,
-                },
-                headerTintColor: COLORS.textPrimary,
-                headerTitleStyle: {
-                  fontFamily: FONTS.medium,
-                  fontSize: 15,
-                },
-              }}
+              options={{ headerShown: false }}
             />
           </>
         ) : (
@@ -186,3 +182,15 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconWrapper: {
+    padding: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconActive: {
+    backgroundColor: '#1E1E1E',
+  },
+});

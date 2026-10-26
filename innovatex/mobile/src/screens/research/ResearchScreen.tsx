@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { ResearchService } from '../../services';
+import AppHeader from '../../components/AppHeader';
 
-export default function ResearchScreen() {
+export default function ResearchScreen({ navigation }: any) {
   const [input, setInput] = useState('https://arxiv.org/abs/1706.03762');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -33,8 +34,17 @@ export default function ResearchScreen() {
   const explanation = result?.explanation || {};
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
+    <View style={styles.container}>
+      <AppHeader
+        title="Research Papers"
+        badge="AI Papers"
+        badgeType="yellow"
+        subtitle="Plain-English summaries of ArXiv publications"
+        canGoBack
+        onBack={() => navigation?.goBack()}
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
         <Text style={styles.title}>Research Paper Synthesis</Text>
         <Text style={styles.desc}>
           Extract methodology, key contributions, and real-world system architecture from academic papers.
@@ -92,7 +102,8 @@ export default function ResearchScreen() {
           )}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

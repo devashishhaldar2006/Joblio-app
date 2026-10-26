@@ -12,8 +12,9 @@ import {
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { GithubService } from '../../services';
 import { X, Search } from 'lucide-react-native';
+import AppHeader from '../../components/AppHeader';
 
-export default function GithubAnalyzerScreen() {
+export default function GithubAnalyzerScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any>(null);
@@ -55,6 +56,14 @@ export default function GithubAnalyzerScreen() {
 
   return (
     <View style={styles.container}>
+      <AppHeader
+        title="GitHub Audit"
+        badge="Quality Check"
+        badgeType="red"
+        subtitle="Repository standards & automated fixes"
+        canGoBack
+        onBack={() => navigation?.goBack()}
+      />
       {/* Input Header */}
       <View style={styles.searchBar}>
         <TextInput

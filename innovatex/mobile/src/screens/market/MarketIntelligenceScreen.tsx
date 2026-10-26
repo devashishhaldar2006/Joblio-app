@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { MarketService } from '../../services';
+import AppHeader from '../../components/AppHeader';
 
 export default function MarketIntelligenceScreen() {
   const [loading, setLoading] = useState(true);
@@ -62,18 +63,17 @@ export default function MarketIntelligenceScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.textPrimary} />}
-    >
-      {/* Editorial Overview Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Market Forecast</Text>
-        <Text style={styles.desc}>
-          Aggregated technical competencies across active engineering job postings.
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <AppHeader
+        title="Market & Trends"
+        badge="Live Data"
+        badgeType="yellow"
+        subtitle="Demand shifts & high-velocity tooling"
+      />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.textPrimary} />}
+      >
 
       {/* Emerging Tools Strip */}
       <View style={styles.section}>
@@ -106,7 +106,7 @@ export default function MarketIntelligenceScreen() {
 
                 <View style={styles.cellMeta}>
                   <Text style={styles.percentageText}>{item.percentage}%</Text>
-                  <Text style={styles.deltaText}>
+                  <Text style={[styles.deltaText, isPositive ? styles.deltaPositive : styles.deltaNegative]}>
                     {isPositive ? `+${item.wow_change}%` : `${item.wow_change}%`}
                   </Text>
                 </View>
@@ -116,6 +116,7 @@ export default function MarketIntelligenceScreen() {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -235,5 +236,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontFamily: FONTS.mono,
     marginTop: 1,
+  },
+  deltaPositive: {
+    color: COLORS.yellowText,
+  },
+  deltaNegative: {
+    color: COLORS.redText,
   },
 });

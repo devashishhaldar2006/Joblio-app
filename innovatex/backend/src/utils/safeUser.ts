@@ -14,10 +14,6 @@ export interface ISafeUser {
   updatedAt?: Date;
 }
 
-/**
- * Sanitizes user data models before sending payloads to clients,
- * ensuring no sensitive fields (passwords, internal salts, OTPs) are ever exposed.
- */
 export function getSafeUserData(user: any): ISafeUser | null {
   if (!user) return null;
   const obj = typeof user.toObject === 'function' ? user.toObject() : { ...user };
@@ -37,9 +33,6 @@ export function getSafeUserData(user: any): ISafeUser | null {
   };
 }
 
-/**
- * Strips untrusted tags, script characters, and normalizes inputs
- */
 export function sanitizeString(str: any, maxLength: number = 255): string {
   if (typeof str !== 'string') return '';
   return str.trim().slice(0, maxLength);

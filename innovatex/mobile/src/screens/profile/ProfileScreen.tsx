@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import AppHeader from '../../components/AppHeader';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -21,14 +22,21 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.name}>{user?.name || 'Developer'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        {user?.githubUsername && (
-          <Text style={styles.github}>github.com/{user.githubUsername}</Text>
-        )}
-      </View>
+    <View style={styles.container}>
+      <AppHeader
+        title="Developer Profile"
+        badge="Pro"
+        badgeType="yellow"
+        subtitle="Account settings & career preferences"
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.name}>{user?.name || 'Developer'}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
+          {user?.githubUsername && (
+            <Text style={styles.github}>github.com/{user.githubUsername}</Text>
+          )}
+        </View>
 
       <View style={styles.card}>
         <Text style={styles.cardHeader}>Profile settings</Text>
@@ -56,7 +64,8 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
         <Text style={styles.logoutText}>Sign out</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

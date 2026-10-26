@@ -12,6 +12,7 @@ import {
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { ContestService } from '../../services';
 import { ExternalLink } from 'lucide-react-native';
+import AppHeader from '../../components/AppHeader';
 
 export default function ContestTrackerScreen() {
   const [contests, setContests] = useState<any[]>([]);
@@ -57,6 +58,12 @@ export default function ContestTrackerScreen() {
 
   return (
     <View style={styles.container}>
+      <AppHeader
+        title="Coding Contests"
+        badge="Live"
+        badgeType="yellow"
+        subtitle="Competitive programming schedule"
+      />
       {/* Platform Filter Bar */}
       <View style={styles.filterBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
@@ -87,7 +94,9 @@ export default function ContestTrackerScreen() {
             contests.map((c, idx) => (
               <View key={idx} style={styles.item}>
                 <View style={styles.itemHeader}>
-                  <Text style={styles.platformBadge}>{c.platform || 'Contest'}</Text>
+                  <View style={styles.platformBadge}>
+                    <Text style={styles.platformBadgeText}>{(c.platform || 'Contest').toUpperCase()}</Text>
+                  </View>
                   {c.difficulty ? (
                     <Text style={styles.difficulty}>{c.difficulty.toUpperCase()}</Text>
                   ) : null}
@@ -96,6 +105,7 @@ export default function ContestTrackerScreen() {
                 <Text style={styles.title}>{c.title}</Text>
 
                 <View style={styles.metaRow}>
+                  <View style={styles.yellowDot} />
                   <Text style={styles.metaText}>
                     {new Date(c.start_time).toLocaleDateString()} {new Date(c.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
@@ -109,7 +119,7 @@ export default function ContestTrackerScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.actionText}>Register</Text>
-                    <ExternalLink size={12} color={COLORS.textPrimary} />
+                    <ExternalLink size={12} color={COLORS.yellowText} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -172,9 +182,10 @@ const styles = StyleSheet.create({
   },
   item: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#222222',
+    borderRadius: 12,
     padding: SPACING.md,
-    backgroundColor: COLORS.bgCanvas,
+    backgroundColor: '#0E0E0E',
   },
   itemHeader: {
     flexDirection: 'row',
@@ -182,10 +193,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   platformBadge: {
-    fontSize: 11,
+    backgroundColor: COLORS.yellowBg,
+    borderColor: COLORS.yellowBorder,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  platformBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
     fontFamily: FONTS.mono,
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
+    color: COLORS.yellowText,
   },
   difficulty: {
     fontSize: 10,
@@ -201,8 +220,15 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    gap: 6,
     marginTop: 6,
+  },
+  yellowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.yellowText,
   },
   metaText: {
     fontSize: 12,
@@ -212,18 +238,21 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     marginTop: SPACING.sm,
     alignSelf: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderDark,
-    paddingBottom: 2,
+    backgroundColor: COLORS.yellowBg,
+    borderWidth: 1,
+    borderColor: COLORS.yellowBorder,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   actionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.regular,
+    color: COLORS.yellowText,
+    fontFamily: FONTS.medium,
   },
   emptyText: {
     color: COLORS.textSecondary,

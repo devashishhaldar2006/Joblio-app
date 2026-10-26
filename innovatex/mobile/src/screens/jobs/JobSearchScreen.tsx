@@ -13,6 +13,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { JobService } from '../../services';
 import { Bookmark, ExternalLink } from 'lucide-react-native';
+import AppHeader from '../../components/AppHeader';
 
 export default function JobSearchScreen() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -141,9 +142,16 @@ export default function JobSearchScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Upload & Query Box */}
-      <View style={styles.card}>
+    <View style={styles.container}>
+      <AppHeader
+        title="Jobs & Matches"
+        badge="Active"
+        badgeType="yellow"
+        subtitle="Resume-aligned engineering listings"
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Upload & Query Box */}
+        <View style={styles.card}>
         <Text style={styles.cardTitle}>Resume Analysis & Role Matching</Text>
         <Text style={styles.cardSub}>
           Select your resume file to match open engineering listings by competency.
@@ -260,7 +268,8 @@ export default function JobSearchScreen() {
           })}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -274,16 +283,17 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   card: {
+    backgroundColor: COLORS.bgCard,
     borderWidth: 1,
     borderColor: COLORS.border,
+    borderRadius: 12,
     padding: SPACING.md,
-    backgroundColor: COLORS.bgCanvas,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: FONTS.regular,
+    fontFamily: FONTS.medium,
   },
   cardSub: {
     fontSize: 12,
@@ -298,6 +308,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: COLORS.borderStrong,
     backgroundColor: COLORS.bgSubtle,
+    borderRadius: 8,
     padding: SPACING.md,
     alignItems: 'center',
     marginBottom: SPACING.md,
@@ -319,20 +330,22 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   textInput: {
+    backgroundColor: COLORS.bgInput,
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    borderRadius: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     color: COLORS.textPrimary,
     fontSize: 13,
     fontFamily: FONTS.regular,
   },
   searchBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
-    paddingVertical: 10,
+    backgroundColor: COLORS.textPrimary,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
+    marginTop: 4,
   },
   searchBtnText: {
     color: COLORS.textInverse,
@@ -343,12 +356,13 @@ const styles = StyleSheet.create({
   profileBox: {
     borderWidth: 1,
     borderColor: COLORS.border,
+    borderRadius: 10,
     padding: SPACING.md,
     marginTop: SPACING.md,
-    backgroundColor: COLORS.bgSubtle,
+    backgroundColor: COLORS.bgCard,
   },
   profileRole: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textPrimary,
     fontFamily: FONTS.medium,
@@ -357,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     fontFamily: FONTS.regular,
-    marginTop: 2,
+    marginTop: 4,
   },
   resultsList: {
     marginTop: SPACING.lg,
@@ -367,12 +381,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: FONTS.regular,
+    fontFamily: FONTS.medium,
     marginBottom: SPACING.xs,
   },
   jobItem: {
+    backgroundColor: COLORS.bgCard,
     borderWidth: 1,
     borderColor: COLORS.border,
+    borderRadius: 12,
     padding: SPACING.md,
   },
   jobHeader: {
@@ -381,10 +397,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   jobTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.textPrimary,
     fontFamily: FONTS.medium,
+    letterSpacing: -0.2,
   },
   jobCompany: {
     fontSize: 12,
@@ -396,47 +413,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 6,
+    marginTop: 8,
   },
   platformBadge: {
-    backgroundColor: COLORS.bgCanvas,
+    backgroundColor: COLORS.accentSubtle,
     borderWidth: 1,
-    borderColor: COLORS.textPrimary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 2,
+    borderColor: 'rgba(56, 139, 253, 0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   platformBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.accentText,
     fontFamily: FONTS.mono,
     letterSpacing: 0.5,
   },
   jobScore: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS.statusSuccessText,
     fontFamily: FONTS.mono,
+    backgroundColor: COLORS.statusSuccessBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   jobReason: {
     fontSize: 12,
     color: COLORS.textSecondary,
     fontFamily: FONTS.regular,
-    marginTop: 4,
-    lineHeight: 16,
+    marginTop: 8,
+    lineHeight: 18,
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 8,
+    marginTop: 10,
   },
   tag: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     backgroundColor: COLORS.bgSubtle,
   },
   tagText: {
@@ -446,7 +468,10 @@ const styles = StyleSheet.create({
   },
   applyBtn: {
     marginTop: 12,
-    backgroundColor: COLORS.textPrimary,
+    backgroundColor: COLORS.bgSubtle,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -455,7 +480,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   applyBtnText: {
-    color: COLORS.textInverse,
+    color: COLORS.textPrimary,
     fontSize: 12,
     fontWeight: '600',
     fontFamily: FONTS.medium,

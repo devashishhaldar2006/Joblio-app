@@ -12,8 +12,9 @@ import {
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { OpenSourceService } from '../../services';
 import { ExternalLink } from 'lucide-react-native';
+import AppHeader from '../../components/AppHeader';
 
-export default function OpenSourceScreen() {
+export default function OpenSourceScreen({ navigation }: any) {
   const [skills, setSkills] = useState('javascript, react');
   const [language, setLanguage] = useState('javascript');
   const [level, setLevel] = useState('beginner');
@@ -34,8 +35,17 @@ export default function OpenSourceScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
+    <View style={styles.container}>
+      <AppHeader
+        title="Open Source"
+        badge="Contribute"
+        badgeType="yellow"
+        subtitle="Good first issues & repo matching"
+        canGoBack
+        onBack={() => navigation?.goBack()}
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
         <Text style={styles.title}>Open Source Contribution Finder</Text>
         <Text style={styles.desc}>
           Filter beginner-friendly and good first issues across public repositories.
@@ -94,7 +104,8 @@ export default function OpenSourceScreen() {
           ))}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
