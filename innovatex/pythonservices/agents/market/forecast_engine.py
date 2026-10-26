@@ -258,7 +258,7 @@ def forecast_skill(
             "weeks_of_data": weeks_of_data,
             "message": f"Insufficient observation depth ({weeks_of_data} weeks) — minimum 4 weeks required.",
             "model_used": "none",
-            "model_version": "Innovatex v4.0",
+            "model_version": "Joblio v4.0",
             "current_percentage": curr_pct,
             "forecast_percentage_6m": curr_pct,
             "confidence": 0.20,
@@ -408,7 +408,7 @@ def forecast_skill(
     spread_26w = forecast_series[-1]["uncertainty_spread"] if forecast_series else 0.0
 
     diagnostics = {
-        "model_version": "Innovatex Multi-Signal Ensemble v4.0",
+        "model_version": "Joblio Multi-Signal Ensemble v4.0",
         "algorithm": model_used,
         "training_window": f"{dates[0]} to {dates[-1]} ({weeks_of_data} weekly observations)",
         "features_used": [
@@ -436,7 +436,7 @@ def forecast_skill(
         "skill": skill_name,
         "insufficient_data": False,
         "model_used": model_used,
-        "model_version": "Innovatex v4.0",
+        "model_version": "Joblio v4.0",
         "weeks_of_data": weeks_of_data,
         "weeks_ahead": weeks_ahead,
         "current_percentage": current_percentage,

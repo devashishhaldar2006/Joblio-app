@@ -11,7 +11,7 @@ class SemanticScholarClient:
             resp = await client.get(
                 f"{self.base_url}/paper/{paper_id}",
                 params={"fields": fields},
-                headers={"User-Agent": "InnovateX-Research-Agent"},
+                headers={"User-Agent": "Joblio-Research-Agent"},
                 timeout=20.0
             )
             if resp.status_code == 200:
@@ -24,7 +24,7 @@ class SemanticScholarClient:
             resp = await client.get(
                 f"{self.base_url}/paper/{paper_id}/recommendations",
                 params={"fields": fields, "limit": limit},
-                headers={"User-Agent": "InnovateX-Research-Agent"},
+                headers={"User-Agent": "Joblio-Research-Agent"},
                 timeout=20.0
             )
             if resp.status_code == 200:

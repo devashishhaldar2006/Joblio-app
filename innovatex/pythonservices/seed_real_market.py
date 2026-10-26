@@ -20,8 +20,8 @@ from utils.skill_dictionary import SKILLS, normalize_skill
 
 load_dotenv()
 
-mongo_uri = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017/innovatex")
-db_name = os.getenv("MONGO_DB_NAME", "innovatex")
+mongo_uri = os.getenv("MONGO_URI", "mongodb://127.0.0.1:27017/joblio")
+db_name = os.getenv("MONGO_DB_NAME", "joblio")
 client_mongo = MongoClient(mongo_uri)
 db = client_mongo[db_name]
 

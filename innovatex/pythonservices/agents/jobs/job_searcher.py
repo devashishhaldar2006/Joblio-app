@@ -198,7 +198,7 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
         try:
             resp = await client.get(
                 "https://remoteok.com/api",
-                headers={"User-Agent": "InnovateX/1.0"},
+                headers={"User-Agent": "Joblio/1.0"},
                 timeout=10.0
             )
             if resp.status_code == 200:
@@ -636,9 +636,7 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Guarantee non-English jobs are never shown even in fallback
         final_jobs = [j for j in raw_jobs if is_english_text(j.get("job_title", "")) and is_english_text(j.get("job_description", ""))]
 
-    # =========================================================================
-    # Build platform search links for platforms without public APIs
-    # =========================================================================
+   
     platform_links = _build_platform_links(roles, skills, "India" if country_filter == "india" else (location_override or ""))
 
     return {

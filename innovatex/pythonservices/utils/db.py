@@ -21,12 +21,12 @@ def get_mongo_uri() -> str:
     uri = os.getenv("MONGO_URI", "")
     if not uri:
         # Fallback to local default if not set
-        uri = "mongodb://127.0.0.1:27017/innovatex"
+        uri = "mongodb://127.0.0.1:27017/joblio"
     return uri
 
 def get_db_name() -> str:
-    # Use specified DB name or default to innovatex
-    return os.getenv("MONGO_DB_NAME", "innovatex")
+    # Use specified DB name or default to joblio
+    return os.getenv("MONGO_DB_NAME", "joblio")
 
 def get_sync_db():
     """Get synchronous pymongo database object."""

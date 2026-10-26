@@ -1,5 +1,5 @@
 """
-Tiered LLM Configuration for InnovateX AI Engine.
+Tiered LLM Configuration for Joblio AI Engine.
 
 llm_fast  → Groq (openai/gpt-oss-120b) — lightweight agents (GitHub, OS Finder, Contests)
 llm_smart → Gemini 3.6 Flash           — heavy-context agents (Research, Job Search)

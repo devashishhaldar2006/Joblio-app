@@ -26,7 +26,7 @@ class GitHubClient:
     def _get_headers(self) -> Dict[str, str]:
         headers = {
             "Accept": "application/vnd.github+json",
-            "User-Agent": "InnovateX-Developer-Platform"
+            "User-Agent": "Joblio-Developer-Platform"
         }
         if self.token and self.token != "your_github_personal_access_token":
             headers["Authorization"] = f"Bearer {self.token}"

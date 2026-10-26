@@ -38,7 +38,7 @@ app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'InnovateX Express TypeScript Backend' });
+  res.json({ status: 'ok', service: 'Joblio Express TypeScript Backend' });
 });
 
 // Error handling middleware
@@ -48,7 +48,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 const PORT = Number(process.env.PORT) || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/innovatex';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/joblio';
 
 mongoose.connect(MONGO_URI)
   .then(async () => {
@@ -72,13 +72,13 @@ mongoose.connect(MONGO_URI)
     });
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] InnovateX Express TypeScript backend running on http://0.0.0.0:${PORT}`);
+      console.log(`[Server] Joblio Express TypeScript backend running on http://0.0.0.0:${PORT}`);
     });
   })
   .catch(err => {
     console.error('[Database] MongoDB connection error:', err);
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] InnovateX Express TypeScript backend running without Mongo on http://0.0.0.0:${PORT}`);
+      console.log(`[Server] Joblio Express TypeScript backend running without Mongo on http://0.0.0.0:${PORT}`);
     });
   });
 

@@ -1,6 +1,6 @@
-# InnovateX — Developer Intelligence Platform
+# Joblio — Developer Intelligence & Job Matching Platform
 
-InnovateX is a full-stack, AI-powered Developer Intelligence Platform combining LLM orchestration, machine learning forecasting, and real-time developer telemetry into a unified dashboard.
+Joblio is a full-stack, AI-powered Developer Intelligence Platform combining LLM orchestration, machine learning forecasting, and real-time developer telemetry into a unified mobile and backend ecosystem.
 
 ---
 

@@ -18,7 +18,7 @@ class ArxivClient:
         return None
 
     async def get_by_id(self, arxiv_id: str) -> Optional[Dict[str, Any]]:
-        headers = {"User-Agent": "InnovateX-Research-Agent/1.0 (academic; mailto:research@innovatex.io)"}
+        headers = {"User-Agent": "Joblio-Research-Agent/1.0 (academic; mailto:support@joblio.app)"}
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
@@ -35,7 +35,7 @@ class ArxivClient:
 
     async def search_by_title(self, title: str) -> Optional[Dict[str, Any]]:
         clean_title = re.sub(r'[\'"]', '', title.strip())
-        headers = {"User-Agent": "InnovateX-Research-Agent/1.0 (academic; mailto:research@innovatex.io)"}
+        headers = {"User-Agent": "Joblio-Research-Agent/1.0 (academic; mailto:support@joblio.app)"}
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
