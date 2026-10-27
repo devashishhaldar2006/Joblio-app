@@ -13,7 +13,6 @@
       "android": {
         "buildType": "apk"
       },
-      "npmClient": "npm",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
