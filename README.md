@@ -1,12 +1,11 @@
 <div align="center">
 
-<img src="./docs/assets/joblio-logo.png" width="120" height="120" alt="Joblio Logo" style="border-radius: 24px;" />
+<h1>
+  <img src="./docs/assets/joblio-logo.png" width="42" height="42" alt="Joblio Logo" style="vertical-align: middle; border-radius: 8px;" />
+  <span>Joblio</span>
+</h1>
 
-# ⚡ Joblio
-
-### **AI-Powered Developer Intelligence & Career Matching Platform**
-
-<img src="./docs/assets/joblio-banner.png" width="100%" alt="Joblio Feature Banner" style="border-radius: 12px; margin: 16px 0;" />
+<p><strong>AI-Powered Developer Intelligence & Career Matching Platform</strong></p>
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Express](https://img.shields.io/badge/Express-4.19-000000?style=flat-square&logo=express)](https://expressjs.com/)
