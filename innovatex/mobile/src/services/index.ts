@@ -15,6 +15,7 @@ export const AuthService = {
     targetRole?: string;
     skills?: string[];
     resumeText?: string;
+    resumeFileName?: string;
   }) => {
     const res = await apiClient.post('/auth/onboarding', data);
     return res.data;

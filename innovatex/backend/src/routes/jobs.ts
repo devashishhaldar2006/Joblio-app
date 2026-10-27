@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { createDailyQuotaMiddleware } from '../middleware/quotaMiddleware.js';
 import {
   searchJobs,
   getHistory,
@@ -20,7 +21,10 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-router.post('/search', authMiddleware, upload.single('resume'), searchJobs);
+// Protect AI resume job matching with daily quota (15 searches per day per user)
+const jobSearchQuota = createDailyQuotaMiddleware(15, 'Resume Job Matches');
+
+router.post('/search', authMiddleware, jobSearchQuota, upload.single('resume'), searchJobs);
 router.get('/history', authMiddleware, getHistory);
 router.get('/history/:id', authMiddleware, getHistoryById);
 

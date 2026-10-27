@@ -12,11 +12,15 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { JobService } from '../../services';
-import { Bookmark, ExternalLink } from 'lucide-react-native';
+import { Bookmark, ExternalLink, FileText, CheckCircle2 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
+import { useAuth } from '../../context/AuthContext';
 
 export default function JobSearchScreen() {
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const { user, updateUser } = useAuth();
+  const [selectedFile, setSelectedFile] = useState<any>(
+    user?.resumeFileName ? { name: user.resumeFileName, isExisting: true } : null
+  );
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
@@ -106,8 +110,8 @@ export default function JobSearchScreen() {
     setLoading(true);
     try {
       const data = await JobService.uploadAndSearch(
-        selectedFile.uri,
-        selectedFile.name,
+        selectedFile.uri || '',
+        selectedFile.name || 'resume.pdf',
         selectedFile.mimeType || 'application/pdf',
         query.trim(),
         location.trim(),
@@ -120,6 +124,9 @@ export default function JobSearchScreen() {
       );
       setResults(data.results || []);
       setParsedProfile(data.parsed_profile || null);
+      if (selectedFile.name && selectedFile.name !== user?.resumeFileName) {
+        updateUser({ hasResume: true, resumeFileName: selectedFile.name });
+      }
     } catch (e: any) {
       alert(e.response?.data?.error || e.message || 'Job search failed');
     } finally {

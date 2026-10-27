@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Platform,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -21,20 +21,35 @@ import {
   ArrowRight,
   Briefcase,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  X,
 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
+
+export const POPULAR_ROLES = [
+  'Full Stack Engineer',
+  'Frontend Developer',
+  'Backend Developer',
+  'Mobile App Developer (React Native / Flutter)',
+  'Software Engineer',
+  'AI / Machine Learning Engineer',
+  'Data Scientist',
+  'DevOps & Cloud Engineer',
+  'Systems & C++ Engineer',
+  'Cybersecurity Analyst',
+  'Blockchain / Web3 Developer',
+];
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuth();
 
-  // Determine provider logic
   const isGithubUser = user?.authProvider === 'github' || Boolean(user?.githubUsername);
-  const isGoogleUser = user?.authProvider === 'google';
 
   const [githubUsername, setGithubUsername] = useState(user?.githubUsername || '');
-  const [targetRole, setTargetRole] = useState(user?.targetRole || 'Software Engineer');
+  const [targetRole, setTargetRole] = useState(user?.targetRole || 'Full Stack Engineer');
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedResume, setSelectedResume] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState('');
@@ -47,7 +62,7 @@ export default function OnboardingScreen() {
         type: [
           'application/pdf',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'text/plain'
+          'text/plain',
         ],
         copyToCacheDirectory: false,
       });
@@ -79,79 +94,70 @@ export default function OnboardingScreen() {
   };
 
   const handleCompleteOnboarding = async () => {
-    if (!selectedResume) {
-      setErrorMsg('Please upload your resume to complete your profile setup.');
-      return;
-    }
-
-    // Non-github users (Email/password or Google) should provide or confirm their GitHub username
-    if (!isGithubUser && !githubUsername.trim()) {
-      setErrorMsg('Please enter your GitHub username to link developer metrics.');
-      return;
-    }
-
     setLoading(true);
     setErrorMsg('');
-    setUploadProgressText('Parsing resume & analyzing skills...');
+    setUploadProgressText('Finalizing your developer profile...');
 
     try {
-      // Step 1: Send resume to JobService to extract structured profile
-      let parsedSkills: string[] = user?.skills || ['TypeScript', 'React'];
+      let parsedSkills: string[] = user?.skills || ['TypeScript', 'React', 'Node.js'];
       let parsedRole = targetRole;
 
-      try {
-        const searchRes = await JobService.uploadAndSearch(
-          selectedResume.uri,
-          selectedResume.name || 'resume.pdf',
-          selectedResume.mimeType || 'application/pdf',
-          targetRole,
-          'India / Remote'
-        );
+      // 1. If resume attached, attempt AI extraction & caching
+      if (selectedResume?.uri) {
+        try {
+          setUploadProgressText('Analyzing resume & matching skills...');
+          const searchRes = await JobService.uploadAndSearch(
+            selectedResume.uri,
+            selectedResume.name || 'resume.pdf',
+            selectedResume.mimeType || 'application/pdf',
+            targetRole,
+            'India / Remote'
+          );
 
-        if (searchRes?.parsed_profile) {
-          const p = searchRes.parsed_profile;
-          if (Array.isArray(p.skills) && p.skills.length > 0) {
-            parsedSkills = p.skills;
+          if (searchRes?.parsed_profile) {
+            const p = searchRes.parsed_profile;
+            if (Array.isArray(p.skills) && p.skills.length > 0) {
+              parsedSkills = p.skills;
+            }
+            if (p.current_role) {
+              parsedRole = p.current_role;
+            }
           }
-          if (p.current_role) {
-            parsedRole = p.current_role;
-          }
+        } catch (resumeParseErr: any) {
+          console.warn('Resume parse skipped, continuing:', resumeParseErr?.message);
         }
-      } catch (resumeParseErr: any) {
-        console.warn('Resume parse warning (continuing onboarding with defaults):', resumeParseErr.message);
       }
 
-      setUploadProgressText('Finalizing your developer profile...');
+      setUploadProgressText('Saving preferences...');
 
-      // Step 2: Complete onboarding in backend
-      try {
-        const res = await AuthService.completeOnboarding({
-          githubUsername: isGithubUser ? (user?.githubUsername || githubUsername.trim()) : githubUsername.trim(),
-          targetRole: parsedRole,
-          skills: parsedSkills,
-        });
-
-        if (res?.user) {
-          updateUser({
-            ...res.user,
-            hasCompletedOnboarding: true,
-          });
-          return;
-        }
-      } catch (completeErr: any) {
-        console.warn('AuthService completeOnboarding warning:', completeErr?.message);
-      }
-
-      // Fallback: If network or backend sync was interrupted, update local session directly so user proceeds
-      updateUser({
-        hasCompletedOnboarding: true,
-        githubUsername: (isGithubUser ? user?.githubUsername : githubUsername.trim()) || githubUsername.trim(),
+      // 2. Submit to backend
+      const cleanGithub = githubUsername ? githubUsername.trim().replace(/^@/, '') : '';
+      const res = await AuthService.completeOnboarding({
+        githubUsername: isGithubUser ? user?.githubUsername : cleanGithub,
         targetRole: parsedRole,
         skills: parsedSkills,
+        resumeFileName: selectedResume?.name || '',
       });
+
+      if (res?.user) {
+        updateUser({
+          ...res.user,
+          hasCompletedOnboarding: true,
+          hasResume: Boolean(selectedResume?.name),
+          resumeFileName: selectedResume?.name || '',
+        });
+      } else {
+        updateUser({
+          hasCompletedOnboarding: true,
+          githubUsername: cleanGithub,
+          targetRole: parsedRole,
+          skills: parsedSkills,
+          hasResume: Boolean(selectedResume?.name),
+          resumeFileName: selectedResume?.name || '',
+        });
+      }
     } catch (err: any) {
-      console.error('Onboarding failure:', err);
-      // Even if everything threw an unexpected error, mark onboarding completed locally so the user is never blocked
+      console.warn('Onboarding error, completing locally:', err);
       updateUser({
         hasCompletedOnboarding: true,
         githubUsername: githubUsername.trim(),
@@ -170,19 +176,15 @@ export default function OnboardingScreen() {
         <View style={styles.header}>
           <View style={styles.badge}>
             <Sparkles color="#FFFFFF" size={12} strokeWidth={2.5} />
-            <Text style={styles.badgeText}>SETUP PROFILE</Text>
+            <Text style={styles.badgeText}>GET STARTED</Text>
           </View>
-          <Text style={styles.title}>Let's build your profile</Text>
+          <Text style={styles.title}>Welcome to Joblio</Text>
           <Text style={styles.subtitle}>
-            {isGithubUser
-              ? 'Your GitHub is connected! Upload your resume so our AI can match you with targeted jobs and internships.'
-              : isGoogleUser
-              ? 'Welcome via Google! Upload your resume and connect your GitHub username to personalize recommendations.'
-              : 'Welcome! Upload your resume and link your GitHub username to access curated opportunities.'}
+            Select your target career path. GitHub and resume are optional now and can be updated anytime in your profile.
           </Text>
         </View>
 
-        {/* Error message */}
+        {/* Error banner */}
         {errorMsg ? (
           <View style={styles.errorBanner}>
             <AlertCircle color="#FF4D4D" size={16} />
@@ -190,15 +192,77 @@ export default function OnboardingScreen() {
           </View>
         ) : null}
 
-        {/* Section 1: Resume Upload (Mandatory for all) */}
+        {/* Section 1: Target Role Dropdown (Required) */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Briefcase color="#FFFFFF" size={18} />
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>1. Target Role / Job Title</Text>
+              <Text style={styles.cardSubtitle}>Select your primary specialization</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.dropdownTrigger}
+            onPress={() => setShowRoleModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.dropdownValue}>{targetRole}</Text>
+            <ChevronDown color="#888888" size={18} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Section 2: GitHub Username (Optional) */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                  fill="#FFFFFF"
+                />
+              </Svg>
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>2. GitHub Profile</Text>
+              <Text style={styles.cardSubtitle}>Optional • Used for repository analysis</Text>
+            </View>
+          </View>
+
+          {isGithubUser ? (
+            <View style={styles.githubLinkedBox}>
+              <CheckCircle2 color="#22C55E" size={16} />
+              <Text style={styles.githubLinkedText}>
+                Connected as <Text style={styles.githubLinkedUsername}>@{user?.githubUsername}</Text>
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputPrefix}>github.com/</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="your-username"
+                placeholderTextColor="#666666"
+                value={githubUsername}
+                onChangeText={setGithubUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Section 3: Resume (Optional, stays uploaded) */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.iconCircle}>
               <FileText color="#FFFFFF" size={18} />
             </View>
             <View style={styles.cardHeaderText}>
-              <Text style={styles.cardTitle}>1. Upload Resume</Text>
-              <Text style={styles.cardSubtitle}>PDF, DOCX, or TXT (Max 10MB)</Text>
+              <Text style={styles.cardTitle}>3. Resume Document</Text>
+              <Text style={styles.cardSubtitle}>Optional • Upload once, kept forever for jobs</Text>
             </View>
           </View>
 
@@ -215,87 +279,27 @@ export default function OnboardingScreen() {
                     {selectedResume.name}
                   </Text>
                   <Text style={styles.selectedFileSize}>
-                    {selectedResume.size ? `${(selectedResume.size / 1024).toFixed(0)} KB • Tap to replace` : 'Ready to parse • Tap to replace'}
+                    {selectedResume.size ? `${(selectedResume.size / 1024).toFixed(0)} KB • Tap to replace` : 'Ready • Tap to replace'}
                   </Text>
                 </View>
               </View>
             ) : (
               <View style={styles.uploadPlaceholder}>
-                <UploadCloud color="#888888" size={32} strokeWidth={1.5} />
-                <Text style={styles.uploadPromptTitle}>Tap to select resume</Text>
-                <Text style={styles.uploadPromptSubtitle}>Our AI parses your skills & experiences instantly</Text>
+                <UploadCloud color="#888888" size={32} />
+                <Text style={styles.uploadPromptTitle}>Attach your resume (PDF/DOCX)</Text>
+                <Text style={styles.uploadPromptSubtitle}>You can also upload this later in Job Search</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Section 2: GitHub Profile */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="#FFFFFF">
-                <Path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-              </Svg>
-            </View>
-            <View style={styles.cardHeaderText}>
-              <Text style={styles.cardTitle}>2. GitHub Profile</Text>
-              <Text style={styles.cardSubtitle}>
-                {isGithubUser ? 'Auto-detected from your GitHub account' : 'Used to audit code quality & match repos'}
-              </Text>
-            </View>
-          </View>
-
-          {isGithubUser ? (
-            <View style={styles.githubLinkedBox}>
-              <CheckCircle2 color="#22C55E" size={20} />
-              <Text style={styles.githubLinkedText}>
-                Linked as <Text style={styles.githubLinkedUsername}>@{user?.githubUsername || 'connected'}</Text>
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputPrefix}>github.com/</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="username"
-                placeholderTextColor="#555555"
-                value={githubUsername}
-                onChangeText={setGithubUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          )}
-        </View>
-
-        {/* Section 3: Target Role Preference */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Briefcase color="#FFFFFF" size={18} />
-            </View>
-            <View style={styles.cardHeaderText}>
-              <Text style={styles.cardTitle}>3. Target Role</Text>
-              <Text style={styles.cardSubtitle}>Your primary role interest</Text>
-            </View>
-          </View>
-
-          <TextInput
-            style={styles.roleInput}
-            placeholder="e.g. Full Stack Developer, ML Engineer, Backend..."
-            placeholderTextColor="#555555"
-            value={targetRole}
-            onChangeText={setTargetRole}
-          />
-        </View>
-
-        {/* Progress text if parsing */}
-        {uploadProgressText ? (
+        {/* Progress indicator */}
+        {loading && (
           <View style={styles.progressContainer}>
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.progressText}>{uploadProgressText}</Text>
           </View>
-        ) : null}
+        )}
 
         {/* Submit Button */}
         <TouchableOpacity
@@ -308,12 +312,47 @@ export default function OnboardingScreen() {
             <ActivityIndicator size="small" color="#000000" />
           ) : (
             <>
-              <Text style={styles.submitButtonText}>Complete Setup & Explore Jobs</Text>
+              <Text style={styles.submitButtonText}>Enter Joblio Platform</Text>
               <ArrowRight color="#000000" size={18} strokeWidth={2.2} />
             </>
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Role Picker Modal */}
+      <Modal visible={showRoleModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Target Role</Text>
+              <TouchableOpacity onPress={() => setShowRoleModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <X color="#FFFFFF" size={20} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 340 }}>
+              {POPULAR_ROLES.map((r) => {
+                const isSelected = targetRole === r;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={[styles.roleOption, isSelected && styles.roleOptionSelected]}
+                    onPress={() => {
+                      setTargetRole(r);
+                      setShowRoleModal(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.roleOptionText, isSelected && styles.roleOptionTextSelected]}>
+                      {r}
+                    </Text>
+                    {isSelected && <CheckCircle2 color="#FFFFFF" size={16} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -415,6 +454,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: FONTS.regular,
   },
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    height: 48,
+  },
+  dropdownValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   uploadBox: {
     backgroundColor: '#141414',
     borderColor: '#262626',
@@ -505,17 +560,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     paddingLeft: 2,
   },
-  roleInput: {
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderColor: '#262626',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 46,
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: FONTS.regular,
-  },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -545,5 +589,51 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: '#121212',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#262626',
+    padding: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E1E1E',
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  roleOptionSelected: {
+    backgroundColor: '#1E1E1E',
+  },
+  roleOptionText: {
+    color: '#CCCCCC',
+    fontSize: 14,
+  },
+  roleOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

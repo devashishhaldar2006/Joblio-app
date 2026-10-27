@@ -15,6 +15,7 @@ export interface ISafeUser {
   hasCompletedOnboarding: boolean;
   authProvider: string;
   hasResume: boolean;
+  resumeFileName?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -37,7 +38,8 @@ export function getSafeUserData(user: any): ISafeUser | null {
     preferences: obj.preferences || {},
     hasCompletedOnboarding: Boolean(obj.hasCompletedOnboarding),
     authProvider: obj.authProvider || 'email',
-    hasResume: Boolean(obj.resumeText && obj.resumeText.length > 20),
+    hasResume: Boolean((obj.resumeText && obj.resumeText.length > 20) || obj.resumeFileName),
+    resumeFileName: obj.resumeFileName || '',
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt
   };

@@ -92,9 +92,9 @@ export const completeOnboarding = async (req: AuthenticatedRequest, res: Respons
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    const { githubUsername, targetRole, skills, resumeText } = req.body;
+    const { githubUsername, targetRole, skills, resumeText, resumeFileName } = req.body;
 
-    if (githubUsername) {
+    if (githubUsername !== undefined) {
       user.githubUsername = githubUsername.trim().replace(/^@/, '');
     }
     if (targetRole) {
@@ -105,6 +105,9 @@ export const completeOnboarding = async (req: AuthenticatedRequest, res: Respons
     }
     if (resumeText) {
       user.resumeText = resumeText;
+    }
+    if (resumeFileName) {
+      user.resumeFileName = resumeFileName;
     }
 
     user.hasCompletedOnboarding = true;

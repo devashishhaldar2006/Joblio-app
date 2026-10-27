@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,21 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { GithubService } from '../../services';
+import { useAuth } from '../../context/AuthContext';
 import { X, Search } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 
 export default function GithubAnalyzerScreen({ navigation }: any) {
-  const [username, setUsername] = useState('');
+  const { user } = useAuth();
+  const [username, setUsername] = useState(user?.githubUsername || '');
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any>(null);
+
+  useEffect(() => {
+    if (user?.githubUsername && !username) {
+      setUsername(user.githubUsername);
+    }
+  }, [user?.githubUsername]);
   const [activeTab, setActiveTab] = useState<'overview' | 'actions' | 'codegen'>('overview');
   const [fixModalContent, setFixModalContent] = useState<string | null>(null);
   const [fixModalTitle, setFixModalTitle] = useState('');

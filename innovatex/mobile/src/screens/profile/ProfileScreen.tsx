@@ -63,8 +63,10 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>Gateway</Text>
-          <Text style={styles.val}>10.0.2.2 (Localhost)</Text>
+          <Text style={styles.label}>Resume on file</Text>
+          <Text style={[styles.val, user?.hasResume ? { color: '#22C55E' } : { color: COLORS.textMuted }]}>
+            {user?.resumeFileName || (user?.hasResume ? 'Active Resume Attached' : 'None uploaded')}
+          </Text>
         </View>
       </View>
 

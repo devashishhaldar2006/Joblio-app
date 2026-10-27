@@ -21,6 +21,7 @@ export interface IUser extends Document {
   hasCompletedOnboarding: boolean;
   authProvider: 'email' | 'google' | 'github';
   resumeText?: string;
+  resumeFileName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +92,10 @@ const userSchema = new Schema<IUser>({
     default: 'email'
   },
   resumeText: {
+    type: String,
+    default: ''
+  },
+  resumeFileName: {
     type: String,
     default: ''
   },

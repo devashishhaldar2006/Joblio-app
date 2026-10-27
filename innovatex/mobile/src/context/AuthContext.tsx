@@ -15,6 +15,7 @@ export interface User {
   hasCompletedOnboarding?: boolean;
   authProvider?: 'email' | 'google' | 'github';
   hasResume?: boolean;
+  resumeFileName?: string;
 }
 
 interface AuthContextType {

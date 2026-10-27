@@ -83,6 +83,10 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
           user.targetRole = parsed_profile.current_role;
           changed = true;
         }
+        if (fileName) {
+          user.resumeFileName = fileName;
+          changed = true;
+        }
         if (changed) {
           await user.save();
         }
