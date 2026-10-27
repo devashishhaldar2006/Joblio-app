@@ -15,6 +15,7 @@ import contestRoutes from './routes/contests.js';
 import jobRoutes from './routes/jobs.js';
 import marketRoutes from './routes/market.js';
 import reportRoutes from './routes/reports.js';
+import legalRoutes from './routes/legal.js';
 
 import { updateContestCache } from './utils/contestFetcher.js';
 
@@ -35,6 +36,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/', legalRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
