@@ -154,11 +154,13 @@ router.get('/privacy', (req: Request, res: Response) => {
     <h2>6. Children's Privacy</h2>
     <p>Joblio is intended for developers, engineering students, and career professionals seeking software employment. We do not knowingly collect personal information from children under the age of 13.</p>
 
-    <h2>7. Contact Us</h2>
+    <h2>7. Contact & Authors</h2>
     <div class="contact-card">
       <p>If you have any questions, concerns, or data deletion requests regarding this Privacy Policy, please reach out to our team at:</p>
-      <p><strong>Email:</strong> <a href="mailto:support@joblio.app">support@joblio.app</a></p>
-      <p><strong>Developer:</strong> Devashish Haldar (<a href="https://github.com/devashishhaldar2006">GitHub Profile</a>)</p>
+      <p><strong>Email:</strong> <a href="mailto:workfordevashishhaldar@gmail.com">workfordevashishhaldar@gmail.com</a></p>
+      <p><strong>Created by:</strong> Devashish & Om</p>
+      <p><strong>GitHub:</strong> <a href="https://github.com/devashishhaldar2006">Devashish</a> · <a href="https://github.com/loqom">Om</a></p>
+      <p><strong>LinkedIn:</strong> <a href="https://linkedin.com/in/devashish-haldar-dev">Devashish</a> · <a href="https://linkedin.com/in/om-vishwakarma-codes">Om</a></p>
     </div>
   </div>
 </body>

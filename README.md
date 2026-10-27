@@ -152,5 +152,11 @@ All API keys, JWT secrets, and database credentials are excluded from Git via `.
 
 ---
 
+## Authors
+* **Devashish** - [@devashishhaldar2006](https://github.com/devashishhaldar2006) · [LinkedIn](https://linkedin.com/in/devashish-haldar-dev)
+* **Om** - [@loqom](https://github.com/loqom) · [LinkedIn](https://linkedin.com/in/om-vishwakarma-codes)
+
+---
+
 ## License
-MIT License. Created for the InnovateX Developer Intelligence Platform.
+MIT License. Created for the Joblio Developer Intelligence Platform.

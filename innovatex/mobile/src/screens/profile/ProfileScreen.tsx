@@ -6,9 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { ExternalLink } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 
 export default function ProfileScreen() {
@@ -19,6 +21,14 @@ export default function ProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: logout },
     ]);
+  };
+
+  const openLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (e) {
+      console.warn('Error opening author link:', e);
+    }
   };
 
   return (
@@ -67,6 +77,61 @@ export default function ProfileScreen() {
           <Text style={[styles.val, user?.hasResume ? { color: '#22C55E' } : { color: COLORS.textMuted }]}>
             {user?.resumeFileName || (user?.hasResume ? 'Active Resume Attached' : 'None uploaded')}
           </Text>
+        </View>
+      </View>
+
+      {/* Built By Section */}
+      <View style={styles.builtByCard}>
+        <Text style={styles.cardHeader}>Built by</Text>
+        <View style={styles.creatorsRow}>
+          {/* Devashish */}
+          <View style={styles.creatorCol}>
+            <Text style={styles.creatorName}>Devashish</Text>
+            <View style={styles.creatorLinks}>
+              <TouchableOpacity
+                style={styles.creatorPill}
+                onPress={() => openLink('https://github.com/devashishhaldar2006')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.creatorPillText}>GitHub</Text>
+                <ExternalLink size={10} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.creatorPill}
+                onPress={() => openLink('https://linkedin.com/in/devashish-haldar-dev')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.creatorPillText}>LinkedIn</Text>
+                <ExternalLink size={10} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.creatorsDivider} />
+
+          {/* Om */}
+          <View style={styles.creatorCol}>
+            <Text style={styles.creatorName}>Om</Text>
+            <View style={styles.creatorLinks}>
+              <TouchableOpacity
+                style={styles.creatorPill}
+                onPress={() => openLink('https://github.com/loqom')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.creatorPillText}>GitHub</Text>
+                <ExternalLink size={10} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.creatorPill}
+                onPress={() => openLink('https://linkedin.com/in/om-vishwakarma-codes')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.creatorPillText}>LinkedIn</Text>
+                <ExternalLink size={10} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -160,5 +225,54 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     fontFamily: FONTS.medium,
+  },
+  builtByCard: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: SPACING.md,
+    backgroundColor: COLORS.bgCanvas,
+    gap: 12,
+  },
+  creatorsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  creatorCol: {
+    flex: 1,
+    gap: 8,
+  },
+  creatorName: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FONTS.medium,
+  },
+  creatorLinks: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  creatorPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#262626',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  creatorPillText: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontFamily: FONTS.regular,
+  },
+  creatorsDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 12,
   },
 });

@@ -478,6 +478,11 @@ export default function AuthScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Subtle Credits Footer */}
+        <View style={styles.footerCredits}>
+          <Text style={styles.footerCreditsText}>Joblio v1.0 • Crafted by Devashish & Om</Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -679,5 +684,15 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 13,
     fontFamily: FONTS.regular,
+  },
+  footerCredits: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  footerCreditsText: {
+    color: '#444444',
+    fontSize: 11,
+    fontFamily: FONTS.regular,
+    letterSpacing: 0.3,
   },
 });
