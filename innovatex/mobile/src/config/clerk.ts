@@ -24,17 +24,23 @@ const base64Decode = (str: string): string => {
 
 export const getClerkFrontendApi = (): string => {
   const envApi = process.env.EXPO_PUBLIC_CLERK_FRONTEND_API;
-  if (envApi) return envApi;
+  if (envApi) return envApi.replace(/\/+$/, '');
 
   try {
     // Standard Clerk key: pk_test_<base64_encoded_domain>$
     const key = CLERK_PUBLISHABLE_KEY.trim();
     const parts = key.split('_');
     if (parts.length >= 3) {
-      const b64 = parts[2].replace(/\$$/, '');
+      let b64 = parts[2];
+      // Strip trailing dollar sign if present in key format
+      if (b64.endsWith('$')) {
+        b64 = b64.slice(0, -1);
+      }
       const decoded = base64Decode(b64);
-      if (decoded && decoded.includes('.')) {
-        return `https://${decoded.trim()}`;
+      // Clean up any trailing non-domain characters (like stray '$' or control chars)
+      const cleanDomain = decoded.replace(/[^a-zA-Z0-9.-]/g, '').trim();
+      if (cleanDomain && cleanDomain.includes('.')) {
+        return `https://${cleanDomain}`;
       }
     }
   } catch (e) {
