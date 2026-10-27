@@ -404,9 +404,6 @@ export const getLatestAnalysis = async (req: AuthenticatedRequest, res: Response
     }
 
     let latestRecord = await GithubAnalysis.findOne(filter).sort({ analyzedAt: -1 });
-    if (!latestRecord && !queryUsername) {
-      latestRecord = await GithubAnalysis.findOne().sort({ analyzedAt: -1 });
-    }
     if (!latestRecord || !latestRecord.report) {
       return res.status(200).json(null);
     }
@@ -455,13 +452,6 @@ export const getHistory = async (req: AuthenticatedRequest, res: Response) => {
     let history = await GithubAnalysis.find(filter)
       .sort({ analyzedAt: -1 })
       .limit(15);
-
-    if (history.length === 0 && !req.query.username) {
-      const fallback = await GithubAnalysis.findOne().sort({ analyzedAt: -1 });
-      if (fallback) {
-        history = [fallback];
-      }
-    }
 
     return res.status(200).json(history);
   } catch (err) {

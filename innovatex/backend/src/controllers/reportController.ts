@@ -288,7 +288,7 @@ export const getReportById = async (req: AuthenticatedRequest, res: Response) =>
     let normalized: any = null;
 
     if (type === 'github') {
-      doc = await GithubAnalysis.findOne({ _id: id });
+      doc = await GithubAnalysis.findOne({ _id: id, userId });
       if (doc) normalized = normalizeGithubReport(doc);
     } else if (type === 'research') {
       doc = await ResearchHistory.findOne({ _id: id, userId });
@@ -319,7 +319,7 @@ export const deleteReport = async (req: AuthenticatedRequest, res: Response) => 
 
     let deleted: any = null;
     if (type === 'github') {
-      deleted = await GithubAnalysis.findOneAndDelete({ _id: id });
+      deleted = await GithubAnalysis.findOneAndDelete({ _id: id, userId });
     } else if (type === 'research') {
       deleted = await ResearchHistory.findOneAndDelete({ _id: id, userId });
     } else if (type === 'jobs') {
