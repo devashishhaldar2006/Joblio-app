@@ -1,162 +1,287 @@
-# Joblio — Developer Intelligence & Job Matching Platform
+<div align="center">
 
-Joblio is a full-stack, AI-powered Developer Intelligence Platform combining LLM orchestration, machine learning forecasting, and real-time developer telemetry into a unified mobile and backend ecosystem.
+# ⚡ Joblio
 
----
+### **AI-Powered Developer Intelligence & Career Matching Platform**
 
-## Architecture & Modules
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Express](https://img.shields.io/badge/Express-4.19-000000?style=flat-square&logo=express)](https://expressjs.com/)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?style=flat-square&logo=expo)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?style=flat-square&logo=react)](https://reactnative.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Orchestration-FF6F00?style=flat-square)](https://python.langchain.com/)
+[![Upstash Redis](https://img.shields.io/badge/Upstash-Redis%20Cache-00E599?style=flat-square&logo=redis)](https://upstash.com/)
+[![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-The platform consists of 6 integrated intelligence modules:
+**Joblio** is an enterprise-grade, full-stack intelligence platform that bridges the gap between software developers and the tech industry. It combines real-time developer telemetry, multi-agent LLM workflows, machine learning market forecasting, and high-precision career matching into a sleek, Sunset Noir mobile ecosystem.
 
-1. **GitHub Profile Analyzer**: Multi-agent repository analysis, code quality auditing, and commit pattern insights.
-2. **Research Paper Agent**: ArXiv paper exploration, technical concept breakdown, and architecture explanation.
-3. **Open Source Contribution Finder**: Personalized good-first-issue matching with step-by-step PR guides and automated code reviews.
-4. **Competitive Programming Intelligence**: Live contest radar integrating CLIST API with personalized difficulty filtering.
-5. **Multi-Agent Job Search**: Automated resume parsing, skill matching, and tailored role recommendations.
-6. **Job Market Demand Forecaster**:
-   - **Data Feed**: Live telemetry from RapidAPI JSearch across global tech hubs.
-   - **NLP Engine**: Two-pass skill extraction across 570+ technology skills.
-   - **Auto-Selecting ML**: Facebook Prophet (weekly additive model, $\ge 16$ weeks), ARIMA (auto-AIC order search, $\ge 12$ weeks), or Linear Regression ($\ge 4$ weeks).
-   - **Trajectory Analytics**: 26-week demand predictions, 80% confidence interval bands, and momentum indexes.
-   - **Skill Gap Auditor**: Portfolio resilience scoring and personalized skill recommendations.
+[Architecture](#-system-architecture) • [Features](#-core-capabilities) • [Tech Stack](#-technical-stack) • [Installation](#-getting-started) • [Deployment](#-cloud-deployment) • [Authors](#-authors)
 
 ---
 
-## Tech Stack
+</div>
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 18, Vite, Recharts, Lucide React, Modern Glassmorphism CSS |
-| **Backend API** | Node.js, Express, MongoDB / Mongoose, JWT Authentication, Axios |
-| **AI / ML Microservices** | Python 3.11+, FastAPI, LangGraph, Facebook Prophet, Statsmodels (ARIMA), Scikit-learn, APScheduler, Motor (Async MongoDB) |
-| **LLMs & Telemetry** | Google Gemini, Groq, RapidAPI JSearch Feed, CLIST API |
+## 📌 System Architecture
+
+Joblio operates on a distributed microservice topology designed for horizontal scalability, sub-second latency, and token efficiency:
+
+```mermaid
+flowchart TD
+    subgraph Client["📱 Mobile Client (React Native / Expo 58)"]
+        UI["Sunset Noir UI / Navigation"]
+        ClerkSDK["Clerk Auth SDK (OAuth / SSO)"]
+        SecureCache["AsyncStorage & SecureStore"]
+    end
+
+    subgraph Gateway["🚀 Backend API Gateway (Node.js / Express TS)"]
+        AuthMiddleware["Clerk Session Token Verification"]
+        QuotaMiddleware["Fair-Use Rate Limiter (Map In-Memory / IP)"]
+        ContestCron["Contest Cache Engine (node-cron 6h)"]
+        APIRoutes["REST Endpoints (/jobs, /github, /market, /contests)"]
+    end
+
+    subgraph AIEngine["🧠 AI & ML Microservice (FastAPI + LangGraph)"]
+        RedisCache["Upstash Redis Serverless Cache"]
+        Pruner["Resume NLP Compression (2500 Chars)"]
+        SkillDict["570+ Technology Deterministic Dictionary"]
+        LangGraphPipe["LangGraph Multi-Agent Workflows"]
+        LLMPool["LLM Router: Groq (Llama 3.3) ⇄ Google Gemini"]
+        MLEngine["Forecaster: Facebook Prophet ⇄ Auto-ARIMA"]
+    end
+
+    subgraph Storage["☁️ Cloud Data Layer"]
+        MongoDB[("MongoDB Atlas: Users, History, Snapshots")]
+        Upstash[("Upstash Redis: 7d Resumes, 30d Papers")]
+        ExternalAPIs["JSearch (RapidAPI) • CLIST • GitHub REST API • arXiv"]
+    end
+
+    Client -->|HTTPS / JWT| Gateway
+    Gateway -->|Tenant Scoped Query| MongoDB
+    Gateway -->|Internal RPC / Multipart| AIEngine
+    AIEngine -->|REST Cache Check / Set| Upstash
+    AIEngine -->|Inference Call| LLMPool
+    AIEngine -->|Scrape / Telemetry| ExternalAPIs
+```
 
 ---
 
-## Project Structure
+## ✨ Core Capabilities
+
+### 1. 💼 AI-Powered Resume Matching & Job Radar
+- **Sticky Resume Persistence**: Candidates upload a resume once (PDF, DOCX, TXT); it remains attached and synced across all app sessions until deliberately updated.
+- **Multi-Dimensional Filtering**: Search jobs and internships by Workplace (`Remote`, `Hybrid`, `Onsite`), Opportunity Type (`Jobs`, `Internships`), Geography (`India 🇮🇳`, `Global`), and Source (`LinkedIn`, `Y Combinator`, `Internshala`).
+- **English-Only Guarantee**: Automated Latin-character filters exclude foreign-language or non-Latin listings.
+
+### 2. 📈 Market Intelligence & ML Forecaster
+- **Live Tech Telemetry**: Continuous scraping of active engineering openings via RapidAPI JSearch.
+- **Two-Pass NLP Extractor**: Recognizes 570+ frameworks, databases, languages, and cloud libraries.
+- **Adaptive Machine Learning Engine**:
+  - **Facebook Prophet**: Weekly additive seasonality model for skills with $\ge 16$ weeks of historical data.
+  - **Auto-ARIMA**: Automated AIC order minimization for skills with $\ge 12$ weeks.
+  - **Linear Regression**: Baseline velocity trend for emerging technologies ($\ge 4$ weeks).
+- **26-Week Forward Projections**: Computes 80% confidence interval bands, demand velocity, and momentum indices.
+
+### 3. 🔍 GitHub Developer Profiler & Audit
+- **Engineering Hygiene Score**: Audits public GitHub profiles based on commit velocity, README documentation, testing, and CI/CD coverage (0–100 score).
+- **Automated Fix Generation**: Generates production-ready GitHub Actions CI/CD workflows and profile `README.md` files.
+
+### 4. 🏆 Competitive Programming Radar
+- **Multi-Platform Scraping**: Aggregates live upcoming contests from **LeetCode**, **Codeforces**, **CodeChef**, and **AtCoder** via CLIST API.
+- **Background Cron Updates**: Pre-computes and caches contest schedules every 6 hours, serving listings in under **10ms**.
+
+### 5. 📄 Research Paper Explainer
+- **arXiv Integration**: Explores computer science and AI research papers.
+- **Hierarchical Extraction**: Breaks papers down into problem formulation, core methodology, architectural pipeline steps, and developer takeaways.
+- **30-Day Redis Caching**: Popular papers are cached in Upstash, slashing token consumption to **zero** on repeat queries.
+
+### 6. 🛡️ Token Optimization & Scalability Suite
+- **Prompt Pruning**: Strips legal boilerplate and disclaimers from resumes, slashing prompt tokens by **~60%**.
+- **Hybrid Parsing**: Runs deterministic dictionary lookups first; falls back to LLM inference only when needed.
+- **Fair-Use Quotas**: Express rate limiting prevents quota exhaustion (15 resume matches/day, 10 audits/day).
+
+---
+
+## 🛠️ Technical Stack
+
+| Layer | Technologies | Purpose |
+| :--- | :--- | :--- |
+| **Mobile Client** | React Native 0.88, Expo SDK 58, TypeScript | Cross-platform iOS & Android mobile application |
+| **Authentication** | Clerk Expo SDK, Clerk Express Middleware | Passwordless, Google OAuth, GitHub OAuth & JWT sessions |
+| **Backend API** | Node.js 20+, Express 4, TypeScript | Secure API gateway, validation, cron schedulers |
+| **AI Microservice** | Python 3.11+, FastAPI, LangGraph | Multi-agent execution pipelines & document parsing |
+| **LLM Inference** | Groq (Llama 3.3 70B Versatile), Google Gemini 1.5 | High-speed, cost-effective language models |
+| **Machine Learning** | Prophet, Statsmodels (ARIMA), Scikit-learn, Pandas | Time-series trend analysis & demand forecasting |
+| **Caching Layer** | Upstash Redis (Serverless REST) | Token elimination for resumes and research papers |
+| **Database** | MongoDB Atlas, Motor (Async IO), Mongoose | Persistent document store with multi-tenant isolation |
+| **Build & Release** | Expo Application Services (EAS Build) | Automated Android APK and AAB compilation |
+
+---
+
+## 📂 Repository Structure
 
 ```text
-innovatex/
-├── backend/                  # Node.js / Express REST API
-│   ├── controllers/          # Route handlers (market, auth, jobs, etc.)
-│   ├── middleware/           # Auth and optional auth guards
-│   ├── models/               # Mongoose schemas (SkillDataPoint, MarketSnapshot, etc.)
-│   ├── routes/               # Express API endpoints
-│   ├── .env.example          # Environment template
-│   └── package.json
+Joblio-app/
+├── innovatex/
+│   ├── backend/                     # Node.js Express TypeScript Gateway
+│   │   ├── src/
+│   │   │   ├── controllers/         # auth, jobs, github, market, reports
+│   │   │   ├── middleware/          # authMiddleware (Clerk), quotaMiddleware
+│   │   │   ├── models/              # User, ContestCache, MarketSnapshot, JobSearchHistory
+│   │   │   ├── routes/              # Express API endpoints & /privacy legal page
+│   │   │   └── utils/               # contestFetcher, safeUser sanitization
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── mobile/                      # React Native / Expo Mobile App
+│   │   ├── assets/                  # App icon (512x512), splash, adaptive launcher
+│   │   ├── src/
+│   │   │   ├── components/          # Reusable UI widgets & AppHeader
+│   │   │   ├── config/              # API configuration & Clerk base64 decoder
+│   │   │   ├── constants/           # Sunset Noir theme tokens (COLORS, FONTS)
+│   │   │   ├── context/             # AuthContext (Clerk + Mongo session sync)
+│   │   │   ├── navigation/          # AppNavigator (Role-gated onboarding routing)
+│   │   │   ├── screens/             # Auth, Onboarding, Jobs, Contests, Market, Profile
+│   │   │   └── services/            # Axios API clients & multipart file uploads
+│   │   ├── app.json                 # Expo configuration & deep linking schemes
+│   │   ├── eas.json                 # EAS build profiles (APK preview & production AAB)
+│   │   └── package.json
+│   │
+│   └── pythonservices/              # Python FastAPI AI & ML Microservice
+│       ├── agents/
+│       │   ├── github/              # Repo analyzer, code audit, fix generator
+│       │   ├── jobs/                # Resume parser, job searcher, match scorer
+│       │   ├── market/              # JSearch scraper, NLP skill extractor, Prophet forecaster
+│       │   ├── opensource/          # Good first issue finder & PR guides
+│       │   └── research/            # ArXiv paper explainer & related research finder
+│       ├── graphs/                  # LangGraph state machine definitions
+│       ├── utils/                   # Upstash Redis cache client, MongoDB async client, LLM router
+│       ├── main.py                  # FastAPI application entrypoint
+│       ├── scheduler.py             # APScheduler background telemetry cron
+│       └── requirements.txt
 │
-├── frontend/                 # React + Vite application
-│   ├── src/
-│   │   ├── components/       # UI elements (Navbar, Sidebar, etc.)
-│   │   ├── pages/            # View pages (market, dashboard, etc.)
-│   │   ├── services/         # Axios API client
-│   │   └── utils/            # Skill taxonomy (570+ skills autocomplete)
-│   ├── .env.example          # Environment template
-│   └── package.json
-│
-└── pythonservices/           # Python FastAPI + ML Microservices
-    ├── agents/market/        # JSearch scraper, NLP extractor, timeseries, Prophet/ARIMA engine
-    ├── graphs/               # LangGraph state pipelines
-    ├── utils/                # 573-skill dictionary, MongoDB clients
-    ├── main.py               # FastAPI server & endpoints
-    ├── scheduler.py          # APScheduler weekly telemetry job (Sunday 02:00 UTC)
-    ├── .env.example          # Environment template
-    └── requirements.txt      # Python dependencies
+└── README.md
 ```
 
 ---
 
-## Quickstart Setup Guide
+## 🚀 Getting Started
 
-### 1. Prerequisites
-- **Node.js** v18+ and **npm**
-- **Python** 3.10+ (with C++ build tools for `prophet`)
-- **MongoDB** (Atlas cluster or local MongoDB instance)
-
----
-
-### 2. Python AI/ML Microservice
-
-```bash
-cd innovatex/pythonservices
-
-# 1. Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate    # On Windows: .venv\Scripts\activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Configure environment
-cp .env.example .env
-# Edit .env and supply your GEMINI_API_KEY, GROQ_API_KEY, RAPIDAPI_KEY, and MONGO_URI
-
-# 4. Start the FastAPI microservice
-python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-```
+### Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **Python**: v3.10 or v3.11
+- **Package Manager**: `npm`
+- **Expo EAS CLI**: `npm install -g eas-cli`
 
 ---
 
-### 3. Node.js Backend API
-
+### 1. Backend Service Setup
 ```bash
 cd innovatex/backend
 
-# 1. Install dependencies
+# Install dependencies
 npm install
 
-# 2. Configure environment
+# Configure environment
 cp .env.example .env
-# Edit .env and supply your MONGO_URI and JWT_SECRET
+# Fill in MONGO_URI, CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY, CLIST credentials
 
-# 3. Start the Express API server
-node app.js
-```
-Backend runs at `http://localhost:5000`.
-
----
-
-### 4. React Frontend
-
-```bash
-cd innovatex/frontend
-
-# 1. Install dependencies
-npm install
-
-# 2. Configure environment
-cp .env.example .env
-# Edit .env if your backend runs on a different port (default: http://localhost:5000/api)
-
-# 3. Start development server
+# Run development server
 npm run dev
+
+# Compile TypeScript for production
+npm run build
 ```
-Frontend runs at `http://localhost:5173`.
+Backend runs at `http://localhost:5000`. Health check: `http://localhost:5000/api/health`.
 
 ---
 
-## Running Automated ML Tests
-
-To verify the Prophet, ARIMA, and Linear Regression forecasting pipeline:
-
+### 2. Python AI Microservice Setup
 ```bash
 cd innovatex/pythonservices
-python test_market_ml.py
+
+# Create and activate virtual environment
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Fill in GROQ_API_KEY, GEMINI_API_KEY, RAPIDAPI_KEY, UPSTASH credentials
+
+# Start FastAPI server
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+FastAPI docs: `http://localhost:8000/docs`. Health check: `http://localhost:8000/health`.
+
+---
+
+### 3. Mobile App (Expo) Setup
+```bash
+cd innovatex/mobile
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+# Start Expo Development Server
+npx expo start
 ```
 
 ---
 
-## Security & Secrets
+## 📱 Compiling the Android APK
 
-All API keys, JWT secrets, and database credentials are excluded from Git via `.gitignore`. Always maintain your local secrets in `.env` and configure production secrets via deployment platform environment variables.
+Joblio is pre-configured with **Expo Application Services (EAS)** for building standalone Android APKs:
+
+```powershell
+cd innovatex/mobile
+
+# Build standalone test APK (Cloud builder)
+$env:EAS_BUILD_SKIP_LOCKFILE_CHECK=1; npx eas build -p android --profile preview
+
+# Build production App Bundle (.aab) for Google Play Store
+npx eas build -p android --profile production
+```
 
 ---
 
-## Authors
+## ☁️ Cloud Deployment
+
+| Service | Hosting Platform | URL |
+| :--- | :--- | :--- |
+| **API Gateway** | Render Web Service | `https://joblio-backend.onrender.com` |
+| **AI Microservice** | Render Web Service | `https://joblio-ai-service.onrender.com` |
+| **Serverless Cache** | Upstash Redis | `https://feasible-pelican-241151.upstash.io` |
+| **Database** | MongoDB Atlas | Cluster `cluster0` |
+| **Privacy Policy** | Render (Hosted) | `https://joblio-backend.onrender.com/privacy` |
+
+---
+
+## 🛡️ Security & Privacy
+
+- **Data Encryption**: All transit traffic is strictly enforced over TLS/HTTPS.
+- **Tenant Isolation**: All database operations scope records by verified Clerk user tokens (`userId`).
+- **Secrets Protection**: All `.env` files are strictly excluded from git tracking.
+- **Transient AI Processing**: Resumes submitted for parsing are evaluated transiently and cached in encrypted Redis memory; they are never shared with or used to train third-party foundation models.
+
+---
+
+## 👥 Authors
+
 * **Devashish** - [@devashishhaldar2006](https://github.com/devashishhaldar2006) · [LinkedIn](https://linkedin.com/in/devashish-haldar-dev)
 * **Om** - [@loqom](https://github.com/loqom) · [LinkedIn](https://linkedin.com/in/om-vishwakarma-codes)
 
 ---
 
-## License
-MIT License. Created for the Joblio Developer Intelligence Platform.
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
