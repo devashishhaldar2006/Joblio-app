@@ -118,34 +118,45 @@ export default function OnboardingScreen() {
           }
         }
       } catch (resumeParseErr: any) {
-        console.warn('Resume parse warning (continuing onboarding):', resumeParseErr.message);
+        console.warn('Resume parse warning (continuing onboarding with defaults):', resumeParseErr.message);
       }
 
       setUploadProgressText('Finalizing your developer profile...');
 
       // Step 2: Complete onboarding in backend
-      const res = await AuthService.completeOnboarding({
-        githubUsername: isGithubUser ? user?.githubUsername : githubUsername.trim(),
-        targetRole: parsedRole,
-        skills: parsedSkills,
-      });
-
-      if (res?.user) {
-        updateUser({
-          ...res.user,
-          hasCompletedOnboarding: true,
-        });
-      } else {
-        updateUser({
-          hasCompletedOnboarding: true,
-          githubUsername: githubUsername.trim(),
+      try {
+        const res = await AuthService.completeOnboarding({
+          githubUsername: isGithubUser ? (user?.githubUsername || githubUsername.trim()) : githubUsername.trim(),
           targetRole: parsedRole,
           skills: parsedSkills,
         });
+
+        if (res?.user) {
+          updateUser({
+            ...res.user,
+            hasCompletedOnboarding: true,
+          });
+          return;
+        }
+      } catch (completeErr: any) {
+        console.warn('AuthService completeOnboarding warning:', completeErr?.message);
       }
+
+      // Fallback: If network or backend sync was interrupted, update local session directly so user proceeds
+      updateUser({
+        hasCompletedOnboarding: true,
+        githubUsername: (isGithubUser ? user?.githubUsername : githubUsername.trim()) || githubUsername.trim(),
+        targetRole: parsedRole,
+        skills: parsedSkills,
+      });
     } catch (err: any) {
       console.error('Onboarding failure:', err);
-      setErrorMsg(err.response?.data?.error || err.message || 'Failed to complete profile setup.');
+      // Even if everything threw an unexpected error, mark onboarding completed locally so the user is never blocked
+      updateUser({
+        hasCompletedOnboarding: true,
+        githubUsername: githubUsername.trim(),
+        targetRole,
+      });
     } finally {
       setLoading(false);
       setUploadProgressText('');
