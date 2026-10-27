@@ -60,9 +60,54 @@ export default function AuthScreen() {
     setErrorMsg('');
     setOauthLoading(strategy === 'oauth_google' ? 'google' : 'github');
     try {
-      const redirectUrl = 'joblio://oauth-native-callback';
-      
-      // Step 1: Create sign-in attempt on Clerk's Native API
+      const oauthHook = strategy === 'oauth_google' ? googleOAuth : githubOAuth;
+
+      // Primary: Official Clerk SDK OAuth flow (handles both Sign In AND auto Sign Up)
+      if (oauthHook?.startOAuthFlow) {
+        const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'joblio', path: 'oauth-native-callback' });
+        const { createdSessionId, setActive, signIn, signUp } = await oauthHook.startOAuthFlow({
+          redirectUrl,
+        });
+
+        // 1. Session created immediately (Existing user OR auto-registered user)
+        if (createdSessionId && setActive) {
+          await setActive({ session: createdSessionId });
+          await syncClerkSession();
+          return;
+        }
+
+        // 2. If user does not have an account yet and Clerk parked flow in signUp state
+        if (signUp && signUp.status === 'complete' && signUp.createdSessionId && setActive) {
+          await setActive({ session: signUp.createdSessionId });
+          await syncClerkSession();
+          return;
+        }
+
+        // 3. If signUp requires missing requirements (e.g. transfer/finalize from OAuth)
+        if (signUp && signUp.status === 'missing_requirements') {
+          try {
+            // Attempt auto-completion of OAuth signup
+            const completeSignUp = await signUp.create({});
+            if (completeSignUp.status === 'complete' && completeSignUp.createdSessionId && setActive) {
+              await setActive({ session: completeSignUp.createdSessionId });
+              await syncClerkSession();
+              return;
+            }
+          } catch (autoSignErr) {
+            console.log('[Clerk] OAuth auto-signup resolution:', autoSignErr);
+          }
+        }
+
+        // 4. If signIn is pending or has created session
+        if (signIn && signIn.status === 'complete' && signIn.createdSessionId && setActive) {
+          await setActive({ session: signIn.createdSessionId });
+          await syncClerkSession();
+          return;
+        }
+      }
+
+      // Fallback: Direct REST call
+      const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'joblio', path: 'oauth-native-callback' });
       const clerkFrontendApi = getClerkFrontendApi();
       const resp = await fetch(`${clerkFrontendApi}/v1/client/sign_ins?_is_native=1`, {
         method: 'POST',
@@ -76,10 +121,8 @@ export default function AuthScreen() {
         throw new Error('Unable to generate verification link from identity provider.');
       }
 
-      // Step 2: Open system in-app browser for user to authenticate
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
-      // Step 3: When user returns with session
       if (result.type === 'success' && result.url) {
         const parsedUrl = new URL(result.url);
         const rotatingTokenNonce = parsedUrl.searchParams.get('rotating_token_nonce') || '';
