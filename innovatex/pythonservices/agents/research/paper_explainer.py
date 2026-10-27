@@ -3,6 +3,7 @@ from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 from utils.llm_config import get_llm_smart
 from utils.llm_client import parse_json_from_llm
+from utils.redis_cache import generate_cache_key, get_cached_json, set_cached_json
 
 async def explain_paper_node(state: Dict[str, Any]) -> Dict[str, Any]:
     raw_paper = state.get("raw_paper", {})
@@ -10,6 +11,15 @@ async def explain_paper_node(state: Dict[str, Any]) -> Dict[str, Any]:
     abstract = raw_paper.get("abstract", "")
     tldr_data = raw_paper.get("tldr")
     tldr_text = tldr_data.get("text") if isinstance(tldr_data, dict) else (tldr_data or "N/A")
+
+    # 1. Check Redis Cache first (Research papers are static; caching saves 100% tokens on repeated queries)
+    cache_key = generate_cache_key("paper_explanation", f"{title}:{abstract[:250]}")
+    cached_explanation = get_cached_json(cache_key)
+    if cached_explanation:
+        return {
+            **state,
+            "explanation": cached_explanation
+        }
 
     prompt = f"""You are explaining a research paper to a final year engineering student who knows programming but is not a researcher.
 
@@ -68,8 +78,11 @@ Do not wrap with markdown backticks or commentary.
             "related_fields": ["Computer Science", "Artificial Intelligence"]
         }
 
+    # 2. Store in Redis with a 30-day TTL (2,592,000 seconds)
+    if explanation:
+        set_cached_json(cache_key, explanation, ttl_seconds=2592000)
+
     return {
         **state,
         "explanation": explanation
     }
-
