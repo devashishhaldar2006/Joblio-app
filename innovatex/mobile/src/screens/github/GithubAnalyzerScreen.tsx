@@ -1,3 +1,4 @@
+import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -91,6 +92,15 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
           )}
         </TouchableOpacity>
       </View>
+
+      {loading && (
+        <View style={{ paddingHorizontal: 16 }}>
+          <AiLoadingIndicator
+            title="Analyzing GitHub Profile..."
+            defaultSubtitle="Fetching repository metrics, commit velocity, and test coverage indicators."
+          />
+        </View>
+      )}
 
       {report ? (
         <ScrollView contentContainerStyle={styles.scrollContent}>

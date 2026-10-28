@@ -1,3 +1,4 @@
+import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import React, { useState } from 'react';
 import {
   View,
@@ -207,12 +208,10 @@ export default function OpenSourceScreen({ navigation }: any) {
 
         {/* Results List */}
         {loading && (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color="#FF7A00" />
-            <Text style={styles.loadingText}>
-              Scanning public repositories for {selectedLanguage} {selectedLevel} issues...
-            </Text>
-          </View>
+          <AiLoadingIndicator
+            title={`Discovering ${selectedLanguage} Open Source Issues...`}
+            defaultSubtitle="Searching active GitHub repositories for verified good-first-issues."
+          />
         )}
 
         {!loading && hasSearched && opportunities.length === 0 && (

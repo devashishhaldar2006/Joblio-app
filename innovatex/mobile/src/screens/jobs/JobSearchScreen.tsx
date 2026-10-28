@@ -1,3 +1,4 @@
+import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -298,7 +299,7 @@ export default function JobSearchScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.searchBtn}
+          style={[styles.searchBtn, loading && { opacity: 0.7 }]}
           onPress={handleSearch}
           disabled={loading}
           activeOpacity={0.8}
@@ -310,6 +311,13 @@ export default function JobSearchScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {loading && (
+        <AiLoadingIndicator
+          title="Matching Resume with Active Jobs..."
+          defaultSubtitle="Extracting technical profile and matching against verified engineering listings."
+        />
+      )}
 
       {/* Candidate Profile summary */}
       {parsedProfile && (
