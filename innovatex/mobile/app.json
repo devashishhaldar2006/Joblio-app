@@ -6,7 +6,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -14,6 +19,11 @@
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0A",
         "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0A0A0A"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.devashishcodes.mobile"
