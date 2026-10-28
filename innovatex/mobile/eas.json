@@ -14,7 +14,10 @@
         "buildType": "apk"
       },
       "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_c2F2ZWQtZ2F6ZWxsZS04NDgyLmNsZXJrLmFjY291bnRzLmRldiQ",
+        "EXPO_PUBLIC_API_URL": "https://joblio-backend.onrender.com",
+        "EXPO_PUBLIC_PYTHON_URL": "https://joblio-ai-service.onrender.com"
       }
     },
     "production": {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClerkClient } from '@clerk/express';
+import { createClerkClient, verifyToken } from '@clerk/express';
 import User from '../models/User.js';
 
 export interface AuthUserPayload {
@@ -34,10 +34,11 @@ function getClerkClient() {
 
 async function verifyClerkToken(token: string): Promise<AuthUserPayload | null> {
   const clerk = getClerkClient();
-  if (!clerk) return null;
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) return null;
 
   try {
-    const verified = await clerk.verifyToken(token);
+    const verified = await verifyToken(token, { secretKey });
     if (!verified || !verified.sub) return null;
 
     const clerkId = verified.sub;

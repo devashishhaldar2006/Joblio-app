@@ -8,6 +8,10 @@ const getDevFallbackUrl = (port: number) => {
 };
 
 export const API_CONFIG = {
-  NODE_URL: process.env.EXPO_PUBLIC_API_URL || getDevFallbackUrl(5000),
-  PYTHON_URL: process.env.EXPO_PUBLIC_PYTHON_URL || getDevFallbackUrl(8000),
+  NODE_URL:
+    process.env.EXPO_PUBLIC_API_URL ||
+    'https://joblio-backend.onrender.com',
+  PYTHON_URL:
+    process.env.EXPO_PUBLIC_PYTHON_URL ||
+    'https://joblio-ai-service.onrender.com',
 };
