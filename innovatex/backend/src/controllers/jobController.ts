@@ -17,16 +17,28 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
       fileMime = req.body.mimetype || 'application/pdf';
     }
 
-    // Auto-fallback: check if user already has saved resumeBase64 or resumeText
+    // Auto-fallback: check if user already has saved resumeBase64 or resumeText or profile data
     if (!fileBuffer && req.user?._id) {
       const User = (await import('../models/User.js')).default;
       const currentUser = await User.findById(req.user._id);
       if (currentUser?.resumeBase64) {
         fileBuffer = Buffer.from(currentUser.resumeBase64, 'base64');
         fileName = currentUser.resumeFileName || 'resume.pdf';
-      } else if (currentUser?.resumeText && currentUser.resumeText.length > 20) {
+      } else if (currentUser?.resumeText && currentUser.resumeText.length > 10) {
         fileBuffer = Buffer.from(currentUser.resumeText, 'utf8');
-        fileName = currentUser.resumeFileName || 'resume.txt';
+        fileName = (currentUser.resumeFileName ? currentUser.resumeFileName.replace(/\.pdf$/i, '.txt') : 'resume.txt');
+        fileMime = 'text/plain';
+      } else if (currentUser) {
+        // Construct resume text on-the-fly from the user's verified skills & role
+        const generatedText = [
+          `Candidate: ${currentUser.name}`,
+          `Target Role: ${currentUser.targetRole || 'Software Engineer'}`,
+          `Skills: ${(currentUser.skills && currentUser.skills.length > 0 ? currentUser.skills.join(', ') : 'TypeScript, JavaScript, React, Node.js')}`,
+          `Bio: ${currentUser.bio || 'Experienced engineering developer'}`,
+          `GitHub: ${currentUser.githubUsername || ''}`
+        ].join('\n');
+        fileBuffer = Buffer.from(generatedText, 'utf8');
+        fileName = 'profile_resume.txt';
         fileMime = 'text/plain';
       }
     }
