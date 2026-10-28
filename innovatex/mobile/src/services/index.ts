@@ -55,8 +55,8 @@ export const JobService = {
       source?: string;
     }
   ) => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    const token = await AsyncStorage.getItem('auth_token');
+    const { getFreshToken } = require('./apiClient');
+    const token = await getFreshToken();
     const { API_CONFIG } = require('../config/api');
 
     let targetUri = fileUri;

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
-import apiClient from '../services/apiClient';
+import apiClient, { setAuthTokenGetter } from '../services/apiClient';
 
 export interface User {
   _id: string;
@@ -46,6 +46,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const isClerkActive = Boolean(clerkAuth?.isLoaded);
+
+  // Wire Clerk's getToken into the global apiClient interceptor
+  useEffect(() => {
+    if (clerkAuth?.getToken) {
+      setAuthTokenGetter(async () => {
+        try {
+          return await clerkAuth.getToken();
+        } catch {
+          return null;
+        }
+      });
+    }
+  }, [clerkAuth?.getToken]);
 
   const loadStoredSession = useCallback(async () => {
     try {
