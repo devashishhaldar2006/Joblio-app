@@ -102,7 +102,8 @@ export default function JobSearchScreen() {
   };
 
   const handleSearch = async () => {
-    if (!selectedFile) {
+    const resumeToUse = selectedFile || (user?.resumeFileName ? { name: user.resumeFileName, isExisting: true } : null);
+    if (!resumeToUse) {
       alert('Please upload a resume file (PDF, DOCX, or TXT).');
       return;
     }
@@ -110,9 +111,9 @@ export default function JobSearchScreen() {
     setLoading(true);
     try {
       const data = await JobService.uploadAndSearch(
-        selectedFile.uri || '',
-        selectedFile.name || 'resume.pdf',
-        selectedFile.mimeType || 'application/pdf',
+        resumeToUse.uri || '',
+        resumeToUse.name || 'resume.pdf',
+        resumeToUse.mimeType || 'application/pdf',
         query.trim(),
         location.trim(),
         {
@@ -124,10 +125,10 @@ export default function JobSearchScreen() {
       );
       setResults(data.results || []);
       setParsedProfile(data.parsed_profile || null);
-      if (selectedFile.name) {
-        updateUser({ hasResume: true, resumeFileName: selectedFile.name });
+      if (resumeToUse.name) {
+        updateUser({ hasResume: true, resumeFileName: resumeToUse.name });
         try {
-          await AuthService.updateProfile({ resumeFileName: selectedFile.name });
+          await AuthService.updateProfile({ resumeFileName: resumeToUse.name });
         } catch (syncErr) {
           console.warn('Failed to sync resume name to backend profile:', syncErr);
         }
