@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
-import { JobService } from '../../services';
+import { AuthService, JobService } from '../../services';
 import { Bookmark, ExternalLink, FileText, CheckCircle2 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/AuthContext';
@@ -124,8 +124,13 @@ export default function JobSearchScreen() {
       );
       setResults(data.results || []);
       setParsedProfile(data.parsed_profile || null);
-      if (selectedFile.name && selectedFile.name !== user?.resumeFileName) {
+      if (selectedFile.name) {
         updateUser({ hasResume: true, resumeFileName: selectedFile.name });
+        try {
+          await AuthService.updateProfile({ resumeFileName: selectedFile.name });
+        } catch (syncErr) {
+          console.warn('Failed to sync resume name to backend profile:', syncErr);
+        }
       }
     } catch (e: any) {
       alert(e.response?.data?.error || e.message || 'Job search failed');

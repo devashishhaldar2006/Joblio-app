@@ -16,6 +16,11 @@ export interface User {
   authProvider?: 'email' | 'google' | 'github';
   hasResume?: boolean;
   resumeFileName?: string;
+  preferences?: {
+    preferredWorkType?: string;
+    emailAlerts?: boolean;
+    theme?: string;
+  };
 }
 
 interface AuthContextType {

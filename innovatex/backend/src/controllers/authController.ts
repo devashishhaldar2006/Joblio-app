@@ -37,16 +37,25 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       skills,
       location,
       preferences,
+      resumeFileName,
+      removeResume,
     } = req.body;
 
     if (name) user.name = name;
-    if (githubUsername !== undefined) user.githubUsername = githubUsername.trim();
+    if (githubUsername !== undefined) user.githubUsername = githubUsername.trim().replace(/^@/, '');
     if (bio !== undefined) user.bio = bio;
     if (targetRole !== undefined) user.targetRole = targetRole;
     if (Array.isArray(skills)) user.skills = skills;
     if (location !== undefined) user.location = location;
     if (preferences && typeof preferences === 'object') {
       user.preferences = { ...user.preferences, ...preferences };
+    }
+    if (resumeFileName) {
+      user.resumeFileName = resumeFileName;
+    }
+    if (removeResume) {
+      user.resumeFileName = '';
+      user.resumeText = '';
     }
 
     user.updatedAt = new Date();
