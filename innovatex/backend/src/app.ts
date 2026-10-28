@@ -9,7 +9,6 @@ import cron from 'node-cron';
 
 import authRoutes from './routes/auth.js';
 import githubRoutes from './routes/github.js';
-import researchRoutes from './routes/research.js';
 import opensourceRoutes from './routes/opensource.js';
 import contestRoutes from './routes/contests.js';
 import jobRoutes from './routes/jobs.js';
@@ -30,7 +29,6 @@ app.use(morgan('dev'));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/github', githubRoutes);
-app.use('/api/research', researchRoutes);
 app.use('/api/opensource', opensourceRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/jobs', jobRoutes);

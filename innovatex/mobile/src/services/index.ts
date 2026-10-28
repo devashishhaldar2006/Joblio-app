@@ -221,10 +221,3 @@ export const OpenSourceService = {
     return res.data;
   },
 };
-
-export const ResearchService = {
-  explainPaper: async (input: string) => {
-    const res = await apiClient.post('/research/explain', { input });
-    return res.data;
-  },
-};

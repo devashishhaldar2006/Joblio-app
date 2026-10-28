@@ -70,19 +70,11 @@ export default function DashboardScreen({ navigation }: any) {
   const exploreFeatures = [
     {
       title: 'Open Source Issues',
-      desc: 'Find beginner-friendly repo issues to contribute to',
+      desc: 'Find beginner-friendly repo issues & PR opportunities to contribute to',
       route: 'OpenSource',
       icon: GitPullRequest,
       tag: 'Contribute',
       tagType: 'yellow',
-    },
-    {
-      title: 'Research Summaries',
-      desc: 'Clear, plain-English summaries of ArXiv AI papers',
-      route: 'Research',
-      icon: BookOpen,
-      tag: 'Read',
-      tagType: 'default',
     },
   ];
 

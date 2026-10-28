@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import GithubAnalysis from '../models/GithubAnalysis.js';
-import ResearchHistory from '../models/ResearchHistory.js';
 import JobSearchHistory from '../models/JobSearchHistory.js';
 import OpenSourceHistory from '../models/OpenSourceHistory.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
@@ -62,41 +61,6 @@ function normalizeGithubReport(doc: any) {
       recommendationStatuses: doc.recommendationStatuses || {},
       selectedGoal: doc.selectedGoal
     }
-  };
-}
-
-function normalizeResearchReport(doc: any) {
-  const out = doc.output || {};
-  const exp = out.explanation || {};
-  const contributions = exp.key_contributions || exp.key_innovations || [];
-  const paperId = out.paper_id || 'ArXiv';
-  const title = out.title || doc.input || 'Synthesized Research Paper';
-
-  const rawData = {
-    ...out,
-    input: doc.input,
-    timestamp: doc.timestamp
-  };
-
-  return {
-    id: doc._id.toString(),
-    type: 'research',
-    categoryLabel: 'Research Synthesis',
-    title: `Paper Synthesis: ${title}`,
-    subtitle: `ArXiv: ${paperId} • Published: ${out.year || 'N/A'} • ${new Date(doc.timestamp).toLocaleDateString()}`,
-    createdAt: doc.timestamp,
-    score: null,
-    scoreLabel: null,
-    tags: ['ArXiv', out.year ? `Year ${out.year}` : 'AI/ML', 'Paper Synthesis'],
-    metrics: [
-      { label: 'Identifier', value: paperId },
-      { label: 'Innovations', value: contributions.length },
-      { label: 'Model', value: 'Llama 3.3 70B' }
-    ],
-    summary: exp.simple_summary || exp.tldr || exp.what_problem_it_solves || 'Comprehensive literature breakdown and architectural innovations.',
-    targetUrl: `/research`,
-    data: rawData,
-    rawData
   };
 }
 
@@ -210,9 +174,8 @@ export const getAllReports = async (req: AuthenticatedRequest, res: Response) =>
       ghFilter.$or.push({ username: req.user.githubUsername.trim().toLowerCase() });
     }
 
-    const [ghDocs, researchDocs, jobDocs, ossDocs] = await Promise.all([
+    const [ghDocs, jobDocs, ossDocs] = await Promise.all([
       GithubAnalysis.find(ghFilter).sort({ analyzedAt: -1 }).limit(Number(limit)).lean(),
-      ResearchHistory.find({ userId }).sort({ timestamp: -1 }).limit(Number(limit)).lean(),
       JobSearchHistory.find({ userId }).sort({ searchedAt: -1 }).limit(Number(limit)).lean(),
       OpenSourceHistory.find({
         userId,
@@ -225,12 +188,6 @@ export const getAllReports = async (req: AuthenticatedRequest, res: Response) =>
     if (!type || type === 'all' || type === 'github') {
       ghDocs.forEach((d) => {
         reports.push(normalizeGithubReport(d));
-      });
-    }
-
-    if (!type || type === 'all' || type === 'research') {
-      researchDocs.forEach((d) => {
-        reports.push(normalizeResearchReport(d));
       });
     }
 
@@ -259,10 +216,9 @@ export const getAllReports = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     const stats = {
-      totalReports: ghDocs.length + researchDocs.length + jobDocs.length + ossDocs.length,
+      totalReports: ghDocs.length + jobDocs.length + ossDocs.length,
       byCategory: {
         github: ghDocs.length,
-        research: researchDocs.length,
         jobs: jobDocs.length,
         opensource: ossDocs.length
       },
@@ -290,9 +246,6 @@ export const getReportById = async (req: AuthenticatedRequest, res: Response) =>
     if (type === 'github') {
       doc = await GithubAnalysis.findOne({ _id: id, userId });
       if (doc) normalized = normalizeGithubReport(doc);
-    } else if (type === 'research') {
-      doc = await ResearchHistory.findOne({ _id: id, userId });
-      if (doc) normalized = normalizeResearchReport(doc);
     } else if (type === 'jobs') {
       doc = await JobSearchHistory.findOne({ _id: id, userId });
       if (doc) normalized = normalizeJobReport(doc);
@@ -320,8 +273,6 @@ export const deleteReport = async (req: AuthenticatedRequest, res: Response) => 
     let deleted: any = null;
     if (type === 'github') {
       deleted = await GithubAnalysis.findOneAndDelete({ _id: id, userId });
-    } else if (type === 'research') {
-      deleted = await ResearchHistory.findOneAndDelete({ _id: id, userId });
     } else if (type === 'jobs') {
       deleted = await JobSearchHistory.findOneAndDelete({ _id: id, userId });
     } else if (type === 'opensource') {

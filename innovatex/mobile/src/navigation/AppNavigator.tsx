@@ -15,7 +15,6 @@ import JobSearchScreen from '../screens/jobs/JobSearchScreen';
 import MarketIntelligenceScreen from '../screens/market/MarketIntelligenceScreen';
 import ContestTrackerScreen from '../screens/contests/ContestTrackerScreen';
 import OpenSourceScreen from '../screens/opensource/OpenSourceScreen';
-import ResearchScreen from '../screens/research/ResearchScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
 // Clean Minimal Lucide Icons
@@ -171,11 +170,6 @@ export default function AppNavigator() {
               <Stack.Screen
                 name="OpenSource"
                 component={OpenSourceScreen}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Research"
-                component={ResearchScreen}
                 options={{ headerShown: false }}
               />
             </>
