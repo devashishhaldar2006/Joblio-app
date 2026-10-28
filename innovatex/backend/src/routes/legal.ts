@@ -170,5 +170,142 @@ router.get('/privacy', (req: Request, res: Response) => {
   res.send(html);
 });
 
+
+router.get('/delete-account', (req: Request, res: Response) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account & Data Deletion - Joblio</title>
+  <style>
+    :root {
+      --bg: #0A0A0A;
+      --card-bg: #141414;
+      --border: #262626;
+      --text: #EDEDED;
+      --text-muted: #888888;
+      --primary: #FF7A00;
+      --primary-light: #FFA34D;
+      --danger: #EF4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .badge {
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    h1 { font-size: 28px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 28px; }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-top: 28px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    p, li { color: #CCCCCC; font-size: 15px; margin-bottom: 12px; }
+    ul, ol { margin-left: 20px; margin-bottom: 16px; }
+    li { margin-bottom: 6px; }
+    .steps-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .contact-card {
+      background: rgba(255, 122, 0, 0.05);
+      border: 1px solid rgba(255, 122, 0, 0.2);
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+    a { color: var(--primary-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .btn {
+      display: inline-block;
+      background: var(--primary);
+      color: #000;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 6px;
+      margin-top: 10px;
+      text-decoration: none;
+    }
+    .btn:hover { background: var(--primary-light); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <span class="badge">Google Play Data Safety</span>
+    </div>
+    <h1>Joblio Account & Data Deletion Request</h1>
+    <div class="subtitle">Compliant with Google Play Store User Data & Deletion Policy</div>
+
+    <p>At <strong>Joblio</strong>, you have complete sovereignty over your personal data. In compliance with Google Play Store policies and international data protection laws (GDPR, CCPA), you can delete your account and all associated personal data at any time.</p>
+
+    <h2>Option 1: In-App Immediate Deletion (Instant)</h2>
+    <div class="steps-card">
+      <ol>
+        <li>Open the <strong>Joblio</strong> app on your Android device.</li>
+        <li>Navigate to the <strong>Profile</strong> tab (bottom right icon).</li>
+        <li>Scroll down to the <strong>Account Settings</strong> section.</li>
+        <li>Tap <strong>Delete Account & Data</strong> and confirm.</li>
+      </ol>
+      <p style="margin-top: 12px; color: #888888; font-size: 13px;">This instantly wipes your profile, uploaded resumes, saved job bookmarks, and developer history from our servers.</p>
+    </div>
+
+    <h2>Option 2: Web Deletion Request (Without App Access)</h2>
+    <p>If you have uninstalled the app or cannot log in, you can request account deletion directly by contacting our compliance officers:</p>
+    <div class="contact-card">
+      <p>Send an email with the subject <strong>"Joblio Data Deletion Request"</strong> from the email address registered with your account to:</p>
+      <p style="margin: 8px 0; font-size: 16px;"><strong>Email:</strong> <a href="mailto:workfordevashishhaldar@gmail.com?subject=Joblio%20Data%20Deletion%20Request">workfordevashishhaldar@gmail.com</a></p>
+      <p>Include your registered email address or public username. Our team will verify and execute the permanent purge within <strong>24–48 hours</strong> and send confirmation.</p>
+      <a class="btn" href="mailto:workfordevashishhaldar@gmail.com?subject=Joblio%20Data%20Deletion%20Request">Send Deletion Request Email</a>
+    </div>
+
+    <h2>What Data Is Deleted Permanently?</h2>
+    <ul>
+      <li><strong>User Profile:</strong> Name, registered email address, avatar, bio, and target engineering roles.</li>
+      <li><strong>Resumes & Uploaded Files:</strong> Stored resume documents, parsed technical skills, and extracted text.</li>
+      <li><strong>Activity History:</strong> Job search match logs, bookmarked jobs, and GitHub repository hygiene audits.</li>
+      <li><strong>Authentication Tokens:</strong> Identity provider bindings and active session tokens.</li>
+    </ul>
+
+    <h2>Data Retention Period</h2>
+    <p>Once requested or triggered in-app, all personally identifiable data is permanently purged immediately and cannot be recovered. Aggregated, fully anonymized statistics (such as overall technology demand percentages) do not link back to any individual user.</p>
+  </div>
+</body>
+</html>`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
 export default router;
 

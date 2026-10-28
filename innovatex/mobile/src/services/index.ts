@@ -24,6 +24,10 @@ export const AuthService = {
     const res = await apiClient.get('/auth/quotas');
     return res.data;
   },
+  deleteAccount: async () => {
+    const res = await apiClient.delete('/auth/account');
+    return res.data;
+  },
 };
 
 export const GithubService = {

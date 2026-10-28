@@ -1,3 +1,7 @@
+import JobBookmark from '../models/JobBookmark.js';
+import JobSearchHistory from '../models/JobSearchHistory.js';
+import GithubAnalysis from '../models/GithubAnalysis.js';
+import OpenSourceHistory from '../models/OpenSourceHistory.js';
 import { Response } from 'express';
 import User from '../models/User.js';
 import { getSafeUserData } from '../utils/safeUser.js';
@@ -131,5 +135,32 @@ export const completeOnboarding = async (req: AuthenticatedRequest, res: Respons
   } catch (err) {
     console.error('Complete onboarding error:', err);
     return res.status(500).json({ error: 'Failed to complete onboarding.' });
+  }
+};
+
+export const deleteAccount = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({ error: 'User session invalid.' });
+    }
+    const userId = req.user._id;
+
+    // 1. Delete all user-associated records across collections
+    await Promise.all([
+      JobBookmark.deleteMany({ userId }),
+      JobSearchHistory.deleteMany({ userId }),
+      GithubAnalysis.deleteMany({ userId }),
+      OpenSourceHistory.deleteMany({ userId }),
+    ]);
+
+    // 2. Delete user document from MongoDB
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      message: 'Account and all associated personal data permanently purged.',
+    });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    return res.status(500).json({ error: 'Failed to delete account data.' });
   }
 };

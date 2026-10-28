@@ -54,6 +54,30 @@ export default function ProfileScreen({ navigation }: any) {
     ]);
   };
 
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account & Data',
+      'This will permanently delete your Joblio account, stored resumes, saved bookmarks, and GitHub analysis records. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AuthService.deleteAccount();
+              await logout();
+              Alert.alert('Account Deleted', 'Your account and data have been permanently removed.');
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.error || err.message || 'Failed to delete account.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const openLink = async (url: string) => {
     try {
       await Linking.openURL(url);
