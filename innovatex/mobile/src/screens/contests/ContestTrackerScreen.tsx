@@ -58,17 +58,25 @@ export default function ContestTrackerScreen() {
 
   const formatISTDateTime = (isoString: string) => {
     try {
-      const date = new Date(isoString);
+      if (!isoString) return '';
+      let cleanIso = String(isoString).trim();
+      // Ensure time string is treated as UTC if missing explicit timezone offset
+      if (!cleanIso.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(cleanIso)) {
+        cleanIso += 'Z';
+      }
+      const date = new Date(cleanIso);
       if (isNaN(date.getTime())) return isoString;
-      return date.toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }) + ' IST';
+      return (
+        date.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }) + ' IST'
+      );
     } catch {
       return isoString;
     }

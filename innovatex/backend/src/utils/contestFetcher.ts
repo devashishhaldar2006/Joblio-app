@@ -71,6 +71,19 @@ function getPlatformDisplayName(platformStr: string): string {
   return platformStr ? platformStr.replace(/\.com|\.org|\.jp|\.net|\.cn|\.ru|\.by|\.in/g, '').toUpperCase() : 'Competitive';
 }
 
+function normalizeUtcIso(raw: string): string {
+  if (!raw) return '';
+  let str = String(raw).trim();
+  if (!str.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(str)) {
+    str += 'Z';
+  }
+  try {
+    return new Date(str).toISOString();
+  } catch {
+    return str;
+  }
+}
+
 function inferTechnologies(title: string, platform: string): string[] {
   const t = (title + ' ' + platform).toLowerCase();
   const techs: string[] = [];
@@ -134,8 +147,8 @@ async function fetchFromCLIST(): Promise<IContest[]> {
           title: c.event,
           platform: displayName,
           platform_logo_key: platformKey,
-          start_time: c.start,
-          end_time: c.end,
+          start_time: normalizeUtcIso(c.start),
+          end_time: normalizeUtcIso(c.end),
           duration_seconds: c.duration,
           url: c.href,
           difficulty: inferDifficulty(c.event),

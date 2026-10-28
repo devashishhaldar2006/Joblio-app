@@ -20,6 +20,10 @@ export const AuthService = {
     const res = await apiClient.post('/auth/onboarding', data);
     return res.data;
   },
+  getQuotas: async () => {
+    const res = await apiClient.get('/auth/quotas');
+    return res.data;
+  },
 };
 
 export const GithubService = {
