@@ -17,6 +17,20 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
       fileMime = req.body.mimetype || 'application/pdf';
     }
 
+    // Auto-fallback: check if user already has saved resumeBase64 or resumeText
+    if (!fileBuffer && req.user?._id) {
+      const User = (await import('../models/User.js')).default;
+      const currentUser = await User.findById(req.user._id);
+      if (currentUser?.resumeBase64) {
+        fileBuffer = Buffer.from(currentUser.resumeBase64, 'base64');
+        fileName = currentUser.resumeFileName || 'resume.pdf';
+      } else if (currentUser?.resumeText && currentUser.resumeText.length > 20) {
+        fileBuffer = Buffer.from(currentUser.resumeText, 'utf8');
+        fileName = currentUser.resumeFileName || 'resume.txt';
+        fileMime = 'text/plain';
+      }
+    }
+
     if (!fileBuffer) {
       return res.status(400).json({ error: 'Please upload a PDF, DOCX, or TXT resume file.' });
     }
@@ -85,6 +99,9 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
         }
         if (fileName) {
           user.resumeFileName = fileName;
+          if (fileBuffer && fileBuffer.length < 5 * 1024 * 1024) {
+            user.resumeBase64 = fileBuffer.toString('base64');
+          }
           changed = true;
         }
         if (changed) {

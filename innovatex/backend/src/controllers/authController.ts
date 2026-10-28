@@ -42,6 +42,7 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       location,
       preferences,
       resumeFileName,
+      resumeBase64,
       removeResume,
     } = req.body;
 
@@ -54,11 +55,15 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     if (preferences && typeof preferences === 'object') {
       user.preferences = { ...user.preferences, ...preferences };
     }
-    if (resumeFileName) {
+        if (resumeFileName) {
       user.resumeFileName = resumeFileName;
+    }
+    if (resumeBase64) {
+      user.resumeBase64 = resumeBase64;
     }
     if (removeResume) {
       user.resumeFileName = '';
+      user.resumeBase64 = '';
       user.resumeText = '';
     }
 

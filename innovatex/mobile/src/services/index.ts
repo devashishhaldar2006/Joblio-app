@@ -67,10 +67,23 @@ export const JobService = {
     const token = await getFreshToken();
     const { API_CONFIG } = require('../config/api');
 
+    // Case 1: When using an existing saved resume without a local file URI
+    if (!fileUri || fileUri.trim() === '') {
+      const res = await apiClient.post('/jobs/search', {
+        query,
+        location,
+        work_type: filters?.work_type,
+        job_type: filters?.job_type,
+        country: filters?.country,
+        source: filters?.source,
+      });
+      return res.data;
+    }
+
     let targetUri = fileUri;
     try {
       const cacheDir = FileSystemLegacy.cacheDirectory || FileSystemLegacy.documentDirectory;
-      if (cacheDir && !targetUri.startsWith(cacheDir)) {
+      if (cacheDir && !targetUri.startsWith(cacheDir) && targetUri.includes('://')) {
         const destUri = `${cacheDir}upload_${Date.now()}_${(fileName || 'resume.pdf').replace(/\s+/g, '_')}`;
         await FileSystemLegacy.copyAsync({
           from: targetUri,
@@ -126,19 +139,23 @@ export const JobService = {
 
     // Fallback: Read file as Base64 and send via JSON payload
     try {
-      let base64Data: string;
-      try {
-        base64Data = await FileSystemLegacy.readAsStringAsync(targetUri, {
-          encoding: FileSystemLegacy.EncodingType.Base64,
-        });
-      } catch {
-        base64Data = await FileSystemLegacy.readAsStringAsync(fileUri, {
-          encoding: FileSystemLegacy.EncodingType.Base64,
-        });
+      let base64Data: string = '';
+      if (targetUri && targetUri.trim() !== '') {
+        try {
+          base64Data = await FileSystemLegacy.readAsStringAsync(targetUri, {
+            encoding: FileSystemLegacy.EncodingType.Base64,
+          });
+        } catch {
+          if (fileUri && fileUri.trim() !== '') {
+            base64Data = await FileSystemLegacy.readAsStringAsync(fileUri, {
+              encoding: FileSystemLegacy.EncodingType.Base64,
+            });
+          }
+        }
       }
 
       const res = await apiClient.post('/jobs/search', {
-        base64: base64Data,
+        ...(base64Data ? { base64: base64Data } : {}),
         filename: fileName || 'resume.pdf',
         mimetype: fileType || 'application/pdf',
         query,
