@@ -33,7 +33,26 @@
     },
     "plugins": [
       "expo-sharing",
-      "expo-splash-screen"
+      "expo-system-ui",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#0A0A0A",
+            "image": "./assets/splash-icon.png"
+          },
+          "android": {
+            "backgroundColor": "#0A0A0A",
+            "image": "./assets/splash-icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

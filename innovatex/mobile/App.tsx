@@ -9,7 +9,7 @@ import { CLERK_PUBLISHABLE_KEY } from './src/config/clerk';
 
 export default function App() {
   const content = (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <AuthProvider>
         <StatusBar style="light" />
         <AppNavigator />
