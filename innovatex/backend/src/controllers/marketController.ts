@@ -4,6 +4,7 @@ import MarketSnapshot from '../models/MarketSnapshot.js';
 import JobSearchHistory from '../models/JobSearchHistory.js';
 import User from '../models/User.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { callPythonServiceWithRetry } from '../utils/pythonService.js';
 
 const getPythonBaseUrl = () => process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
@@ -35,11 +36,12 @@ export const forecastSkill = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     const pyUrl = `${getPythonBaseUrl()}/market/forecast`;
-    const response = await axios.post(
-      pyUrl,
-      { skill, user_skills },
-      { timeout: 60000 }
-    );
+    const response = await callPythonServiceWithRetry({
+      method: 'POST',
+      url: pyUrl,
+      data: { skill, user_skills },
+      timeout: 60000
+    }, 6, 4000);
 
     return res.status(200).json(response.data);
   } catch (err: any) {

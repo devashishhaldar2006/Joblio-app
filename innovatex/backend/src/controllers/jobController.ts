@@ -4,6 +4,7 @@ import FormData from 'form-data';
 import JobSearchHistory from '../models/JobSearchHistory.js';
 import JobBookmark from '../models/JobBookmark.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { callPythonServiceWithRetry } from '../utils/pythonService.js';
 
 export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -75,14 +76,15 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
       form.append('source', req.body.source);
     }
 
-    const pyRes = await axios.post(`${pythonUrl}/jobs/search`, form, {
-      headers: {
-        ...form.getHeaders()
-      },
+    const pyRes = await callPythonServiceWithRetry({
+      method: 'POST',
+      url: `${pythonUrl}/jobs/search`,
+      data: form,
+      headers: form.getHeaders(),
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
       timeout: 120000
-    });
+    }, 6, 4000);
 
     const { parsed_profile, results } = pyRes.data;
 

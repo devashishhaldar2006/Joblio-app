@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import axios from 'axios';
 import GithubAnalysis from '../models/GithubAnalysis.js';
 import User from '../models/User.js';
+import { callPythonServiceWithRetry } from '../utils/pythonService.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 
 function computeSnapshotChanges(prevReport: any, currReport: any) {
@@ -312,11 +313,12 @@ export const analyzeGithub = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
-    const pyRes = await axios.post(
-      `${pythonUrl}/github/analyze`,
-      { username: cleanUsername },
-      { timeout: 65000 }
-    );
+    const pyRes = await callPythonServiceWithRetry({
+      method: 'POST',
+      url: `${pythonUrl}/github/analyze`,
+      data: { username: cleanUsername },
+      timeout: 65000
+    }, 6, 4000);
 
     const finalReport = pyRes.data;
     const currScore = finalReport.overall_score ?? finalReport.totalScore ?? 0;

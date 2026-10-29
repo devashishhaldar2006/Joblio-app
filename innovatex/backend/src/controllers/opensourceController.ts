@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import axios from 'axios';
 import OpenSourceHistory from '../models/OpenSourceHistory.js';
+import { callPythonServiceWithRetry } from '../utils/pythonService.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 
 export const findOpportunities = async (req: AuthenticatedRequest, res: Response) => {
