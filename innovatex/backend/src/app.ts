@@ -34,6 +34,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/legal', legalRoutes);
 app.use('/', legalRoutes);
 
 // Health check
