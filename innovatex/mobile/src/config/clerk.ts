@@ -1,7 +1,7 @@
 // Environment configuration for Joblio Mobile client
 export const CLERK_PUBLISHABLE_KEY =
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-  'pk_test_c2F2ZWQtZ2F6ZWxsZS04NDgyLmNsZXJrLmFjY291bnRzLmRldiQ';
+  'pk_live_Y2xlcmsuam9ibGlvLmhhY2tjZW50cmFsLm1lJA';
 
 const base64Decode = (str: string): string => {
   if (typeof atob === 'function') {
@@ -46,6 +46,6 @@ export const getClerkFrontendApi = (): string => {
   } catch (e) {
     // Fallback if decoding error
   }
-  return 'https://saved-gazelle-8482.clerk.accounts.dev';
+  return 'https://clerk.joblio.hackcentral.me';
 };
 
