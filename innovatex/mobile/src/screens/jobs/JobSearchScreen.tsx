@@ -404,7 +404,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingBottom: 48,
+    paddingTop: 12,
+    paddingBottom: 90,
   },
   card: {
     backgroundColor: COLORS.bgCard,

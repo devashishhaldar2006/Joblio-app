@@ -494,7 +494,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 48,
+    paddingTop: 12,
+    paddingBottom: 90,
     gap: 16,
   },
   identityCard: {

@@ -395,7 +395,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 60,
+    paddingTop: 12,
+    paddingBottom: 90,
   },
   summaryCard: {
     flexDirection: 'row',

@@ -268,8 +268,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? 36 : 14,
-    paddingBottom: 40,
+    paddingTop: Platform.OS === 'android' ? 48 : 22,
+    paddingBottom: 90,
   },
   topBrandBar: {
     flexDirection: 'row',

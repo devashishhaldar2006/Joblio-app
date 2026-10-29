@@ -79,8 +79,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#161616',
     paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? 36 : 14,
-    paddingBottom: 14,
+    paddingTop: Platform.OS === 'android' ? 48 : 22,
+    paddingBottom: 16,
   },
   topRow: {
     flexDirection: 'row',

@@ -204,7 +204,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.md,
-    paddingBottom: 48,
+    paddingTop: 12,
+    paddingBottom: 90,
     gap: SPACING.sm,
   },
   center: {

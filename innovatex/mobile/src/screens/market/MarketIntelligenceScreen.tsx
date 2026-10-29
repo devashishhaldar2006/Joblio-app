@@ -454,7 +454,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingBottom: 60,
+    paddingTop: 12,
+    paddingBottom: 90,
     gap: 16,
   },
   center: {
