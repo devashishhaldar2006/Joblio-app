@@ -251,3 +251,10 @@ export const OpenSourceService = {
     return res.data;
   },
 };
+
+export const ReportService = {
+  getDashboardStats: async () => {
+    const res = await apiClient.get('/reports/dashboard-stats');
+    return res.data;
+  },
+};

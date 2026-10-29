@@ -196,7 +196,7 @@ export default function ProfileScreen({ navigation }: any) {
     <View style={styles.container}>
       <AppHeader
         title="Developer Profile"
-        badge="Pro"
+        badge="Verified"
         badgeType="yellow"
         subtitle="Developer identity & active credentials"
       />

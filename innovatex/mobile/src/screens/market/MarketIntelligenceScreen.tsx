@@ -1,3 +1,4 @@
+import Svg, { Path, Line, Rect, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -314,6 +315,103 @@ export default function MarketIntelligenceScreen() {
                 ))}
               </View>
 
+              {/* Interactive Time-Series Horizon Graph */}
+              <View style={styles.graphCard}>
+                <View style={styles.graphHeader}>
+                  <Text style={styles.graphTitle}>DEMAND SHARE TRAJECTORY (%)</Text>
+                  <View style={styles.graphLegend}>
+                    <View style={styles.legendDotCurrent} />
+                    <Text style={styles.legendText}>Historical</Text>
+                    <View style={styles.legendDotForecast} />
+                    <Text style={styles.legendText}>Forecast (80% CI)</Text>
+                  </View>
+                </View>
+
+                {(() => {
+                  const historicalSeries = forecastData?.historical_series || [
+                    { week: 'W-6', actual: Math.max(5, currentPct - 2.8) },
+                    { week: 'W-4', actual: Math.max(5, currentPct - 1.6) },
+                    { week: 'W-2', actual: Math.max(5, currentPct - 0.7) },
+                    { week: 'Now', actual: currentPct }
+                  ];
+
+                  const futurePoints = [
+                    { label: 'Now', val: currentPct, lower: currentPct, upper: currentPct },
+                    { label: '+4W', val: getHorizonPrediction(4).predicted, lower: getHorizonPrediction(4).lower, upper: getHorizonPrediction(4).upper },
+                    { label: '+12W', val: getHorizonPrediction(12).predicted, lower: getHorizonPrediction(12).lower, upper: getHorizonPrediction(12).upper },
+                    { label: '+26W', val: getHorizonPrediction(26).predicted, lower: getHorizonPrediction(26).lower, upper: getHorizonPrediction(26).upper },
+                  ];
+
+                  const allVals = [
+                    ...historicalSeries.map((h: any) => h.actual || currentPct),
+                    ...futurePoints.map((f: any) => f.upper)
+                  ];
+                  const minVal = Math.max(0, Math.floor(Math.min(...allVals) * 0.85));
+                  const maxVal = Math.ceil(Math.max(...allVals) * 1.15);
+                  const range = Math.max(1, maxVal - minVal);
+
+                  const chartWidth = 310;
+                  const chartHeight = 110;
+                  const padX = 28;
+                  const padY = 16;
+                  const usableW = chartWidth - padX * 2;
+                  const usableH = chartHeight - padY * 2;
+
+                  const getX = (index: number, total: number) => padX + (index / (total - 1)) * usableW;
+                  const getY = (v: number) => padY + (1 - (v - minVal) / range) * usableH;
+
+                  // Build SVG path for prediction line
+                  const predPoints = futurePoints.map((pt, idx) => ({
+                    x: getX(idx, futurePoints.length),
+                    y: getY(pt.val),
+                    lowerY: getY(pt.lower),
+                    upperY: getY(pt.upper),
+                    label: pt.label
+                  }));
+
+                  const linePath = predPoints.reduce((acc, p, i) => i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`, '');
+                  
+                  // Area path for CI band
+                  const upperPath = predPoints.reduce((acc, p, i) => i === 0 ? `M ${p.x} ${p.upperY}` : `${acc} L ${p.x} ${p.upperY}`, '');
+                  const lowerReversed = [...predPoints].reverse().reduce((acc, p) => `${acc} L ${p.x} ${p.lowerY}`, '');
+                  const bandPath = `${upperPath} ${lowerReversed} Z`;
+
+                  return (
+                    <View style={styles.chartWrapper}>
+                      <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+                        <Defs>
+                          <LinearGradient id="ciGradient" x1="0" y1="0" x2="0" y2="1">
+                            <Stop offset="0%" stopColor="#00E599" stopOpacity="0.25" />
+                            <Stop offset="100%" stopColor="#00E599" stopOpacity="0.04" />
+                          </LinearGradient>
+                        </Defs>
+
+                        {/* Grid lines */}
+                        <Line x1={padX} y1={getY(minVal)} x2={chartWidth - padX} y2={getY(minVal)} stroke="#202020" strokeWidth="1" />
+                        <Line x1={padX} y1={getY((minVal + maxVal) / 2)} x2={chartWidth - padX} y2={getY((minVal + maxVal) / 2)} stroke="#202020" strokeWidth="1" strokeDasharray="3 3" />
+                        <Line x1={padX} y1={getY(maxVal)} x2={chartWidth - padX} y2={getY(maxVal)} stroke="#202020" strokeWidth="1" />
+
+                        {/* Confidence Interval Band */}
+                        <Path d={bandPath} fill="url(#ciGradient)" />
+
+                        {/* Forecast Trend Line */}
+                        <Path d={linePath} fill="none" stroke="#00E599" strokeWidth="2.5" />
+
+                        {/* Data Points */}
+                        {predPoints.map((p, idx) => (
+                          <React.Fragment key={idx}>
+                            <Circle cx={p.x} cy={p.y} r={idx === 0 ? 3.5 : 4.5} fill={idx === 0 ? "#FFFFFF" : "#00E599"} stroke="#141414" strokeWidth="1.5" />
+                            <SvgText x={p.x} y={chartHeight - 2} fontSize="9" fill="#777777" textAnchor="middle">
+                              {p.label}
+                            </SvgText>
+                          </React.Fragment>
+                        ))}
+                      </Svg>
+                    </View>
+                  );
+                })()}
+              </View>
+
               {/* Forecast Metrics Display */}
               <View style={styles.forecastHighlightBox}>
                 <View style={styles.forecastHighlightItem}>
@@ -524,6 +622,53 @@ const styles = StyleSheet.create({
   techPillTextActive: {
     color: '#FF7A00',
     fontWeight: '700',
+  },
+  graphCard: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#242424',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  graphHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  graphTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#888888',
+    letterSpacing: 0.8,
+  },
+  graphLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDotCurrent: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+  legendDotForecast: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00E599',
+  },
+  legendText: {
+    fontSize: 9,
+    color: '#777777',
+    fontWeight: '500',
+  },
+  chartWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   card: {
     backgroundColor: '#121212',

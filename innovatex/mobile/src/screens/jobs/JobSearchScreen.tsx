@@ -13,7 +13,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { AuthService, JobService } from '../../services';
-import { Bookmark, ExternalLink, FileText, CheckCircle2 } from 'lucide-react-native';
+import { ExternalLink, FileText, CheckCircle2 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/AuthContext';
 
@@ -343,13 +343,7 @@ export default function JobSearchScreen() {
                     <Text style={styles.jobTitle}>{job.title}</Text>
                     <Text style={styles.jobCompany}>{job.company} · {job.location || 'Remote'}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => handleToggleBookmark(job)}>
-                    <Bookmark
-                      size={18}
-                      color={COLORS.textPrimary}
-                      fill={isBookmarked ? COLORS.textPrimary : 'transparent'}
-                    />
-                  </TouchableOpacity>
+
                 </View>
 
                 <View style={styles.jobMetaRow}>

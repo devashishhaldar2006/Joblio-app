@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { ReportService } from '../../services';
 import {
   Code2,
   Briefcase,
@@ -26,10 +27,32 @@ import {
 export default function DashboardScreen({ navigation }: any) {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [dashboardStats, setDashboardStats] = React.useState<{ liveContests: number; userAudits: number }>({
+    liveContests: 12,
+    userAudits: 0,
+  });
+
+  const fetchStats = async () => {
+    try {
+      const data = await ReportService.getDashboardStats();
+      if (data && typeof data.liveContests === 'number') {
+        setDashboardStats({
+          liveContests: data.liveContests,
+          userAudits: data.userAudits ?? 0,
+        });
+      }
+    } catch {
+      // Keep graceful fallback
+    }
+  };
+
+  React.useEffect(() => {
+    fetchStats();
+  }, [user?._id]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    fetchStats().finally(() => setRefreshing(false));
   };
 
   const quickFeatures = [
@@ -76,6 +99,14 @@ export default function DashboardScreen({ navigation }: any) {
       tag: 'Contribute',
       tagType: 'yellow',
     },
+    {
+      title: 'GitHub Code Audit',
+      desc: 'Deep repository health, commit velocity & automated PR fixes',
+      route: 'GithubAudit',
+      icon: Code2,
+      tag: 'Audit',
+      tagType: 'red',
+    },
   ];
 
   return (
@@ -92,9 +123,6 @@ export default function DashboardScreen({ navigation }: any) {
           <Text style={styles.brandTitle}>
             Job<Text style={styles.brandAccent}>lio</Text>
           </Text>
-          <View style={styles.proPill}>
-            <Text style={styles.proPillText}>PRO</Text>
-          </View>
         </View>
         <TouchableOpacity
           style={styles.avatarButton}
@@ -116,22 +144,22 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
           <View style={styles.statusPill}>
             <View style={styles.livePulseDot} />
-            <Text style={styles.statusPillText}>Online</Text>
+            <Text style={styles.statusPillText}>Verified</Text>
           </View>
         </View>
       </View>
 
-      {/* Clean Status Overview with Modern Yellow/Red Highlights */}
+      {/* Dynamic Status Overview with Verified Live Metrics */}
       <View style={styles.overviewBox}>
         <View style={styles.overviewItem}>
-          <Text style={styles.overviewValue}>Active</Text>
-          <Text style={styles.overviewLabel}>Account</Text>
+          <Text style={styles.overviewValue}>{user?.targetRole ? user.targetRole.split(' ')[0] : 'Engineer'}</Text>
+          <Text style={styles.overviewLabel}>Specialty</Text>
         </View>
         <View style={styles.dividerVertical} />
         <View style={styles.overviewItem}>
           <View style={styles.valueRow}>
             <View style={styles.yellowDot} />
-            <Text style={[styles.overviewValue, { color: COLORS.yellowText }]}>80+</Text>
+            <Text style={[styles.overviewValue, { color: COLORS.yellowText }]}>{dashboardStats.liveContests}</Text>
           </View>
           <Text style={styles.overviewLabel}>Live contests</Text>
         </View>
@@ -139,9 +167,9 @@ export default function DashboardScreen({ navigation }: any) {
         <View style={styles.overviewItem}>
           <View style={styles.valueRow}>
             <View style={styles.redDot} />
-            <Text style={[styles.overviewValue, { color: COLORS.redText }]}>2</Text>
+            <Text style={[styles.overviewValue, { color: COLORS.redText }]}>{dashboardStats.userAudits}</Text>
           </View>
-          <Text style={styles.overviewLabel}>Audit alerts</Text>
+          <Text style={styles.overviewLabel}>Audits completed</Text>
         </View>
       </View>
 

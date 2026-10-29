@@ -311,7 +311,7 @@ export default function OpenSourceScreen({ navigation }: any) {
                           <Text style={styles.starText}>{stars}</Text>
                         </View>
                       )}
-                      {matchScore !== null && (
+                      {matchScore !== null && matchScore > 0 && (
                         <View style={styles.matchScoreBadge}>
                           <Target size={11} color="#00E599" />
                           <Text style={styles.matchScoreText}>{matchScore}% Match</Text>

@@ -32,9 +32,10 @@ import {
 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 
-export default function GithubAnalyzerScreen({ navigation }: any) {
+export default function GithubAnalyzerScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const [username, setUsername] = useState(user?.githubUsername || '');
+  const initialUsername = route?.params?.username || user?.githubUsername || '';
+  const [username, setUsername] = useState(initialUsername);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any>(null);
 
