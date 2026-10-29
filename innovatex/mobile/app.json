@@ -56,8 +56,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "1c764213-f090-45c3-843d-3d1a5e6dc02e"
+        "projectId": "553e3966-64c8-4055-905a-1253e53c4415"
       }
-    }
+    },
+    "owner": "devashishhaldar2006"
   }
 }
