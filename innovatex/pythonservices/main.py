@@ -110,6 +110,7 @@ class OpenSourceFindRequest(BaseModel):
     skills: List[str]
     experience_level: str
     preferred_language: str
+    query: Optional[str] = ""
 
 class OpenSourceGuideRequest(BaseModel):
     issue_url: str
@@ -218,6 +219,7 @@ async def find_opensource(payload: OpenSourceFindRequest):
             "skills": payload.skills,
             "experience_level": payload.experience_level,
             "preferred_language": payload.preferred_language,
+            "query": (payload.query or "").strip(),
             "raw_repos": [],
             "filtered_repos": [],
             "issues_per_repo": {},

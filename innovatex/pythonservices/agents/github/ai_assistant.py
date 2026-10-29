@@ -25,6 +25,64 @@ def _build_deterministic_fallback(action_type: str, report: Dict[str, Any], repo
     repo_desc = repo.get("description") or f"A {repo_lang} engineering repository by @{username}."
     dirs = (repo.get("engineering") or {}).get("top_level_dirs") or ["src"]
 
+    if action_type == "ci_workflow":
+        return f"""name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Runtime ({repo_lang})
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter & Static Analysis
+        run: npm run lint --if-present
+
+      - name: Run Test Suite
+        run: npm test --if-present
+"""
+
+    if action_type == "contributing_guide":
+        return f"""# Contributing to {repo_name}
+
+Thank you for your interest in contributing to {repo_name}! We welcome contributions from developers of all skill levels.
+
+## Development Setup
+1. Fork the repository on GitHub.
+2. Clone your local fork:
+   ```bash
+   git clone https://github.com/{username}/{repo_name}.git
+   cd {repo_name}
+   ```
+3. Install project dependencies:
+   ```bash
+   npm install
+   ```
+
+## Branching & Commit Guidelines
+- Create a dedicated feature branch: `git checkout -b feat/your-feature-name`
+- Follow Conventional Commits format: `feat:`, `fix:`, `docs:`, `refactor:`
+
+## Submitting Pull Requests
+- Ensure all tests pass prior to pushing.
+- Link relevant issues in your PR description.
+"""
+
     if action_type == "profile_bio":
         stack_str = ", ".join((techs or top_langs)[:4]) or "Full-Stack Software"
         dna_top = (report.get("developer_dna") or [{}])[0].get("category", "Software Engineering")

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Linking,
   Modal,
+  TextInput,
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { OpenSourceService } from '../../services';
@@ -22,6 +23,10 @@ import {
   BookOpen,
   X,
   Target,
+  Search,
+  Code2,
+  ShieldCheck,
+  ChevronRight,
 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 
@@ -64,6 +69,7 @@ export default function OpenSourceScreen({ navigation }: any) {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('TypeScript');
   const [selectedLevel, setSelectedLevel] = useState<string>('beginner');
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['React', 'TypeScript']);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -86,7 +92,8 @@ export default function OpenSourceScreen({ navigation }: any) {
       const data = await OpenSourceService.findOpportunities(
         selectedSkills,
         selectedLevel,
-        selectedLanguage.toLowerCase()
+        selectedLanguage.toLowerCase(),
+        searchQuery.trim()
       );
       setOpportunities(Array.isArray(data) ? data : []);
     } catch (e: any) {
@@ -108,6 +115,29 @@ export default function OpenSourceScreen({ navigation }: any) {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* GitHub Audit Feature Card */}
+        <TouchableOpacity
+          style={styles.auditFeatureCard}
+          onPress={() => navigation?.navigate('GithubAudit')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.auditIconCircle}>
+            <Code2 size={18} color="#00E599" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.auditCardTitle}>GitHub Profile & Code Audit</Text>
+              <View style={styles.proBadge}>
+                <Text style={styles.proBadgeText}>AI Audit</Text>
+              </View>
+            </View>
+            <Text style={styles.auditCardSubtitle}>
+              Run repository quality checks, commit velocity analysis, and automated fixes.
+            </Text>
+          </View>
+          <ChevronRight size={18} color="#888888" />
+        </TouchableOpacity>
+
         {/* Controls Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -119,6 +149,28 @@ export default function OpenSourceScreen({ navigation }: any) {
               <Text style={styles.cardDesc}>
                 Personalized GitHub repository issues scored to match your tech stack.
               </Text>
+            </View>
+          </View>
+
+          {/* Text Input Search Field for Exploring Topics & Features */}
+          <View style={styles.fieldSection}>
+            <Text style={styles.fieldLabel}>EXPLORE TOPICS OR FEATURES</Text>
+            <View style={styles.queryInputContainer}>
+              <Search size={14} color="#888888" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.queryInput}
+                placeholder="e.g. LLM, CLI, compiler, authentication, web3..."
+                placeholderTextColor="#666666"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+                  <X size={12} color="#888888" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -415,6 +467,67 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 48,
+  },
+  queryInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  queryInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: FONTS.regular,
+  },
+  clearBtn: {
+    padding: 4,
+  },
+  auditFeatureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 10,
+    padding: 14,
+    gap: 12,
+  },
+  auditIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#181818',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#282828',
+  },
+  auditCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  proBadge: {
+    backgroundColor: 'rgba(0, 229, 153, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  proBadgeText: {
+    color: '#00E599',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  auditCardSubtitle: {
+    color: '#888888',
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
   },
   card: {
     backgroundColor: '#121212',

@@ -5,13 +5,14 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 
 export const findOpportunities = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { skills, experience_level, preferred_language } = req.body;
+    const { skills, experience_level, preferred_language, query } = req.body;
 
     const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
     const pyRes = await axios.post(`${pythonUrl}/opensource/find`, {
       skills: skills || [],
       experience_level: experience_level || 'beginner',
-      preferred_language: preferred_language || 'javascript'
+      preferred_language: preferred_language || 'javascript',
+      query: query || ''
     }, { timeout: 120000 });
 
     const results = pyRes.data || [];

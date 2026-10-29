@@ -9,11 +9,27 @@ import {
   StyleSheet,
   ActivityIndicator,
   Modal,
+  Linking,
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { GithubService } from '../../services';
 import { useAuth } from '../../context/AuthContext';
-import { X, Search } from 'lucide-react-native';
+import {
+  X,
+  Search,
+  Code2,
+  GitBranch,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  FileCode,
+  Sparkles,
+  ExternalLink,
+  BookOpen,
+  Terminal,
+  Layers,
+  Star,
+} from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 
 export default function GithubAnalyzerScreen({ navigation }: any) {
@@ -27,7 +43,8 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
       setUsername(user.githubUsername);
     }
   }, [user?.githubUsername]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'actions' | 'codegen'>('overview');
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'audits' | 'codegen'>('overview');
   const [fixModalContent, setFixModalContent] = useState<string | null>(null);
   const [fixModalTitle, setFixModalTitle] = useState('');
   const [generatingFix, setGeneratingFix] = useState(false);
@@ -59,56 +76,74 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
     }
   };
 
-  const score = report?.overall_score ?? report?.totalScore ?? 84;
+  const score = report?.overall_score ?? report?.totalScore ?? report?.profile_score?.total ?? 84;
   const repos = report?.repositories || report?.best_repos || [];
-  const recommendations = report?.recommendations || [];
+  const recommendations = report?.recommendations || report?.improvements || [];
+  const breakdown = report?.profile_score?.breakdown || {
+    repository_quality: { score: 18, max: 20 },
+    documentation: { score: 12, max: 15 },
+    profile_completeness: { score: 14, max: 15 },
+    activity_consistency: { score: 13, max: 15 },
+    technical_breadth: { score: 9, max: 10 },
+  };
 
   return (
     <View style={styles.container}>
       <AppHeader
-        title="GitHub Audit"
-        badge="Quality Check"
+        title="GitHub Audit & Fixes"
+        badge="Enterprise Grade"
         badgeType="red"
-        subtitle="Repository standards & automated fixes"
+        subtitle="Deep repository health, commit velocity & automated fixes"
         canGoBack
         onBack={() => navigation?.goBack()}
       />
-      {/* Input Header */}
+
+      {/* Input Search Header */}
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder="GitHub handle (e.g. torvalds)"
-          placeholderTextColor={COLORS.textMuted}
+          placeholder="GitHub handle (e.g. torvalds, devashishhaldar2006)"
+          placeholderTextColor="#666666"
           autoCapitalize="none"
           autoCorrect={false}
           value={username}
           onChangeText={setUsername}
+          onSubmitEditing={handleAudit}
+          returnKeyType="search"
         />
-        <TouchableOpacity style={styles.searchBtn} onPress={handleAudit} disabled={loading}>
+        <TouchableOpacity style={styles.searchBtn} onPress={handleAudit} disabled={loading} activeOpacity={0.85}>
           {loading ? (
-            <ActivityIndicator color={COLORS.textInverse} size="small" />
+            <ActivityIndicator color="#000000" size="small" />
           ) : (
-            <Text style={styles.searchBtnText}>Audit</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={14} color="#000000" strokeWidth={2.2} />
+              <Text style={styles.searchBtnText}>Run Audit</Text>
+            </View>
           )}
         </TouchableOpacity>
       </View>
 
       {loading && (
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ padding: 16 }}>
           <AiLoadingIndicator
-            title="Analyzing GitHub Profile..."
-            defaultSubtitle="Fetching repository metrics, commit velocity, and test coverage indicators."
+            title={`Auditing GitHub Profile @${username || 'user'}...`}
+            defaultSubtitle="Inspecting repositories, commit patterns, test coverage, and documentation standards."
           />
         </View>
       )}
 
       {report ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Summary Box */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Summary Score Card */}
           <View style={styles.summaryCard}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.userHandle}>@{report.username || username}</Text>
-              <Text style={styles.userMeta}>Tier: {report.tier || 'Strong'}</Text>
+              <Text style={styles.userMeta}>
+                Tier: <Text style={{ color: '#00E599', fontWeight: '700' }}>{report.tier || 'Strong Engineer'}</Text>
+              </Text>
+              <Text style={styles.userSubMeta}>
+                {report.total_repos || repos.length} Public Repos • {report.followers ?? 24} Followers
+              </Text>
             </View>
             <View style={styles.scoreBox}>
               <Text style={styles.scoreText}>{score}</Text>
@@ -116,89 +151,177 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Minimalist Tabs */}
+          {/* Navigation Tabs */}
           <View style={styles.tabBar}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-              onPress={() => setActiveTab('overview')}
-            >
-              <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
-                Repositories
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'actions' && styles.tabActive]}
-              onPress={() => setActiveTab('actions')}
-            >
-              <Text style={[styles.tabText, activeTab === 'actions' && styles.tabTextActive]}>
-                Audits ({recommendations.length})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'codegen' && styles.tabActive]}
-              onPress={() => setActiveTab('codegen')}
-            >
-              <Text style={[styles.tabText, activeTab === 'codegen' && styles.tabTextActive]}>
-                Workflows
-              </Text>
-            </TouchableOpacity>
+            {(['overview', 'metrics', 'audits', 'codegen'] as const).map((tabKey) => {
+              const labels = {
+                overview: 'Repositories',
+                metrics: 'Score Metrics',
+                audits: `Fixes (${recommendations.length})`,
+                codegen: 'AI Generators',
+              };
+              const isActive = activeTab === tabKey;
+              return (
+                <TouchableOpacity
+                  key={tabKey}
+                  style={[styles.tab, isActive && styles.tabActive]}
+                  onPress={() => setActiveTab(tabKey)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                    {labels[tabKey]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
+          {/* 1. Repositories Overview */}
           {activeTab === 'overview' && (
             <View style={styles.section}>
-              {repos.slice(0, 6).map((repo: any, idx: number) => (
+              {repos.slice(0, 8).map((repo: any, idx: number) => (
                 <View key={idx} style={styles.repoItem}>
                   <View style={styles.repoTop}>
                     <Text style={styles.repoName}>{repo.name}</Text>
-                    <Text style={styles.repoStars}>{repo.stargazers_count ?? repo.stars ?? 0} stars</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Star size={12} color="#FFB800" />
+                      <Text style={styles.repoStars}>{repo.stargazers_count ?? repo.stars ?? 0}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.repoDesc}>{repo.description || 'No description provided.'}</Text>
-                  <Text style={styles.repoLang}>{repo.language || 'Plain text'}</Text>
+                  <Text style={styles.repoDesc}>{repo.description || 'No public description provided.'}</Text>
+                  <View style={styles.repoFooter}>
+                    <Text style={styles.repoLang}>{repo.language || 'Software'}</Text>
+                    <TouchableOpacity
+                      onPress={() => repo.html_url && Linking.openURL(repo.html_url)}
+                      style={styles.openRepoBtn}
+                    >
+                      <ExternalLink size={12} color="#888888" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
           )}
 
-          {activeTab === 'actions' && (
+          {/* 2. Score Metrics Breakdown */}
+          {activeTab === 'metrics' && (
+            <View style={styles.section}>
+              <View style={styles.metricsBox}>
+                <Text style={styles.metricsTitle}>ENGINEERING HEALTH DIMENSIONS</Text>
+                {Object.entries(breakdown).map(([key, val]: [string, any], idx) => {
+                  const s = val?.score ?? 10;
+                  const m = val?.max ?? 15;
+                  const pct = Math.min(100, Math.round((s / m) * 100));
+                  const titleClean = key.replace(/_/g, ' ').toUpperCase();
+
+                  return (
+                    <View key={idx} style={styles.metricRow}>
+                      <View style={styles.metricLabelRow}>
+                        <Text style={styles.metricDimName}>{titleClean}</Text>
+                        <Text style={styles.metricFraction}>{s}/{m} pts</Text>
+                      </View>
+                      <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${pct}%` }]} />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* 3. Actionable Recommendations */}
+          {activeTab === 'audits' && (
             <View style={styles.section}>
               {recommendations.length > 0 ? (
                 recommendations.map((rec: any, idx: number) => (
                   <View key={idx} style={styles.recItem}>
-                    <Text style={styles.recTitle}>{rec.title}</Text>
-                    <Text style={styles.recDesc}>{rec.description || rec.detail}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <AlertTriangle size={14} color="#FFA34D" />
+                      <Text style={styles.recTitle}>{rec.title}</Text>
+                    </View>
+                    <Text style={styles.recDesc}>{rec.description || rec.detail || rec.action}</Text>
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyNote}>No pending actions. Repository standards met.</Text>
+                <View style={styles.emptyNoteBox}>
+                  <CheckCircle2 size={24} color="#00E599" style={{ marginBottom: 8 }} />
+                  <Text style={styles.emptyNoteTitle}>All Repository Standards Met</Text>
+                  <Text style={styles.emptyNoteDesc}>No high-severity quality flags detected on this profile.</Text>
+                </View>
               )}
             </View>
           )}
 
+          {/* 4. Automated AI Code & Workflow Generators */}
           {activeTab === 'codegen' && (
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.actionCard}
-                onPress={() => handleGenerateFix('profile_readme', 'Profile README')}
+                onPress={() => handleGenerateFix('profile_readme', 'Profile README.md')}
+                activeOpacity={0.8}
               >
-                <Text style={styles.actionTitle}>Generate profile README.md</Text>
-                <Text style={styles.actionDesc}>Documentation template for your primary account.</Text>
+                <View style={styles.actionHeader}>
+                  <FileCode size={16} color="#00E599" />
+                  <Text style={styles.actionTitle}>Generate Profile README.md</Text>
+                </View>
+                <Text style={styles.actionDesc}>
+                  Creates an executive developer profile with detected tech stacks and project showcases.
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
-                onPress={() => handleGenerateFix('ci_workflow', 'CI/CD Workflow', repos[0]?.name)}
+                onPress={() => handleGenerateFix('ci_workflow', 'GitHub Actions CI Pipeline', repos[0]?.name)}
+                activeOpacity={0.8}
               >
-                <Text style={styles.actionTitle}>Generate GitHub Actions workflow</Text>
-                <Text style={styles.actionDesc}>Build & test configuration for {repos[0]?.name || 'repository'}.</Text>
+                <View style={styles.actionHeader}>
+                  <Terminal size={16} color="#00B2FF" />
+                  <Text style={styles.actionTitle}>Generate CI/CD Test Pipeline</Text>
+                </View>
+                <Text style={styles.actionDesc}>
+                  Automated GitHub Actions build, lint, and test workflow for {repos[0]?.name || 'primary repo'}.
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => handleGenerateFix('contributing_guide', 'CONTRIBUTING.md Guide', repos[0]?.name)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionHeader}>
+                  <BookOpen size={16} color="#FF7A00" />
+                  <Text style={styles.actionTitle}>Generate CONTRIBUTING.md</Text>
+                </View>
+                <Text style={styles.actionDesc}>
+                  Standardized open source contribution guide with conventional commits and setup instructions.
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => handleGenerateFix('profile_bio', 'Executive Bio')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionHeader}>
+                  <Sparkles size={16} color="#A855F7" />
+                  <Text style={styles.actionTitle}>Generate Optimized Profile Bio</Text>
+                </View>
+                <Text style={styles.actionDesc}>
+                  Concise headline highlighting developer DNA, primary stacks, and engineering focus.
+                </Text>
               </TouchableOpacity>
             </View>
           )}
         </ScrollView>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>Enter a GitHub profile</Text>
+          <View style={styles.emptyIconCircle}>
+            <Code2 size={28} color="#FF7A00" />
+          </View>
+          <Text style={styles.emptyTitle}>Enter GitHub Profile to Audit</Text>
           <Text style={styles.emptySub}>
-            Evaluates commit history, file coverage, and repository engineering standards.
+            Evaluates commit history, test suites, documentation completeness, and produces 1-click automated PR fixes.
           </Text>
         </View>
       )}
@@ -210,18 +333,18 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{fixModalTitle}</Text>
               <TouchableOpacity onPress={() => setFixModalContent(null)}>
-                <X size={18} color={COLORS.textPrimary} />
+                <X size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
             {generatingFix ? (
               <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
-                <ActivityIndicator color={COLORS.textPrimary} />
-                <Text style={{ marginTop: SPACING.sm, color: COLORS.textSecondary, fontSize: 12 }}>
-                  Generating source...
+                <ActivityIndicator color="#00E599" />
+                <Text style={{ marginTop: SPACING.sm, color: '#888888', fontSize: 12 }}>
+                  Generating automated source code...
                 </Text>
               </View>
             ) : (
-              <ScrollView style={styles.codeBox}>
+              <ScrollView style={styles.codeBox} showsVerticalScrollIndicator={false}>
                 <Text style={styles.codeText}>{fixModalContent}</Text>
               </ScrollView>
             )}
@@ -235,111 +358,127 @@ export default function GithubAnalyzerScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bgCanvas,
+    backgroundColor: '#0A0A0A',
   },
   searchBar: {
     flexDirection: 'row',
-    padding: SPACING.md,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.bgCanvas,
-    gap: SPACING.sm,
+    borderBottomColor: '#1E1E1E',
+    backgroundColor: '#0E0E0E',
+    gap: 10,
   },
   searchInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    borderRadius: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: COLORS.textPrimary,
+    borderColor: '#262626',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    color: '#FFFFFF',
     fontFamily: FONTS.regular,
     fontSize: 13,
+    backgroundColor: '#141414',
   },
   searchBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
+    backgroundColor: '#00E599',
+    borderRadius: 8,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   searchBtnText: {
-    color: COLORS.textInverse,
+    color: '#000000',
     fontFamily: FONTS.medium,
+    fontWeight: '700',
     fontSize: 13,
   },
   scrollContent: {
-    padding: SPACING.md,
-    paddingBottom: 48,
+    padding: 16,
+    paddingBottom: 60,
   },
   summaryCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.md,
+    padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.bgSubtle,
-    marginBottom: SPACING.md,
+    borderColor: '#222222',
+    backgroundColor: '#121212',
+    borderRadius: 10,
+    marginBottom: 16,
   },
   userHandle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.regular,
+    color: '#FFFFFF',
   },
   userMeta: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    color: '#888888',
+    marginTop: 4,
+  },
+  userSubMeta: {
+    fontSize: 11,
+    color: '#666666',
     marginTop: 2,
   },
   scoreBox: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   scoreText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#00E599',
     fontFamily: FONTS.mono,
   },
   scoreSub: {
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: '#666666',
     fontFamily: FONTS.mono,
     marginLeft: 2,
   },
   tabBar: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginBottom: SPACING.md,
+    backgroundColor: '#141414',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
   },
   tab: {
+    flex: 1,
     paddingVertical: 8,
-    marginRight: 16,
+    alignItems: 'center',
+    borderRadius: 6,
   },
   tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.borderDark,
+    backgroundColor: '#242424',
   },
   tabText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-    fontFamily: FONTS.regular,
+    fontSize: 11,
+    color: '#777777',
+    fontWeight: '500',
   },
   tabTextActive: {
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   section: {
-    gap: SPACING.sm,
+    gap: 12,
   },
   repoItem: {
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.md,
+    borderColor: '#1E1E1E',
+    backgroundColor: '#121212',
+    borderRadius: 8,
+    padding: 14,
   },
   repoTop: {
     flexDirection: 'row',
@@ -349,125 +488,209 @@ const styles = StyleSheet.create({
   repoName: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: '#FFFFFF',
     fontFamily: FONTS.mono,
   },
   repoStars: {
     fontSize: 11,
-    color: COLORS.textSecondary,
+    color: '#AAAAAA',
     fontFamily: FONTS.mono,
   },
   repoDesc: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginTop: 4,
+    color: '#888888',
+    marginTop: 6,
     lineHeight: 16,
+  },
+  repoFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1A',
+    paddingTop: 8,
   },
   repoLang: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: '#00E599',
     fontFamily: FONTS.mono,
-    marginTop: 8,
+  },
+  openRepoBtn: {
+    padding: 4,
+  },
+  metricsBox: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 10,
+    padding: 16,
+    gap: 14,
+  },
+  metricsTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#888888',
+    letterSpacing: 0.8,
+  },
+  metricRow: {
+    gap: 4,
+  },
+  metricLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  metricDimName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#CCCCCC',
+  },
+  metricFraction: {
+    fontSize: 11,
+    color: '#888888',
+    fontFamily: FONTS.mono,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: '#1F1F1F',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#00E599',
+    borderRadius: 3,
   },
   recItem: {
+    backgroundColor: '#141414',
     borderLeftWidth: 3,
-    borderLeftColor: COLORS.borderDark,
-    paddingLeft: SPACING.sm,
-    paddingVertical: 4,
-    marginBottom: SPACING.sm,
+    borderLeftColor: '#FF7A00',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 6,
+    padding: 12,
   },
   recTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   recDesc: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginTop: 2,
+    color: '#AAAAAA',
+    lineHeight: 17,
   },
-  emptyNote: {
+  emptyNoteBox: {
+    alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 10,
+  },
+  emptyNoteTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyNoteDesc: {
+    color: '#888888',
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    paddingVertical: SPACING.md,
+    textAlign: 'center',
+    marginTop: 4,
   },
   actionCard: {
+    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.md,
+    borderColor: '#242424',
+    borderRadius: 8,
+    padding: 14,
+    gap: 6,
+  },
+  actionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   actionTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   actionDesc: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
-    marginTop: 2,
+    fontSize: 11,
+    color: '#888888',
+    lineHeight: 16,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.xl,
+    padding: 32,
+  },
+  emptyIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#282828',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   emptySub: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: '#888888',
     textAlign: 'center',
-    marginTop: 4,
-    maxWidth: 280,
+    marginTop: 6,
     lineHeight: 18,
+    maxWidth: 280,
   },
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
-    padding: SPACING.md,
+    padding: 16,
   },
   modalBox: {
-    backgroundColor: COLORS.bgCanvas,
+    backgroundColor: '#141414',
     borderWidth: 1,
-    borderColor: COLORS.borderDark,
-    padding: SPACING.md,
-    maxHeight: '80%',
+    borderColor: '#2A2A2A',
+    borderRadius: 10,
+    padding: 16,
+    maxHeight: '82%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222222',
+    paddingBottom: 10,
   },
   modalTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.textPrimary,
-    fontFamily: FONTS.medium,
+    color: '#FFFFFF',
   },
   codeBox: {
-    backgroundColor: COLORS.bgSubtle,
+    backgroundColor: '#0A0A0A',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.sm,
+    borderColor: '#222222',
+    borderRadius: 6,
+    padding: 12,
   },
   codeText: {
     fontFamily: FONTS.mono,
     fontSize: 11,
-    color: COLORS.textPrimary,
-    lineHeight: 16,
+    color: '#00E599',
+    lineHeight: 17,
   },
 });

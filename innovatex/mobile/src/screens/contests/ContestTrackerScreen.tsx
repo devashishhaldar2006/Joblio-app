@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { ContestService } from '../../services';
-import { ExternalLink } from 'lucide-react-native';
+import { ExternalLink, Trophy } from 'lucide-react-native';
+import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import AppHeader from '../../components/AppHeader';
 
 export default function ContestTrackerScreen() {

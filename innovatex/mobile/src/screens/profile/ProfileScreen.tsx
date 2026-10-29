@@ -237,12 +237,12 @@ export default function ProfileScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* GitHub Connection Banner */}
+          {/* Connected GitHub Handle */}
           <View style={styles.githubBanner}>
             <View style={styles.githubLeftRow}>
               <Code2 size={16} color="#FFFFFF" />
               <View>
-                <Text style={styles.githubTitle}>GitHub Integration</Text>
+                <Text style={styles.githubTitle}>Connected GitHub Handle</Text>
                 <Text style={styles.githubHandle}>
                   {user?.githubUsername
                     ? `github.com/${user.githubUsername}`
@@ -250,25 +250,6 @@ export default function ProfileScreen({ navigation }: any) {
                 </Text>
               </View>
             </View>
-
-            {user?.githubUsername ? (
-              <TouchableOpacity
-                style={styles.runAuditPill}
-                onPress={handleOpenGithubAudit}
-                activeOpacity={0.7}
-              >
-                <Sparkles size={12} color="#000000" strokeWidth={2.2} />
-                <Text style={styles.runAuditPillText}>Run Audit</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.connectGithubPill}
-                onPress={() => setIsEditing(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.connectGithubPillText}>Connect</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 

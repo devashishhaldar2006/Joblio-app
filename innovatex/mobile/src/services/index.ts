@@ -201,6 +201,10 @@ export const MarketService = {
     const res = await apiClient.post('/market/gap-report', { user_skills: userSkills });
     return res.data;
   },
+  forecastSkill: async (skill: string, userSkills?: string[]) => {
+    const res = await apiClient.post('/market/forecast', { skill, user_skills: userSkills || [] });
+    return res.data;
+  },
 };
 
 export const ContestService = {
@@ -220,11 +224,12 @@ export const ContestService = {
 };
 
 export const OpenSourceService = {
-  findOpportunities: async (skills: string[], experienceLevel: string, preferredLanguage: string) => {
+  findOpportunities: async (skills: string[], experienceLevel: string, preferredLanguage: string, customQuery?: string) => {
     const res = await apiClient.post('/opensource/find', {
       skills,
       experience_level: experienceLevel,
       preferred_language: preferredLanguage,
+      query: customQuery || '',
     });
     return res.data;
   },

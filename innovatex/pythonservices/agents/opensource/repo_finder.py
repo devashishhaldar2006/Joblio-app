@@ -5,6 +5,7 @@ from utils.github_client import GitHubClient
 async def repo_finder_node(state: Dict[str, Any]) -> Dict[str, Any]:
     preferred_language = state.get("preferred_language", "javascript").lower()
     experience_level = state.get("experience_level", "beginner").lower()
+    custom_query = (state.get("query") or "").strip()
 
     client = GitHubClient()
 
@@ -16,7 +17,10 @@ async def repo_finder_node(state: Dict[str, Any]) -> Dict[str, Any]:
     else:
         star_filter = "stars:>5000"
 
-    query = f"language:{preferred_language} {star_filter} good-first-issues:>1"
+    if custom_query:
+        query = f"{custom_query} language:{preferred_language} {star_filter} good-first-issues:>0"
+    else:
+        query = f"language:{preferred_language} {star_filter} good-first-issues:>1"
     raw_repos = await client.search_repositories(query=query, sort="updated", per_page=10)
 
     # Concurrently fetch open 'good first issue' issues for these repos
