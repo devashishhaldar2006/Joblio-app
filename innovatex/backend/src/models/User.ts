@@ -19,6 +19,7 @@ export interface IUser extends Document {
   location?: string;
   preferences: IUserPreferences;
   hasCompletedOnboarding: boolean;
+  welcomeEmailSent?: boolean;
   authProvider: 'email' | 'google' | 'github';
   resumeText?: string;
   resumeFileName?: string;

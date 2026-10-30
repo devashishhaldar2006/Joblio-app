@@ -6,6 +6,7 @@ import { Response } from 'express';
 import User from '../models/User.js';
 import { getSafeUserData } from '../utils/safeUser.js';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { sendWelcomeEmail } from '../utils/emailService.js';
 
 export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -55,7 +56,7 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     if (preferences && typeof preferences === 'object') {
       user.preferences = { ...user.preferences, ...preferences };
     }
-        if (resumeFileName) {
+    if (resumeFileName) {
       user.resumeFileName = resumeFileName;
     }
     if (resumeBase64) {
@@ -90,6 +91,23 @@ export const syncClerkUser = async (req: AuthenticatedRequest, res: Response) =>
     if (!user) {
       return res.status(404).json({ error: 'User record not found.' });
     }
+
+    // Trigger developer welcome email via Resend on initial registration / sync
+    if (!user.welcomeEmailSent && user.email && !user.email.endsWith('@clerk.user')) {
+      sendWelcomeEmail({
+        toEmail: user.email,
+        userName: user.name,
+        targetRole: user.targetRole,
+        authProvider: user.authProvider,
+      }).then(res => {
+        if (res.success) {
+          User.findByIdAndUpdate(user._id, { welcomeEmailSent: true }).catch(() => {});
+        }
+      }).catch(err => {
+        console.warn('[AuthController] Welcome email sync warning:', err.message);
+      });
+    }
+
     return res.status(200).json({
       message: 'Synced successfully',
       user: getSafeUserData(user)
@@ -131,6 +149,22 @@ export const completeOnboarding = async (req: AuthenticatedRequest, res: Respons
     user.hasCompletedOnboarding = true;
     user.updatedAt = new Date();
     await user.save();
+
+    // Trigger developer welcome email on onboarding completion
+    if (!user.welcomeEmailSent && user.email && !user.email.endsWith('@clerk.user')) {
+      sendWelcomeEmail({
+        toEmail: user.email,
+        userName: user.name,
+        targetRole: user.targetRole,
+        authProvider: user.authProvider,
+      }).then(res => {
+        if (res.success) {
+          User.findByIdAndUpdate(user._id, { welcomeEmailSent: true }).catch(() => {});
+        }
+      }).catch(err => {
+        console.warn('[AuthController] Welcome email onboarding warning:', err.message);
+      });
+    }
 
     const sanitizedUser = await User.findById(user._id).select('-password');
     return res.status(200).json({
