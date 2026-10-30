@@ -43,7 +43,7 @@ export async function sendWelcomeEmail({
     }
 
     const firstName = userName ? userName.split(' ')[0] : 'Developer';
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Joblio <onboarding@resend.dev>';
+    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Joblio <onboarding@joblio.hackcentral.me>';
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -232,3 +232,4 @@ export async function sendWelcomeEmail({
     return { success: false };
   }
 }
+
