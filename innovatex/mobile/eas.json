@@ -21,7 +21,13 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuam9ibGlvLmhhY2tjZW50cmFsLm1lJA",
+        "EXPO_PUBLIC_API_URL": "https://joblio-backend.onrender.com",
+        "EXPO_PUBLIC_PYTHON_URL": "https://joblio-ai-service.onrender.com"
+      }
     }
   },
   "submit": {
