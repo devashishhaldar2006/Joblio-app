@@ -44,6 +44,8 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Intercept 401s (token refresh) and 502/503/504/timeout (server cold starts)
 apiClient.interceptors.response.use(
   (response) => response,
@@ -55,10 +57,10 @@ apiClient.interceptors.response.use(
     if (
       status === 401 &&
       originalRequest &&
-      !originalRequest._retry &&
+      !originalRequest._retryAuth &&
       getActiveTokenFn
     ) {
-      originalRequest._retry = true;
+      originalRequest._retryAuth = true;
       try {
         const freshToken = await getActiveTokenFn();
         if (freshToken) {
@@ -71,13 +73,32 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // 2. Handle 502 / 503 / 504 / network timeout from sleeping Render instances
-    if (status === 502 || status === 503 || status === 504 || error.code === 'ECONNABORTED' || error.message?.includes('Network Error')) {
-      const friendlyError = new Error(
-        'Our cloud engine was warming up from idle. Please tap again in 5 seconds.'
-      );
-      (friendlyError as any).response = error.response;
-      return Promise.reject(friendlyError);
+    // 2. Seamless in-flight auto-retry for 502 / 503 / 504 / cold-start timeouts
+    // Instead of throwing an error alert to the user, automatically keep retrying
+    // with backoff while keeping the app loader spinning smoothly.
+    const isColdStart =
+      status === 502 ||
+      status === 503 ||
+      status === 504 ||
+      error.code === 'ECONNABORTED' ||
+      error.code === 'ECONNRESET' ||
+      error.message?.includes('Network Error') ||
+      error.message?.includes('timeout');
+
+    if (isColdStart && originalRequest) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      const maxRetries = 6;
+
+      if (originalRequest._retryCount <= maxRetries) {
+        const backoffMs = Math.min(3000 * Math.pow(1.3, originalRequest._retryCount - 1), 8000);
+        console.log(
+          `[apiClient] Render instance cold start (status ${status || error.code}). Auto-retrying ${originalRequest._retryCount}/${maxRetries} in ${Math.round(backoffMs)}ms...`
+        );
+        // Ping health endpoint concurrently to awaken Render
+        axios.get(`${API_CONFIG.NODE_URL}/api/health`, { timeout: 10000 }).catch(() => {});
+        await sleep(backoffMs);
+        return apiClient(originalRequest);
+      }
     }
 
     return Promise.reject(error);

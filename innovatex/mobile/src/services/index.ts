@@ -63,112 +63,31 @@ export const JobService = {
       source?: string;
     }
   ) => {
-    const { getFreshToken } = require('./apiClient');
-    const token = await getFreshToken();
-    const { API_CONFIG } = require('../config/api');
-
-    // Case 1: When using an existing saved resume without a local file URI
-    if (!fileUri || fileUri.trim() === '') {
-      const res = await apiClient.post('/jobs/search', {
-        query,
-        location,
-        work_type: filters?.work_type,
-        job_type: filters?.job_type,
-        country: filters?.country,
-        source: filters?.source,
-      });
-      return res.data;
-    }
-
-    let targetUri = fileUri;
-    try {
-      const cacheDir = FileSystemLegacy.cacheDirectory || FileSystemLegacy.documentDirectory;
-      if (cacheDir && !targetUri.startsWith(cacheDir) && targetUri.includes('://')) {
-        const destUri = `${cacheDir}upload_${Date.now()}_${(fileName || 'resume.pdf').replace(/\s+/g, '_')}`;
-        await FileSystemLegacy.copyAsync({
-          from: targetUri,
-          to: destUri,
-        });
-        targetUri = destUri;
-      }
-    } catch (e) {
-      console.warn('Could not mirror file to cache directory, trying direct URI', e);
-    }
-
-    // Try multipart uploadAsync first
-    try {
-      const uploadType = FileSystemLegacy?.FileSystemUploadType?.MULTIPART ?? 1;
-      const uploadRes = await (FileSystemLegacy.uploadAsync || (FileSystemLegacy as any).default?.uploadAsync)(
-        `${API_CONFIG.NODE_URL}/api/jobs/search`,
-        targetUri,
-        {
-          fieldName: 'resume',
-          httpMethod: 'POST',
-          uploadType,
-          headers: {
-            Accept: 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          parameters: {
-            ...(query ? { query } : {}),
-            ...(location ? { location } : {}),
-            ...(filters?.work_type ? { work_type: filters.work_type } : {}),
-            ...(filters?.job_type ? { job_type: filters.job_type } : {}),
-            ...(filters?.country ? { country: filters.country } : {}),
-            ...(filters?.source ? { source: filters.source } : {}),
-          },
-        }
-      );
-
-      let data;
+    // Read file as Base64 and send via apiClient
+    // apiClient has automatic exponential retry for Render cold starts (502, 503, 504)
+    let base64Data = '';
+    if (fileUri && fileUri.trim() !== '') {
       try {
-        data = JSON.parse(uploadRes.body);
-      } catch {
-        data = { error: uploadRes.body };
+        base64Data = await FileSystemLegacy.readAsStringAsync(fileUri, {
+          encoding: FileSystemLegacy.EncodingType.Base64,
+        });
+      } catch (e) {
+        console.warn('Could not read file as base64 from fileUri, proceeding with profile data:', e);
       }
-
-      if (uploadRes.status >= 200 && uploadRes.status < 300) {
-        return data;
-      }
-      if (uploadRes.status >= 400 && data.error && !data.error.includes('isn\'t readable')) {
-        throw new Error(data.error);
-      }
-    } catch (uploadErr: any) {
-      console.warn('uploadAsync failed, falling back to base64 payload:', uploadErr.message);
     }
 
-    // Fallback: Read file as Base64 and send via JSON payload
-    try {
-      let base64Data: string = '';
-      if (targetUri && targetUri.trim() !== '') {
-        try {
-          base64Data = await FileSystemLegacy.readAsStringAsync(targetUri, {
-            encoding: FileSystemLegacy.EncodingType.Base64,
-          });
-        } catch {
-          if (fileUri && fileUri.trim() !== '') {
-            base64Data = await FileSystemLegacy.readAsStringAsync(fileUri, {
-              encoding: FileSystemLegacy.EncodingType.Base64,
-            });
-          }
-        }
-      }
-
-      const res = await apiClient.post('/jobs/search', {
-        ...(base64Data ? { base64: base64Data } : {}),
-        filename: fileName || 'resume.pdf',
-        mimetype: fileType || 'application/pdf',
-        query,
-        location,
-        work_type: filters?.work_type,
-        job_type: filters?.job_type,
-        country: filters?.country,
-        source: filters?.source,
-      });
-      return res.data;
-    } catch (base64Err: any) {
-      throw new Error(base64Err.response?.data?.error || base64Err.message || 'Job search upload failed');
-    }
+    const res = await apiClient.post('/jobs/search', {
+      ...(base64Data ? { base64: base64Data } : {}),
+      filename: fileName || 'resume.pdf',
+      mimetype: fileType || 'application/pdf',
+      query,
+      location,
+      work_type: filters?.work_type,
+      job_type: filters?.job_type,
+      country: filters?.country,
+      source: filters?.source,
+    });
+    return res.data;
   },
   getBookmarks: async () => {
     const res = await apiClient.get('/jobs/bookmarks');
