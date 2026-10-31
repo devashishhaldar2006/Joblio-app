@@ -105,3 +105,4 @@ Please do not report security vulnerabilities via public GitHub issues. Instead,
 ## 📜 License
 
 By contributing to Joblio, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+

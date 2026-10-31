@@ -26,3 +26,4 @@ The Joblio team takes security and user privacy seriously. If you discover a sec
    - We will credit the reporter upon releasing a verified fix.
 
 Please refrain from disclosing vulnerabilities publicly until we have reviewed and published an official security patch.
+
