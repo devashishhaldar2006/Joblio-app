@@ -16,8 +16,17 @@
 [![Upstash Redis](https://img.shields.io/badge/Upstash-Redis%20Cache-00E599?style=flat-square&logo=redis)](https://upstash.com/)
 [![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Google Play](https://img.shields.io/badge/Google_Play-Get_it_on_Play_Store-00C980?style=flat-square&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.devashishcodes.mobile&pli=1)
 
 **Joblio** is an enterprise-grade, full-stack intelligence platform that bridges the gap between software developers and the tech industry. It combines real-time developer telemetry, multi-agent LLM workflows, machine learning market forecasting, and high-precision career matching into a sleek, Sunset Noir mobile ecosystem.
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.devashishcodes.mobile&pli=1">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="68">
+  </a>
+  <br/>
+  <strong>Available on Google Play:</strong> <a href="https://play.google.com/store/apps/details?id=com.devashishcodes.mobile&pli=1"><code>com.devashishcodes.mobile</code></a>
+</p>
 
 [Architecture](#-system-architecture) • [Features](#-core-capabilities) • [Tech Stack](#-technical-stack) • [Installation](#-getting-started) • [Deployment](#-cloud-deployment) • [Authors](#-authors)
 
