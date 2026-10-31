@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClerkClient, verifyToken } from '@clerk/express';
 import User from '../models/User.js';
+import { sendWelcomeEmail } from '../utils/emailService.js';
 
 export interface AuthUserPayload {
   _id: string;
@@ -88,9 +89,22 @@ async function verifyClerkToken(token: string): Promise<AuthUserPayload | null> 
             authProvider: detectedProvider,
             githubUsername: detectedGithubUsername,
             hasCompletedOnboarding: false,
+            welcomeEmailSent: true,
             skills: ['TypeScript', 'React', 'Node.js'],
             targetRole: 'Software Engineer',
           });
+
+          // Dispatch developer welcome email ONCE on new user sign-up
+          if (email && !email.endsWith('@clerk.user')) {
+            sendWelcomeEmail({
+              toEmail: email,
+              userName: name,
+              targetRole: 'Software Engineer',
+              authProvider: detectedProvider,
+            }).catch(err => {
+              console.warn('[AuthMiddleware] New user welcome email error:', err.message);
+            });
+          }
         }
       } catch (userFetchErr) {
         mongoUser = await User.create({

@@ -88,6 +88,10 @@ const userSchema = new Schema<IUser>({
     type: Boolean,
     default: false
   },
+  welcomeEmailSent: {
+    type: Boolean,
+    default: false
+  },
   authProvider: {
     type: String,
     enum: ['email', 'google', 'github'],

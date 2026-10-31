@@ -92,21 +92,7 @@ export const syncClerkUser = async (req: AuthenticatedRequest, res: Response) =>
       return res.status(404).json({ error: 'User record not found.' });
     }
 
-    // Trigger developer welcome email via Resend on initial registration / sync
-    if (!user.welcomeEmailSent && user.email && !user.email.endsWith('@clerk.user')) {
-      sendWelcomeEmail({
-        toEmail: user.email,
-        userName: user.name,
-        targetRole: user.targetRole,
-        authProvider: user.authProvider,
-      }).then(res => {
-        if (res.success) {
-          User.findByIdAndUpdate(user._id, { welcomeEmailSent: true }).catch(() => {});
-        }
-      }).catch(err => {
-        console.warn('[AuthController] Welcome email sync warning:', err.message);
-      });
-    }
+    // Welcome email is only dispatched on new user sign-up creation, not on routine session sync.
 
     return res.status(200).json({
       message: 'Synced successfully',
