@@ -1,7 +1,7 @@
 <div align="center">
 
 <h1>
-  <img src="./docs/assets/joblio-logo.png" width="42" height="42" alt="Joblio Logo" style="vertical-align: middle; border-radius: 8px;" />
+  <img src="https://raw.githubusercontent.com/devashishhaldar2006/Joblio-app/main/docs/assets/joblio-logo.png" width="42" height="42" alt="Joblio Logo" style="vertical-align: middle; border-radius: 8px;" />
   <span>Joblio</span>
 </h1>
 
