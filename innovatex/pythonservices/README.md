@@ -1,22 +1,17 @@
----
-title: Joblio AI Service
-emoji: 🚀
-colorFrom: yellow
-colorTo: red
-sdk: gradio
-sdk_version: 5.4.0
-app_file: app.py
-pinned: false
-license: mit
----
+# Joblio AI & Developer Intelligence Microservice
 
-# Joblio Developer Intelligence & AI Microservice
+High-throughput, asynchronous AI & ML engine powering Joblio.
 
-This Hugging Face Space hosts the AI & ML microservice powering **Joblio**.
+## Key Capabilities
+- **FastAPI**: Async, high-performance REST APIs.
+- **LangGraph Multi-Agent Workflows**: GitHub auditing, ATS scoring, and research breakdown.
+- **Predictive Time-Series Forecaster**: Facebook Prophet, Auto-ARIMA, and Linear Regression.
+- **Upstash Redis Caching**: Sub-millisecond response caching.
 
-## Architecture & Features
-- **FastAPI + Gradio** high-throughput async endpoints
-- **LangGraph** multi-agent LLM workflows
-- **Facebook Prophet & Auto-ARIMA** 26-week skill forecasting
-- **PDFPlumber & NLP** automated resume ATS parsing
-- **Upstash Redis** high-speed caching
+## Run Locally
+`ash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+`

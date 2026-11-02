@@ -1,3 +1,0 @@
-build-essential
-g++
-libgomp1
