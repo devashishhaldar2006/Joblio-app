@@ -1,7 +1,7 @@
 ---
 title: Joblio AI Service
 emoji: 🚀
-colorFrom: orange
+colorFrom: yellow
 colorTo: red
 sdk: gradio
 sdk_version: 4.44.0
