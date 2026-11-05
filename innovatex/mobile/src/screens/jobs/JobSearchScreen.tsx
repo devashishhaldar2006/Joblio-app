@@ -1,5 +1,6 @@
 import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import React, { useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import {
   View,
   Text,
@@ -68,6 +69,7 @@ export default function JobSearchScreen() {
   };
 
   const handlePickDocument = async () => {
+    if (loading) return;
     try {
       const res = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
@@ -135,7 +137,13 @@ export default function JobSearchScreen() {
         }
       }
     } catch (e: any) {
-      alert(e.response?.data?.error || e.message || 'Job search failed');
+      const status = e.response?.status;
+      const msg = e.response?.data?.error || e.response?.data?.detail || e.message || 'Job search failed';
+      if (status === 422) {
+        Alert.alert('Invalid Resume Document', msg);
+      } else {
+        Alert.alert('Job Search Notice', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -183,7 +191,7 @@ export default function JobSearchScreen() {
           Select your resume file to match open engineering listings by competency.
         </Text>
 
-        <TouchableOpacity style={styles.uploadArea} onPress={handlePickDocument} activeOpacity={0.7}>
+        <TouchableOpacity style={[styles.uploadArea, loading && { opacity: 0.5 }]} onPress={handlePickDocument} disabled={loading} activeOpacity={0.7}>
           <Text style={styles.uploadText}>
             {selectedFile ? selectedFile.name : 'Choose file (PDF, DOCX, TXT)'}
           </Text>

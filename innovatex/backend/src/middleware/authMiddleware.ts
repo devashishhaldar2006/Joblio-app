@@ -90,7 +90,7 @@ async function verifyClerkToken(token: string): Promise<AuthUserPayload | null> 
             githubUsername: detectedGithubUsername,
             hasCompletedOnboarding: false,
             welcomeEmailSent: true,
-            skills: ['TypeScript', 'React', 'Node.js'],
+            skills: [],
             targetRole: 'Software Engineer',
           });
 
@@ -113,7 +113,7 @@ async function verifyClerkToken(token: string): Promise<AuthUserPayload | null> 
           clerkId,
           authProvider: 'email',
           hasCompletedOnboarding: false,
-          skills: ['TypeScript', 'React'],
+          skills: [],
           targetRole: 'Software Engineer',
         });
       }

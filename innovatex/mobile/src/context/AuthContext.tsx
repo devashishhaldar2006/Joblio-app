@@ -113,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name,
             email,
             avatar,
-            skills: ['TypeScript', 'React', 'Node.js'],
+            skills: [],
             targetRole: 'Software Engineer',
           };
           setUser(fallbackUser);

@@ -99,7 +99,7 @@ export default function OnboardingScreen() {
     setUploadProgressText('Finalizing your developer profile...');
 
     try {
-      let parsedSkills: string[] = user?.skills || ['TypeScript', 'React', 'Node.js'];
+      let parsedSkills: string[] = Array.isArray(user?.skills) ? user.skills : [];
       let parsedRole = targetRole;
 
       // 1. If resume attached, attempt AI extraction & caching

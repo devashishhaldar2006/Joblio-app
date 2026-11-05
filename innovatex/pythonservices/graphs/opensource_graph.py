@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Dict, Any
+from typing import TypedDict, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from agents.opensource.repo_finder import repo_finder_node
 from agents.opensource.issue_explainer import issue_explainer_node
@@ -8,6 +8,7 @@ class OpenSourceGraphState(TypedDict, total=False):
     skills: List[str]
     experience_level: str
     preferred_language: str
+    query: Optional[str]
     raw_repos: List[Dict[str, Any]]
     filtered_repos: List[Dict[str, Any]]
     issues_per_repo: Dict[str, Any]

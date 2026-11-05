@@ -14,6 +14,7 @@ import { ContestService } from '../../services';
 import { ExternalLink, Trophy } from 'lucide-react-native';
 import AiLoadingIndicator from '../../components/AiLoadingIndicator';
 import AppHeader from '../../components/AppHeader';
+import { CardListShimmer } from '../../components/ShimmerLoaders';
 
 export default function ContestTrackerScreen() {
   const [contests, setContests] = useState<any[]>([]);
@@ -115,8 +116,8 @@ export default function ContestTrackerScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="small" color={COLORS.textPrimary} />
+        <View style={{ padding: 16 }}>
+          <CardListShimmer count={5} />
         </View>
       ) : (
         <ScrollView

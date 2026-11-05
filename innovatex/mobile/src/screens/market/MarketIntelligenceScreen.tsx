@@ -14,6 +14,7 @@ import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { MarketService } from '../../services';
 import AppHeader from '../../components/AppHeader';
 import AiLoadingIndicator from '../../components/AiLoadingIndicator';
+import { MarketIntelligenceShimmer } from '../../components/ShimmerLoaders';
 import {
   TrendingUp,
   Activity,
@@ -162,9 +163,14 @@ export default function MarketIntelligenceScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="small" color={COLORS.textPrimary} />
-        <Text style={styles.loadingText}>Fetching live market signals...</Text>
+      <View style={styles.container}>
+        <AppHeader
+          title="Market & Trends"
+          badge="Live Pulse"
+          badgeType="yellow"
+          subtitle="Real-time hiring volume & predictive forecasting"
+        />
+        <MarketIntelligenceShimmer />
       </View>
     );
   }

@@ -34,7 +34,7 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
         const generatedText = [
           `Candidate: ${currentUser.name}`,
           `Target Role: ${currentUser.targetRole || 'Software Engineer'}`,
-          `Skills: ${(currentUser.skills && currentUser.skills.length > 0 ? currentUser.skills.join(', ') : 'TypeScript, JavaScript, React, Node.js')}`,
+          `Skills: ${(currentUser.skills && currentUser.skills.length > 0 ? currentUser.skills.join(', ') : '')}`,
           `Bio: ${currentUser.bio || 'Experienced engineering developer'}`,
           `GitHub: ${currentUser.githubUsername || ''}`
         ].join('\n');
@@ -133,8 +133,9 @@ export const searchJobs = async (req: AuthenticatedRequest, res: Response) => {
     });
   } catch (err: any) {
     console.error('Job search error:', err.response?.data || err.message);
-    const msg = err.response?.data?.detail || err.message || 'Job search pipeline failed.';
-    return res.status(500).json({ error: msg });
+    const status = err.response?.status || 500;
+    const msg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Job search pipeline failed.';
+    return res.status(status).json({ error: msg });
   }
 };
 

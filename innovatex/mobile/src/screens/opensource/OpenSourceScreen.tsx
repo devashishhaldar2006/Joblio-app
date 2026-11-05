@@ -115,29 +115,6 @@ export default function OpenSourceScreen({ navigation }: any) {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* GitHub Audit Feature Card */}
-        <TouchableOpacity
-          style={styles.auditFeatureCard}
-          onPress={() => navigation?.navigate('GithubAudit')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.auditIconCircle}>
-            <Code2 size={18} color="#00E599" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.auditCardTitle}>GitHub Profile & Code Audit</Text>
-              <View style={styles.proBadge}>
-                <Text style={styles.proBadgeText}>AI Audit</Text>
-              </View>
-            </View>
-            <Text style={styles.auditCardSubtitle}>
-              Run repository quality checks, commit velocity analysis, and automated fixes.
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#888888" />
-        </TouchableOpacity>
-
         {/* Controls Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>

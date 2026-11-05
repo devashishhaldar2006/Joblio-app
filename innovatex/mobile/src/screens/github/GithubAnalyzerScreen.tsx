@@ -31,6 +31,7 @@ import {
   Star,
 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
+import { AnimatedScoreBadge, AnimatedProgressBar, AnimatedCard } from '../../components/AnimatedComponents';
 
 export default function GithubAnalyzerScreen({ navigation, route }: any) {
   const { user } = useAuth();
@@ -146,10 +147,7 @@ export default function GithubAnalyzerScreen({ navigation, route }: any) {
                 {report.total_repos || repos.length} Public Repos • {report.followers ?? 24} Followers
               </Text>
             </View>
-            <View style={styles.scoreBox}>
-              <Text style={styles.scoreText}>{score}</Text>
-              <Text style={styles.scoreSub}>/100</Text>
-            </View>
+            <AnimatedScoreBadge score={score} maxScore={100} />
           </View>
 
           {/* Navigation Tabs */}
@@ -221,9 +219,7 @@ export default function GithubAnalyzerScreen({ navigation, route }: any) {
                         <Text style={styles.metricDimName}>{titleClean}</Text>
                         <Text style={styles.metricFraction}>{s}/{m} pts</Text>
                       </View>
-                      <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${pct}%` }]} />
-                      </View>
+                      <AnimatedProgressBar percent={pct} color="#00E599" height={5} />
                     </View>
                   );
                 })}

@@ -1,3 +1,5 @@
+import FormData from 'form-data';
+import { callPythonServiceWithRetry } from '../utils/pythonService.js';
 import JobBookmark from '../models/JobBookmark.js';
 import JobSearchHistory from '../models/JobSearchHistory.js';
 import GithubAnalysis from '../models/GithubAnalysis.js';
@@ -61,6 +63,40 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     }
     if (resumeBase64) {
       user.resumeBase64 = resumeBase64;
+      // Auto-analyze uploaded resume with Python AI service & update profile skills & role
+      try {
+        const fileBuffer = Buffer.from(resumeBase64, 'base64');
+        const form = new FormData();
+        form.append('resume', fileBuffer, {
+          filename: resumeFileName || 'resume.pdf',
+          contentType: 'application/pdf',
+        });
+        const pythonUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
+        const pyRes = await callPythonServiceWithRetry({
+          method: 'POST',
+          url: `${pythonUrl}/resume/parse`,
+          data: form,
+          headers: form.getHeaders(),
+          timeout: 45000,
+        }, 3, 2000);
+
+        if (pyRes.data?.parsed_profile) {
+          const parsed = pyRes.data.parsed_profile;
+          if (Array.isArray(parsed.skills) && parsed.skills.length > 0) {
+            // Merge existing skills with freshly extracted skills
+            const combined = Array.from(new Set([...(user.skills || []), ...parsed.skills]));
+            user.skills = combined;
+          }
+          if (parsed.current_role) {
+            user.targetRole = parsed.current_role;
+          }
+          if (parsed.summary && !user.bio) {
+            user.bio = parsed.summary;
+          }
+        }
+      } catch (parseErr: any) {
+        console.warn('[AuthController] Resume auto-parse non-fatal warning:', parseErr.message);
+      }
     }
     if (removeResume) {
       user.resumeFileName = '';

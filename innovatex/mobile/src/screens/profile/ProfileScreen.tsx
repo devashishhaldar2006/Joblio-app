@@ -12,6 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystemLegacy from 'expo-file-system/legacy';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { AuthService, GithubService } from '../../services';
@@ -137,19 +138,44 @@ export default function ProfileScreen({ navigation }: any) {
         setUploadingResume(true);
         const fileName = picked.name || 'resume.pdf';
 
+        let base64Data = '';
+        if (picked.uri) {
+          try {
+            base64Data = await FileSystemLegacy.readAsStringAsync(picked.uri, {
+              encoding: FileSystemLegacy.EncodingType.Base64,
+            });
+          } catch (readErr) {
+            console.warn('Could not encode resume to base64:', readErr);
+          }
+        }
+
         const updateRes = await AuthService.updateProfile({
           resumeFileName: fileName,
+          ...(base64Data ? { resumeBase64: base64Data } : {}),
         });
 
         if (updateRes?.user) {
           updateUser(updateRes.user);
+          if (Array.isArray(updateRes.user.skills)) {
+            setEditSkills(updateRes.user.skills.join(', '));
+          }
+          if (updateRes.user.targetRole) {
+            setEditTargetRole(updateRes.user.targetRole);
+          }
         } else {
           updateUser({ hasResume: true, resumeFileName: fileName });
         }
-        Alert.alert('Resume Saved', `"${fileName}" is now attached to your account permanently.`);
+
+        const detectedSkillsCount = updateRes?.user?.skills?.length || 0;
+        const msg = detectedSkillsCount > 0
+          ? `"${fileName}" analyzed successfully. Detected ${detectedSkillsCount} technical skills and updated your profile.`
+          : `"${fileName}" is now attached to your account permanently.`;
+
+        Alert.alert('Resume Analyzed & Saved', msg);
       }
     } catch (e: any) {
-      Alert.alert('Upload Error', e.message || 'Failed to pick document.');
+      const errDetail = e.response?.data?.error || e.response?.data?.detail || e.message || 'Failed to upload and analyze document.';
+      Alert.alert('Upload Notice', errDetail);
     } finally {
       setUploadingResume(false);
     }
@@ -397,13 +423,18 @@ export default function ProfileScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Career Preferences */}
+                {/* Career Preferences */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeading}>CAREER PARAMETERS</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.sectionHeading}>CAREER PARAMETERS</Text>
+            <TouchableOpacity onPress={() => setIsEditing(true)} activeOpacity={0.7}>
+              <Text style={{ color: '#00E599', fontSize: 11, fontWeight: '700' }}>Edit</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.paramRow}>
             <Text style={styles.paramLabel}>Target Role</Text>
-            <Text style={styles.paramValue}>{user?.targetRole || 'Software Engineer'}</Text>
+            <Text style={styles.paramValue}>{user?.targetRole || 'Not specified'}</Text>
           </View>
 
           <View style={styles.paramRow}>
@@ -413,14 +444,23 @@ export default function ProfileScreen({ navigation }: any) {
             </Text>
           </View>
 
-          <View style={styles.paramRow}>
-            <Text style={styles.paramLabel}>Skills Portfolio</Text>
-            <Text style={styles.paramValueSkills}>
-              {user?.skills && user.skills.length > 0
-                ? user.skills.join('  •  ')
-                : 'TypeScript • React • Node.js • Python'}
-            </Text>
+          <View style={[styles.paramRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={styles.paramLabel}>Skills Portfolio ({user?.skills?.length || 0})</Text>
           </View>
+
+          {user?.skills && user.skills.length > 0 ? (
+            <View style={styles.skillsTagWrap}>
+              {user.skills.map((skill: string, sIdx: number) => (
+                <View key={sIdx} style={styles.skillPill}>
+                  <Text style={styles.skillPillText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptySkillsText}>
+              No skills added yet. Upload a resume or tap Edit to add your tech stack.
+            </Text>
+          )}
         </View>
 
         {/* Built By Card */}
@@ -818,10 +858,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  paramValueSkills: {
-    color: '#DDDDDD',
+  skillsTagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  skillPill: {
+    backgroundColor: '#1C1C1C',
+    borderColor: '#2A2A2A',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  skillPillText: {
+    color: '#E0E0E0',
+    fontSize: 11,
+    fontFamily: FONTS.mono,
+  },
+  emptySkillsText: {
+    color: '#666666',
     fontSize: 12,
-    lineHeight: 18,
+    fontStyle: 'italic',
+    marginTop: 6,
   },
   builtByCard: {
     backgroundColor: '#121212',

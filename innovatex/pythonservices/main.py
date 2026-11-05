@@ -59,7 +59,7 @@ from scheduler import start_market_scheduler, check_and_run_cold_start
 
 from agents.opensource.pr_guide_agent import generate_pr_guide
 from agents.opensource.pr_reviewer import review_pr_code
-from utils.pdf_parser import extract_text_from_pdf
+from utils.pdf_parser import extract_text_from_pdf, validate_resume_text
 
 @asynccontextmanager
 async def lifespan(app):
@@ -158,6 +158,8 @@ async def analyze_github(payload: GithubAnalyzeRequest):
             status_code=ge.status_code,
             detail={"message": ge.message, "rate_limit": ge.rate_limit}
         )
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -259,6 +261,42 @@ async def review_opensource(payload: OpenSourceReviewRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Module 5: Multi-Agent Job Search
+
+# Endpoint: Direct Resume Parse & Profile Extraction (Zero rapidapi search)
+@app.post("/resume/parse")
+async def parse_resume_only(resume: UploadFile = File(...)):
+    try:
+        file_bytes = await resume.read()
+        extracted_text = extract_text_from_pdf(file_bytes)
+        if not extracted_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract readable text from uploaded document (PDF, DOCX, or TXT)."
+            )
+
+        is_valid, validation_error = validate_resume_text(extracted_text)
+        if not is_valid:
+            raise HTTPException(
+                status_code=422,
+                detail=validation_error or "The uploaded document does not appear to be a developer resume. Please upload a valid resume (PDF/DOCX)."
+            )
+
+        from agents.jobs.resume_parser import parse_resume_node
+        parse_result = await parse_resume_node({"resume_text": extracted_text})
+        profile = parse_result.get("parsed_profile", {})
+
+        return {
+            "parsed_profile": profile,
+            "skills": profile.get("skills", []),
+            "current_role": profile.get("current_role", "Software Engineer"),
+            "summary": profile.get("summary", "")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/jobs/search")
 async def search_jobs(
     resume: UploadFile = File(...),
@@ -274,6 +312,13 @@ async def search_jobs(
         extracted_text = extract_text_from_pdf(file_bytes)
         if not extracted_text:
             raise HTTPException(status_code=400, detail="Could not extract readable text from uploaded document (PDF, DOCX, or TXT).")
+
+        is_valid, validation_error = validate_resume_text(extracted_text)
+        if not is_valid:
+            raise HTTPException(
+                status_code=422,
+                detail=validation_error or "The uploaded document does not appear to be a developer resume. Please upload a valid resume (PDF/DOCX)."
+            )
 
         initial_state = {
             "resume_text": extracted_text,
@@ -298,6 +343,8 @@ async def search_jobs(
             "results": result.get("final_results", []),
             "platform_links": result.get("platform_links", [])
         }
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

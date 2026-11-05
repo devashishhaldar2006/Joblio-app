@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, FONTS } from '../constants/theme';
+import { AppBootShimmer } from '../components/ShimmerLoaders';
 
 // Screens
 import AuthScreen from '../screens/auth/AuthScreen';
@@ -141,11 +142,7 @@ export default function AppNavigator() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="small" color="#FFFFFF" />
-      </View>
-    );
+    return <AppBootShimmer />;
   }
 
   return (

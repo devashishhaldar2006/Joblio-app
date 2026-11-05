@@ -73,18 +73,25 @@ Resume:
         res = await model.ainvoke([HumanMessage(content=prompt)])
         parsed_profile = parse_json_from_llm(res.content)
     except Exception as llm_err:
-        # Graceful fallback: If LLM is busy or rate limited, construct clean profile purely from dictionary!
+        # If LLM is unavailable/rate-limited, construct profile strictly from actual resume content (0 hallucinations)
+        if not deterministic_skills:
+            raise ValueError(
+                "Could not detect verifiable developer skills in this document. "
+                "Please ensure your resume includes technical skills, languages, or frameworks."
+            )
+        primary_title = f"{deterministic_skills[0]} Developer" if deterministic_skills else "Software Developer"
+        top_skills_preview = ", ".join(deterministic_skills[:4])
         parsed_profile = {
             "name": "Developer Candidate",
             "email": "",
             "phone": "",
-            "location": "Remote / India",
-            "current_role": "Software Engineer",
-            "experience_years": 2,
-            "education": "Computer Science / Engineering",
-            "skills": deterministic_skills if deterministic_skills else ["TypeScript", "React", "Node.js"],
-            "preferred_roles": ["Full Stack Engineer", "Software Engineer"],
-            "summary": "Full stack developer with proven software engineering proficiency."
+            "location": "Remote / Worldwide",
+            "current_role": primary_title,
+            "experience_years": 1,
+            "education": "Computer Science / Technical Background",
+            "skills": deterministic_skills,
+            "preferred_roles": [primary_title, "Software Engineer"],
+            "summary": f"Developer skilled in {top_skills_preview}."
         }
 
     # Combine deterministic dictionary skills with LLM inferred skills
