@@ -205,7 +205,7 @@ export async function sendWelcomeEmail({
 
       <div class="footer">
         <p style="margin: 0 0 6px 0;">Wingr Platform · Engineered by Devashish & Om</p>
-        <p style="margin: 0;">Need support or have feedback? Reply directly to this email or visit <a href="https://joblio.hackcentral.me">joblio.hackcentral.me</a></p>
+        <p style="margin: 0;">Need support or have feedback? Reply directly to this email or visit <a href="https://joblio.hackcentral.me">Wingr Platform</a></p>
       </div>
     </div>
   </div>
