@@ -121,7 +121,7 @@ export default function DashboardScreen({ navigation }: any) {
       <View style={styles.topBrandBar}>
         <View style={styles.brandContainer}>
           <Text style={styles.brandTitle}>
-            Job<Text style={styles.brandAccent}>lio</Text>
+            Win<Text style={styles.brandAccent}>gr</Text>
           </Text>
         </View>
         <TouchableOpacity

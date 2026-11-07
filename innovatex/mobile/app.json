@@ -3,7 +3,7 @@
     "name": "Wingr",
     "slug": "mobile",
     "scheme": "joblio",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -27,7 +27,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.devashishcodes.mobile",
-      "label": "Wingr"
+      "label": "Wingr",
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/favicon.png"
