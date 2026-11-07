@@ -32,6 +32,12 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function MainTabNavigator() {
+  const insets = useSafeAreaInsets();
+  // Provide comfortable clearance above the Android system white gesture bar
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 22 : 16);
+  const topPadding = 10;
+  const barHeight = 46 + topPadding + bottomPadding;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -53,15 +59,20 @@ function MainTabNavigator() {
         headerTintColor: '#FFFFFF',
         tabBarStyle: {
           backgroundColor: '#0A0A0A',
-          borderTopColor: '#1A1A1A',
+          borderTopColor: '#161616',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 90 : 72,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 14,
-          paddingTop: 10,
+          height: barHeight,
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
           elevation: 0,
         },
+        tabBarItemStyle: {
+          height: 46,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
         tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#555555',
+        tabBarInactiveTintColor: '#666666',
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '500',
