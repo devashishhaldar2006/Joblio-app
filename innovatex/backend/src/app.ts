@@ -39,7 +39,7 @@ app.use('/', legalRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'Joblio Express TypeScript Backend' });
+  res.json({ status: 'ok', service: 'Wingr Express TypeScript Backend' });
 });
 
 // Error handling middleware
@@ -73,13 +73,13 @@ mongoose.connect(MONGO_URI)
     });
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] Joblio Express TypeScript backend running on http://0.0.0.0:${PORT}`);
+      console.log(`[Server] Wingr Express TypeScript backend running on http://0.0.0.0:${PORT}`);
     });
   })
   .catch(err => {
     console.error('[Database] MongoDB connection error:', err);
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] Joblio Express TypeScript backend running without Mongo on http://0.0.0.0:${PORT}`);
+      console.log(`[Server] Wingr Express TypeScript backend running without Mongo on http://0.0.0.0:${PORT}`);
     });
   });
 

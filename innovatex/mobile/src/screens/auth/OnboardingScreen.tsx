@@ -178,7 +178,7 @@ export default function OnboardingScreen() {
             <Sparkles color="#FFFFFF" size={12} strokeWidth={2.5} />
             <Text style={styles.badgeText}>GET STARTED</Text>
           </View>
-          <Text style={styles.title}>Welcome to Joblio</Text>
+          <Text style={styles.title}>Welcome to Wingr</Text>
           <Text style={styles.subtitle}>
             Select your target career path. GitHub and resume are optional now and can be updated anytime in your profile.
           </Text>
@@ -312,7 +312,7 @@ export default function OnboardingScreen() {
             <ActivityIndicator size="small" color="#000000" />
           ) : (
             <>
-              <Text style={styles.submitButtonText}>Enter Joblio Platform</Text>
+              <Text style={styles.submitButtonText}>Enter Wingr Platform</Text>
               <ArrowRight color="#000000" size={18} strokeWidth={2.2} />
             </>
           )}

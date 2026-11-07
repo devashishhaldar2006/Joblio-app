@@ -1,6 +1,6 @@
-# Contributing to Joblio
+# Contributing to Wingr
 
-Thank you for your interest in contributing to **Joblio**! As an open-source, AI-powered developer intelligence and career acceleration platform, we welcome contributions from engineers of all experience levels.
+Thank you for your interest in contributing to **Wingr**! As an open-source, AI-powered developer intelligence and career acceleration platform, we welcome contributions from engineers of all experience levels.
 
 ---
 
@@ -12,10 +12,10 @@ We are committed to providing a welcoming, inclusive, and harassment-free enviro
 
 ## 🛠️ Project Architecture Overview
 
-Joblio is structured as a multi-tier microservice workspace:
+Wingr is structured as a multi-tier microservice workspace:
 
 ```
-Joblio-app/
+Wingr-app/
 ├── innovatex/
 │   ├── mobile/         # React Native (Expo SDK 58, TypeScript, Clerk Auth)
 │   ├── backend/        # Node.js + Express (TypeScript, MongoDB Atlas, Resend)
@@ -31,8 +31,8 @@ Joblio-app/
 
 ### 1. Fork & Clone
 ```bash
-git clone https://github.com/devashishhaldar2006/Joblio-app.git
-cd Joblio-app
+git clone https://github.com/devashishhaldar2006/Wingr-app.git
+cd Wingr-app
 ```
 
 ### 2. Setting Up Components
@@ -104,5 +104,5 @@ Please do not report security vulnerabilities via public GitHub issues. Instead,
 
 ## 📜 License
 
-By contributing to Joblio, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing to Wingr, you agree that your contributions will be licensed under the [MIT License](LICENSE).
 

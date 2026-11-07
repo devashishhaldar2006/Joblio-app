@@ -51,7 +51,7 @@ export async function sendWelcomeEmail({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Joblio</title>
+  <title>Welcome to Wingr</title>
   <style>
     body {
       margin: 0;
@@ -167,7 +167,7 @@ export async function sendWelcomeEmail({
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="logo-badge">⚡ JOBLIO PLATFORM</div>
+        <div class="logo-badge">⚡ WINGR PLATFORM</div>
         <h1 class="hero-title">Welcome to the future of developer careers, ${firstName}!</h1>
         <p class="hero-sub">Your developer intelligence workspace is officially live.</p>
       </div>
@@ -175,7 +175,7 @@ export async function sendWelcomeEmail({
       <div class="content">
         <p class="greeting">Hey ${firstName},</p>
         <p style="color: #BBBBBB; font-size: 14px; margin-bottom: 24px;">
-          Thanks for joining <strong>Joblio</strong>. We built this platform to replace outdated keyword-based job boards with direct engineering telemetry, AI skill matching, and real-time market insights.
+          Thanks for joining <strong>Wingr</strong>. We built this platform to replace outdated keyword-based job boards with direct engineering telemetry, AI skill matching, and real-time market insights.
         </p>
 
         <div class="feature-card">
@@ -199,12 +199,12 @@ export async function sendWelcomeEmail({
         </div>
 
         <div class="cta-container">
-          <a href="https://joblio.hackcentral.me" class="cta-btn">Open Joblio Dashboard →</a>
+          <a href="https://joblio.hackcentral.me" class="cta-btn">Open Wingr Dashboard →</a>
         </div>
       </div>
 
       <div class="footer">
-        <p style="margin: 0 0 6px 0;">Joblio Platform · Engineered by Devashish & Om</p>
+        <p style="margin: 0 0 6px 0;">Wingr Platform · Engineered by Devashish & Om</p>
         <p style="margin: 0;">Need support or have feedback? Reply directly to this email or visit <a href="https://joblio.hackcentral.me">joblio.hackcentral.me</a></p>
       </div>
     </div>
@@ -216,7 +216,7 @@ export async function sendWelcomeEmail({
     const { data, error } = await resend.emails.send({
       from: fromAddress,
       to: [toEmail],
-      subject: `Welcome to Joblio, ${firstName}! 🚀`,
+      subject: `Welcome to Wingr, ${firstName}! 🚀`,
       html: htmlContent,
     });
 

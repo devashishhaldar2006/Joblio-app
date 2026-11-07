@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The following versions of Joblio currently receive security updates and patches:
+The following versions of Wingr currently receive security updates and patches:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -13,7 +13,7 @@ The following versions of Joblio currently receive security updates and patches:
 
 ## Reporting a Vulnerability
 
-The Joblio team takes security and user privacy seriously. If you discover a security vulnerability in Joblio, please report it privately:
+The Wingr team takes security and user privacy seriously. If you discover a security vulnerability in Wingr, please report it privately:
 
 1. **Email Maintainers**: Send details to `workfordevashishhaldar@gmail.com`.
 2. **Include Details**:

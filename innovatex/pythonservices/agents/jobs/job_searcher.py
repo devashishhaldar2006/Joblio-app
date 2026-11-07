@@ -198,7 +198,7 @@ async def search_jobs_node(state: Dict[str, Any]) -> Dict[str, Any]:
         try:
             resp = await client.get(
                 "https://remoteok.com/api",
-                headers={"User-Agent": "Joblio/1.0"},
+                headers={"User-Agent": "Wingr/1.0"},
                 timeout=10.0
             )
             if resp.status_code == 200:

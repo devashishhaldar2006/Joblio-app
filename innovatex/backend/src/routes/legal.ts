@@ -8,7 +8,7 @@ router.get('/privacy', (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - Joblio</title>
+  <title>Privacy Policy - Wingr</title>
   <style>
     :root {
       --bg: #0A0A0A;
@@ -109,10 +109,10 @@ router.get('/privacy', (req: Request, res: Response) => {
     <div class="brand">
       <span class="badge">Legal Document</span>
     </div>
-    <h1>Privacy Policy for Joblio</h1>
+    <h1>Privacy Policy for Wingr</h1>
     <div class="last-updated">Last Updated: October 27, 2026</div>
 
-    <p>Welcome to <strong>Joblio</strong> ("we", "our", or "us"). We provide an AI-powered Developer Intelligence & Job Matching Platform accessible via mobile applications and associated web services. Your privacy is paramount to us, and this Privacy Policy outlines how we collect, use, process, and safeguard your data when using Joblio.</p>
+    <p>Welcome to <strong>Wingr</strong> ("we", "our", or "us"). We provide an AI-powered Developer Intelligence & Job Matching Platform accessible via mobile applications and associated web services. Your privacy is paramount to us, and this Privacy Policy outlines how we collect, use, process, and safeguard your data when using Wingr.</p>
 
     <h2>1. Information We Collect</h2>
     <p>To provide personalized job matching, competitive programming tracking, and developer analytics, we may collect the following data:</p>
@@ -133,7 +133,7 @@ router.get('/privacy', (req: Request, res: Response) => {
     </ul>
 
     <h2>3. Data Sharing & Third-Party Processors</h2>
-    <p><strong>We do not sell, rent, or trade your personal data.</strong> We transmit data only to vetted infrastructure service providers required to operate Joblio:</p>
+    <p><strong>We do not sell, rent, or trade your personal data.</strong> We transmit data only to vetted infrastructure service providers required to operate Wingr:</p>
     <ul>
       <li><strong>Authentication:</strong> Clerk (secure OAuth and session handling).</li>
       <li><strong>Database & Cloud Hosting:</strong> MongoDB Atlas (encrypted database storage) and Render (HTTPS application hosting).</li>
@@ -152,7 +152,7 @@ router.get('/privacy', (req: Request, res: Response) => {
     </ul>
 
     <h2>6. Children's Privacy</h2>
-    <p>Joblio is intended for developers, engineering students, and career professionals seeking software employment. We do not knowingly collect personal information from children under the age of 13.</p>
+    <p>Wingr is intended for developers, engineering students, and career professionals seeking software employment. We do not knowingly collect personal information from children under the age of 13.</p>
 
     <h2>7. Contact & Authors</h2>
     <div class="contact-card">
@@ -177,7 +177,7 @@ router.get('/delete-account', (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account & Data Deletion - Joblio</title>
+  <title>Account & Data Deletion - Wingr</title>
   <style>
     :root {
       --bg: #0A0A0A;
@@ -265,15 +265,15 @@ router.get('/delete-account', (req: Request, res: Response) => {
     <div class="brand">
       <span class="badge">Google Play Data Safety</span>
     </div>
-    <h1>Joblio Account & Data Deletion Request</h1>
+    <h1>Wingr Account & Data Deletion Request</h1>
     <div class="subtitle">Compliant with Google Play Store User Data & Deletion Policy</div>
 
-    <p>At <strong>Joblio</strong>, you have complete sovereignty over your personal data. In compliance with Google Play Store policies and international data protection laws (GDPR, CCPA), you can delete your account and all associated personal data at any time.</p>
+    <p>At <strong>Wingr</strong>, you have complete sovereignty over your personal data. In compliance with Google Play Store policies and international data protection laws (GDPR, CCPA), you can delete your account and all associated personal data at any time.</p>
 
     <h2>Option 1: In-App Immediate Deletion (Instant)</h2>
     <div class="steps-card">
       <ol>
-        <li>Open the <strong>Joblio</strong> app on your Android device.</li>
+        <li>Open the <strong>Wingr</strong> app on your Android device.</li>
         <li>Navigate to the <strong>Profile</strong> tab (bottom right icon).</li>
         <li>Scroll down to the <strong>Account Settings</strong> section.</li>
         <li>Tap <strong>Delete Account & Data</strong> and confirm.</li>
@@ -284,10 +284,10 @@ router.get('/delete-account', (req: Request, res: Response) => {
     <h2>Option 2: Web Deletion Request (Without App Access)</h2>
     <p>If you have uninstalled the app or cannot log in, you can request account deletion directly by contacting our compliance officers:</p>
     <div class="contact-card">
-      <p>Send an email with the subject <strong>"Joblio Data Deletion Request"</strong> from the email address registered with your account to:</p>
-      <p style="margin: 8px 0; font-size: 16px;"><strong>Email:</strong> <a href="mailto:workfordevashishhaldar@gmail.com?subject=Joblio%20Data%20Deletion%20Request">workfordevashishhaldar@gmail.com</a></p>
+      <p>Send an email with the subject <strong>"Wingr Data Deletion Request"</strong> from the email address registered with your account to:</p>
+      <p style="margin: 8px 0; font-size: 16px;"><strong>Email:</strong> <a href="mailto:workfordevashishhaldar@gmail.com?subject=Wingr%20Data%20Deletion%20Request">workfordevashishhaldar@gmail.com</a></p>
       <p>Include your registered email address or public username. Our team will verify and execute the permanent purge within <strong>24–48 hours</strong> and send confirmation.</p>
-      <a class="btn" href="mailto:workfordevashishhaldar@gmail.com?subject=Joblio%20Data%20Deletion%20Request">Send Deletion Request Email</a>
+      <a class="btn" href="mailto:workfordevashishhaldar@gmail.com?subject=Wingr%20Data%20Deletion%20Request">Send Deletion Request Email</a>
     </div>
 
     <h2>What Data Is Deleted Permanently?</h2>

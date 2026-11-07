@@ -59,7 +59,7 @@ export default function ProfileScreen({ navigation }: any) {
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account & Data',
-      'This will permanently delete your Joblio account, stored resumes, saved bookmarks, and GitHub analysis records. This action cannot be undone.',
+      'This will permanently delete your Wingr account, stored resumes, saved bookmarks, and GitHub analysis records. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -520,7 +520,7 @@ export default function ProfileScreen({ navigation }: any) {
         {/* Sign Out Button */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
           <LogOut size={15} color="#FF4D4D" />
-          <Text style={styles.logoutText}>Sign Out of Joblio</Text>
+          <Text style={styles.logoutText}>Sign Out of Wingr</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

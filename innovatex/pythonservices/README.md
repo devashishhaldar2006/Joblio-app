@@ -1,6 +1,6 @@
-# Joblio AI & Developer Intelligence Microservice
+# Wingr AI & Developer Intelligence Microservice
 
-High-throughput, asynchronous AI & ML engine powering Joblio.
+High-throughput, asynchronous AI & ML engine powering Wingr.
 
 ## Key Capabilities
 - **FastAPI**: Async, high-performance REST APIs.

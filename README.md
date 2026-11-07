@@ -1,8 +1,8 @@
 <div align="center">
 
 <h1>
-  <img src="https://raw.githubusercontent.com/devashishhaldar2006/Joblio-app/main/docs/assets/joblio-logo.png" width="42" height="42" alt="Joblio Logo" style="vertical-align: middle; border-radius: 8px;" />
-  <span>Joblio</span>
+  <img src="https://raw.githubusercontent.com/devashishhaldar2006/Wingr-app/main/docs/assets/wingr-logo.png" width="42" height="42" alt="Wingr Logo" style="vertical-align: middle; border-radius: 8px;" />
+  <span>Wingr</span>
 </h1>
 
 <p><strong>AI-Powered Developer Intelligence & Career Matching Platform</strong></p>
@@ -18,7 +18,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Google Play](https://img.shields.io/badge/Google_Play-Get_it_on_Play_Store-00C980?style=flat-square&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.devashishcodes.mobile&pli=1)
 
-**Joblio** is an enterprise-grade, full-stack intelligence platform that bridges the gap between software developers and the tech industry. It combines real-time developer telemetry, multi-agent LLM workflows, machine learning market forecasting, and high-precision career matching into a sleek, Sunset Noir mobile ecosystem.
+**Wingr** is an enterprise-grade, full-stack intelligence platform that bridges the gap between software developers and the tech industry. It combines real-time developer telemetry, multi-agent LLM workflows, machine learning market forecasting, and high-precision career matching into a sleek, Sunset Noir mobile ecosystem.
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.devashishcodes.mobile&pli=1">
@@ -36,7 +36,7 @@
 
 ## 📌 System Architecture
 
-Joblio operates on a distributed microservice topology designed for horizontal scalability, sub-second latency, and token efficiency:
+Wingr operates on a distributed microservice topology designed for horizontal scalability, sub-second latency, and token efficiency:
 
 ```mermaid
 flowchart TD
@@ -133,7 +133,7 @@ flowchart TD
 ## 📂 Repository Structure
 
 ```text
-Joblio-app/
+Wingr-app/
 ├── innovatex/
 │   ├── backend/                     # Node.js Express TypeScript Gateway
 │   │   ├── src/
@@ -252,7 +252,7 @@ npx expo start
 
 ## 📱 Compiling the Android APK
 
-Joblio is pre-configured with **Expo Application Services (EAS)** for building standalone Android APKs:
+Wingr is pre-configured with **Expo Application Services (EAS)** for building standalone Android APKs:
 
 ```powershell
 cd innovatex/mobile
@@ -270,11 +270,11 @@ npx eas build -p android --profile production
 
 | Service | Hosting Platform | URL |
 | :--- | :--- | :--- |
-| **API Gateway** | Render Web Service | `https://joblio-backend.onrender.com` |
-| **AI Microservice** | Render Web Service | `https://joblio-ai-service.onrender.com` |
+| **API Gateway** | Render Web Service | `https://wingr-backend.onrender.com` |
+| **AI Microservice** | Render Web Service | `https://wingr-ai-service.onrender.com` |
 | **Serverless Cache** | Upstash Redis | `https://feasible-pelican-241151.upstash.io` |
 | **Database** | MongoDB Atlas | Cluster `cluster0` |
-| **Privacy Policy** | Render (Hosted) | `https://joblio-backend.onrender.com/privacy` |
+| **Privacy Policy** | Render (Hosted) | `https://wingr-backend.onrender.com/privacy` |
 
 ---
 

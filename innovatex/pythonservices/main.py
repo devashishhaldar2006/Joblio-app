@@ -73,8 +73,8 @@ async def lifespan(app):
     yield
 
 app = FastAPI(
-    title="Joblio AI Engine",
-    description="Python FastAPI + LangGraph microservice powering Joblio Developer Intelligence Platform",
+    title="Wingr AI Engine",
+    description="Python FastAPI + LangGraph microservice powering Wingr Developer Intelligence Platform",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -131,7 +131,7 @@ class MarketGapReportRequest(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "Joblio-FastAPI-LangGraph"}
+    return {"status": "ok", "service": "Wingr-FastAPI-LangGraph"}
 
 # Module 1: GitHub Profile Analyzer
 @app.post("/github/analyze")

@@ -422,7 +422,7 @@ export default function AuthScreen() {
               <Text style={styles.label}>Email Address</Text>
               <TextInput
                 style={styles.input}
-                placeholder="dev@joblio.io"
+                placeholder="dev@wingr.app"
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -481,7 +481,7 @@ export default function AuthScreen() {
 
         {/* Subtle Credits Footer */}
         <View style={styles.footerCredits}>
-          <Text style={styles.footerCreditsText}>Joblio v1.0 • Crafted by Devashish & Om</Text>
+          <Text style={styles.footerCreditsText}>Wingr v1.0 • Crafted by Devashish & Om</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

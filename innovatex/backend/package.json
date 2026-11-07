@@ -1,7 +1,7 @@
 {
-  "name": "joblio-backend",
+  "name": "wingr-backend",
   "version": "1.0.0",
-  "description": "Joblio Developer Intelligence & Job Matching Platform Express Backend",
+  "description": "Wingr Developer Intelligence & Job Matching Platform Express Backend",
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
