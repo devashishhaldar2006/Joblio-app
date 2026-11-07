@@ -1,4 +1,4 @@
-// Environment configuration for Joblio Mobile client
+// Environment configuration for Wingr Mobile client
 export const CLERK_PUBLISHABLE_KEY =
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
   'pk_live_Y2xlcmsuam9ibGlvLmhhY2tjZW50cmFsLm1lJA';

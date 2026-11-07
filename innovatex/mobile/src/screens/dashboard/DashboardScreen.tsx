@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
+  Image,
 } from 'react-native';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -120,6 +121,11 @@ export default function DashboardScreen({ navigation }: any) {
       {/* Top Brand Bar & Profile */}
       <View style={styles.topBrandBar}>
         <View style={styles.brandContainer}>
+          <Image
+            source={require('../../../assets/icon.png')}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.brandTitle}>
             Win<Text style={styles.brandAccent}>gr</Text>
           </Text>
@@ -311,14 +317,19 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  brandLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
     color: '#FFFFFF',
     fontFamily: FONTS.medium,
-    letterSpacing: -0.6,
+    letterSpacing: -0.9,
   },
   brandAccent: {
     color: COLORS.yellowText,

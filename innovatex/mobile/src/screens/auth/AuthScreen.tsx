@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSignIn, useSignUp, useOAuth } from '@clerk/clerk-expo';
@@ -265,14 +266,12 @@ export default function AuthScreen() {
         {/* Editorial Minimal Brand Header */}
         <View style={styles.brandContainer}>
           <View style={styles.brandHeaderRow}>
-            <View style={styles.logoMark}>
-              <View style={styles.logoInnerSquare} />
-            </View>
+            <Image source={require('../../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
             <Text style={styles.brandTitle}>
-              Job<Text style={styles.brandAccent}>lio</Text>
+              Win<Text style={styles.brandAccent}>gr</Text>
             </Text>
           </View>
-          <Text style={styles.brandSubtitle}>Developer intelligence & career analytics</Text>
+          <Text style={styles.brandSubtitle}>The developer’s wingman • Career intelligence</Text>
         </View>
 
         {/* Verification Code View */}
@@ -508,22 +507,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  logoMark: {
-    width: 38,
-    height: 38,
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#262626',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoInnerSquare: {
-    width: 14,
-    height: 14,
-    borderWidth: 2,
-    borderColor: COLORS.accentWarning,
-    borderRadius: 3,
+  logoImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   brandTitle: {
     fontSize: 28,
