@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Wingr: The developer’s wingman",
+    "name": "Wingr",
     "slug": "mobile",
     "scheme": "joblio",
     "version": "1.0.0",
@@ -26,7 +26,8 @@
         "backgroundColor": "#0A0A0A"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.devashishcodes.mobile"
+      "package": "com.devashishcodes.mobile",
+      "label": "Wingr"
     },
     "web": {
       "favicon": "./assets/favicon.png"
