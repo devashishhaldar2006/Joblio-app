@@ -1,7 +1,7 @@
 <div align="center">
 
 <h1>
-  <img src="https://raw.githubusercontent.com/devashishhaldar2006/Wingr-app/main/docs/assets/wingr-logo.png" width="42" height="42" alt="Wingr Logo" style="vertical-align: middle; border-radius: 8px;" />
+  <img src="./docs/assets/wingr-logo.png" width="42" height="42" alt="Wingr Logo" style="vertical-align: middle; border-radius: 8px;" />
   <span>Wingr</span>
 </h1>
 
